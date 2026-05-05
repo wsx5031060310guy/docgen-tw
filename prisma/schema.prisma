@@ -8,15 +8,22 @@ datasource db {
 }
 
 model Contract {
-  id             String   @id @default(cuid())
-  client         String
-  content        String
-  signatureUrl   String?
-  signingStatus  String   @default("UNSIGNED")
-  contractPdfUrl String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  orders         Order[]
+  id                     String    @id @default(cuid())
+  client                 String
+  content                String
+  signatureUrl           String?
+  senderSignedAt         DateTime?
+  recipientName          String?
+  recipientEmail         String?
+  recipientSignatureUrl  String?
+  recipientSignedAt      DateTime?
+  signingToken           String?   @unique
+  signingStatus          String    @default("UNSIGNED")
+  // Lifecycle: UNSIGNED -> SENDER_SIGNED -> AWAITING_RECIPIENT -> FULLY_SIGNED
+  contractPdfUrl         String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  orders                 Order[]
 }
 
 model Order {
