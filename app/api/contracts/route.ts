@@ -39,7 +39,7 @@ export async function POST(req: Request) {
   const stored = createContract({
     templateId,
     client: typeof values.甲方 === "string" ? values.甲方 : (values.乙方 as string) ?? "",
-    content: document.body,
+    content: [document.title, ...document.clauses, document.footer].join("\n\n"),
     senderSignatureUrl: sigRecord.url,
     senderSignatureHash: sigRecord.sha256,
     senderIp: req.headers.get("x-forwarded-for") ?? "unknown",
