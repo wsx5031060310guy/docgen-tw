@@ -14,14 +14,20 @@ export function getStripe(): Stripe | null {
 export async function createCheckoutSession(input: {
   amountTwd: number;
   itemName: string;
-  contractId?: string;
+  merchantTradeNo: string;
+  contractId?: string | null;
   successUrl: string;
   cancelUrl: string;
+  customerEmail?: string | null;
 }) {
   const stripe = getStripe();
   if (!stripe) {
     throw new Error("STRIPE_SECRET_KEY not configured");
   }
+  const metadata: Record<string, string> = {
+    merchantTradeNo: input.merchantTradeNo,
+  };
+  if (input.contractId) metadata.contractId = input.contractId;
   return stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -35,7 +41,8 @@ export async function createCheckoutSession(input: {
         quantity: 1,
       },
     ],
-    metadata: input.contractId ? { contractId: input.contractId } : undefined,
+    metadata,
+    customer_email: input.customerEmail ?? undefined,
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
   });
