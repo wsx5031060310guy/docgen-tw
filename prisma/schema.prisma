@@ -8,12 +8,30 @@ datasource db {
 }
 
 model Contract {
-  id               String   @id @default(cuid())
-  client           String
-  content          String
-  signatureUrl     String?
-  signingStatus    String   @default("UNSIGNED")
-  contractPdfUrl   String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  client         String
+  content        String
+  signatureUrl   String?
+  signingStatus  String   @default("UNSIGNED")
+  contractPdfUrl String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orders         Order[]
+}
+
+model Order {
+  id             String    @id @default(cuid())
+  merchantTradeNo String   @unique
+  contractId     String?
+  contract       Contract? @relation(fields: [contractId], references: [id])
+  provider       String
+  amount         Int
+  currency       String    @default("TWD")
+  itemName       String
+  status         String    @default("PENDING")
+  paymentMethod  String?
+  paymentDate    DateTime?
+  rawCallback    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

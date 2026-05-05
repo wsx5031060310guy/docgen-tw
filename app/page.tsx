@@ -6,11 +6,21 @@ export default function Home() {
   return (
     <main className="mx-auto max-w-5xl p-8 sm:p-12 space-y-10">
       <header className="space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight">DocGen TW</h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-300">台灣法律合約自動產生與電子簽約平台</p>
-        <p className="text-sm text-zinc-500">
-          所有模板皆參考中華民國民法、勞動基準法、電子簽章法等現行法令制定。Jurisdiction：{templates.jurisdiction}．Last reviewed：{templates.lastReviewed}
-        </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-3">
+            <h1 className="text-4xl font-bold tracking-tight">DocGen TW</h1>
+            <p className="text-lg text-zinc-600 dark:text-zinc-300">台灣法律合約自動產生與電子簽約平台</p>
+            <p className="text-sm text-zinc-500">
+              所有模板皆參考中華民國民法、勞動基準法、電子簽章法等現行法令制定。Jurisdiction：{templates.jurisdiction}．Last reviewed：{templates.lastReviewed}
+            </p>
+          </div>
+          <Link
+            href="/checkout"
+            className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-500"
+          >
+            解鎖下載 / 升級
+          </Link>
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
