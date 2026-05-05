@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Order = {
@@ -12,7 +12,7 @@ type Order = {
   paymentDate?: string | null;
 };
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessInner() {
   const searchParams = useSearchParams();
   const order = searchParams.get("order");
   const [data, setData] = useState<Order | null>(null);
@@ -49,8 +49,7 @@ export default function PaymentSuccessPage() {
   }, [order]);
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-12">
-      <h1 className="text-2xl font-bold mb-4">付款結果</h1>
+    <>
       {loading && <p>正在確認付款狀態...</p>}
       {!loading && !data && <p>找不到訂單。</p>}
       {data && (
@@ -93,6 +92,17 @@ export default function PaymentSuccessPage() {
           )}
         </div>
       )}
+    </>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <main className="mx-auto max-w-xl px-4 py-12">
+      <h1 className="text-2xl font-bold mb-4">付款結果</h1>
+      <Suspense fallback={<p>載入中...</p>}>
+        <PaymentSuccessInner />
+      </Suspense>
     </main>
   );
 }
