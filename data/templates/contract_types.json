@@ -1,0 +1,161 @@
+{
+  "version": "1.0.0",
+  "jurisdiction": "TW",
+  "lastReviewed": "2026-05-05",
+  "disclaimer": "本平台所提供之合約模板係參考中華民國民法、勞動基準法、電子簽章法等相關法令制定之通用範本，僅供參考使用。重大商業條款仍建議委由執業律師審閱，以符合個案需求並確保權利義務之完整性。",
+  "templates": [
+    {
+      "id": "freelance",
+      "title": "接案服務合約",
+      "category": "服務契約",
+      "description": "適用於設計、開發、行銷、文案等承攬接案場景。依民法第 490 條承攬規定設計。",
+      "legalBasis": [
+        "民法第 490 條（承攬定義）",
+        "民法第 505 條（報酬給付）",
+        "民法第 514 條（瑕疵擔保）"
+      ],
+      "fields": [
+        { "key": "partyA_name", "label": "甲方（委任方）名稱", "type": "text", "required": true },
+        { "key": "partyA_id", "label": "甲方統一編號 / 身分證字號", "type": "text", "required": true },
+        { "key": "partyB_name", "label": "乙方（承攬方）名稱", "type": "text", "required": true },
+        { "key": "partyB_id", "label": "乙方統一編號 / 身分證字號", "type": "text", "required": true },
+        { "key": "service_scope", "label": "服務範圍", "type": "textarea", "required": true },
+        { "key": "deliverables", "label": "交付項目", "type": "textarea", "required": true },
+        { "key": "amount", "label": "報酬金額（新台幣）", "type": "number", "required": true },
+        { "key": "payment_terms", "label": "付款條件", "type": "select", "options": ["完成後一次付清", "簽約 50% / 完成 50%", "簽約 30% / 中期 40% / 完成 30%", "月結 30 天"], "required": true },
+        { "key": "start_date", "label": "服務起始日", "type": "date", "required": true },
+        { "key": "end_date", "label": "預計完成日", "type": "date", "required": true },
+        { "key": "ip_clause", "label": "智慧財產權歸屬", "type": "select", "options": ["於乙方收到全部款項後歸甲方所有", "歸甲方所有，乙方保留作品集展示權", "歸乙方所有，授權甲方使用"], "required": true }
+      ],
+      "clauses": [
+        "第一條 服務範圍：乙方依本合約附件約定之內容，為甲方提供 {{service_scope}} 之服務。",
+        "第二條 交付項目：乙方應於 {{end_date}} 前交付下列項目：{{deliverables}}。",
+        "第三條 報酬：甲方應給付乙方新台幣 {{amount}} 元整，付款方式為 {{payment_terms}}。",
+        "第四條 智慧財產權：本合約所產出之作品，其智慧財產權之歸屬為「{{ip_clause}}」。",
+        "第五條 保密義務：雙方對於因履行本合約所知悉之他方營業秘密，負有保密義務，於合約終止後仍繼續有效。",
+        "第六條 違約責任：任一方違反本合約之約定，致他方受有損害者，應負損害賠償責任。",
+        "第七條 爭議解決：因本合約所生之爭議，雙方同意以台灣台北地方法院為第一審管轄法院。",
+        "第八條 電子簽章：依電子簽章法第 4 條規定，雙方同意以電子簽章方式簽署本合約，其效力與書面簽章相同。"
+      ]
+    },
+    {
+      "id": "nda",
+      "title": "保密協定（NDA）",
+      "category": "保密契約",
+      "description": "雙向或單向保密協定，適用於商業合作、招聘前置揭露。",
+      "legalBasis": [
+        "營業秘密法第 2 條",
+        "民法第 184 條（侵權行為）",
+        "刑法第 317 條（洩密罪）"
+      ],
+      "fields": [
+        { "key": "partyA_name", "label": "揭露方名稱", "type": "text", "required": true },
+        { "key": "partyB_name", "label": "接受方名稱", "type": "text", "required": true },
+        { "key": "purpose", "label": "揭露目的", "type": "textarea", "required": true },
+        { "key": "confidential_scope", "label": "保密資訊範圍", "type": "textarea", "required": true },
+        { "key": "duration_years", "label": "保密期限（年）", "type": "number", "required": true, "default": 3 },
+        { "key": "is_mutual", "label": "雙向保密", "type": "checkbox", "default": false },
+        { "key": "penalty", "label": "違約金（新台幣）", "type": "number", "required": false }
+      ],
+      "clauses": [
+        "第一條 保密目的：本協定係雙方為 {{purpose}} 而簽訂。",
+        "第二條 保密資訊：包括但不限於 {{confidential_scope}}，無論以口頭、書面、電子或其他形式揭露。",
+        "第三條 保密義務：接受方應以善良管理人之注意義務保管保密資訊，非經揭露方書面同意，不得對第三人揭露。",
+        "第四條 保密期限：自本協定簽署日起 {{duration_years}} 年內持續有效。",
+        "第五條 違約處理：違反本協定者，應賠償新台幣 {{penalty}} 元整之懲罰性違約金，並負一切法律責任。",
+        "第六條 例外：保密義務不適用於 (1) 公眾已知資訊 (2) 接受方獨立開發之資訊 (3) 法令要求揭露之資訊。"
+      ]
+    },
+    {
+      "id": "loan",
+      "title": "民間借貸契約",
+      "category": "金錢消費借貸",
+      "description": "個人或公司間借貸契約。利率受民法第 205 條最高 16% 限制。",
+      "legalBasis": [
+        "民法第 474 條（消費借貸）",
+        "民法第 205 條（最高約定利率 16%）",
+        "民法第 478 條（返還義務）"
+      ],
+      "fields": [
+        { "key": "lender_name", "label": "出借人姓名", "type": "text", "required": true },
+        { "key": "lender_id", "label": "出借人身分證字號", "type": "text", "required": true },
+        { "key": "borrower_name", "label": "借款人姓名", "type": "text", "required": true },
+        { "key": "borrower_id", "label": "借款人身分證字號", "type": "text", "required": true },
+        { "key": "principal", "label": "借款本金（新台幣）", "type": "number", "required": true },
+        { "key": "interest_rate", "label": "年利率（%）", "type": "number", "required": true, "max": 16 },
+        { "key": "loan_date", "label": "借款日", "type": "date", "required": true },
+        { "key": "repayment_date", "label": "還款日", "type": "date", "required": true },
+        { "key": "repayment_method", "label": "還款方式", "type": "select", "options": ["到期一次清償", "按月攤還本息", "按月付息到期還本"], "required": true }
+      ],
+      "clauses": [
+        "第一條 借款金額：出借人於 {{loan_date}} 出借新台幣 {{principal}} 元整予借款人，借款人已親收無誤。",
+        "第二條 利率：年利率 {{interest_rate}}%，未超過民法第 205 條最高約定利率 16% 之上限。",
+        "第三條 還款：借款人應於 {{repayment_date}} 前以「{{repayment_method}}」方式清償全部本息。",
+        "第四條 遲延利息：借款人若未依約清償，應就遲延部分按年利率 16% 計付遲延利息。",
+        "第五條 強制執行：本合約經雙方簽署並公證後，得作為強制執行之執行名義。",
+        "第六條 管轄法院：因本合約所生爭議，雙方同意以借款人住所地之地方法院為第一審管轄法院。"
+      ]
+    },
+    {
+      "id": "consignment",
+      "title": "委任契約書",
+      "category": "委任契約",
+      "description": "委託他人處理特定事務之合約，適用於顧問、代理人等。",
+      "legalBasis": [
+        "民法第 528 條（委任定義）",
+        "民法第 535 條（受任人義務）",
+        "民法第 547 條（報酬請求權）"
+      ],
+      "fields": [
+        { "key": "principal_name", "label": "委任人姓名", "type": "text", "required": true },
+        { "key": "agent_name", "label": "受任人姓名", "type": "text", "required": true },
+        { "key": "task_scope", "label": "委任事項", "type": "textarea", "required": true },
+        { "key": "compensation", "label": "報酬金額", "type": "number", "required": false },
+        { "key": "term_months", "label": "委任期間（月）", "type": "number", "required": true }
+      ],
+      "clauses": [
+        "第一條 委任事項：委任人委託受任人處理下列事務：{{task_scope}}。",
+        "第二條 受任人義務：受任人應以善良管理人之注意義務處理委任事項，並隨時報告處理狀況。",
+        "第三條 報酬：委任人應給付受任人新台幣 {{compensation}} 元整。",
+        "第四條 委任期間：自簽署日起 {{term_months}} 個月。",
+        "第五條 終止：任一方得依民法第 549 條規定隨時終止委任。"
+      ]
+    },
+    {
+      "id": "custom",
+      "title": "客製化合約",
+      "category": "其他",
+      "description": "若上述模板皆不符合需求，可使用此模式自由輸入合約名稱、雙方資訊與所有條款內容。系統將使用相同的法律框架（管轄、電子簽章效力）為您包裝。",
+      "legalBasis": [
+        "民法第 153 條（契約成立）",
+        "電子簽章法第 4 條"
+      ],
+      "fields": [
+        { "key": "contract_title", "label": "合約名稱", "type": "text", "required": true },
+        { "key": "partyA_name", "label": "甲方名稱", "type": "text", "required": true },
+        { "key": "partyA_id", "label": "甲方識別字號", "type": "text", "required": false },
+        { "key": "partyB_name", "label": "乙方名稱", "type": "text", "required": true },
+        { "key": "partyB_id", "label": "乙方識別字號", "type": "text", "required": false },
+        { "key": "custom_requirements", "label": "您的需求描述（系統將據此自動草擬條款）", "type": "textarea", "required": true },
+        { "key": "key_terms", "label": "關鍵條款（如金額、期限、責任等）", "type": "textarea", "required": true },
+        { "key": "jurisdiction", "label": "管轄法院", "type": "select", "options": ["台灣台北地方法院", "台灣新北地方法院", "台灣桃園地方法院", "台灣台中地方法院", "台灣高雄地方法院"], "default": "台灣台北地方法院", "required": true }
+      ],
+      "clauses": [
+        "立合約書人甲方 {{partyA_name}} 與乙方 {{partyB_name}}（以下合稱雙方），就 {{contract_title}} 事宜，依民法第 153 條意思表示合致原則，達成以下合意：",
+        "{{custom_requirements}}",
+        "關鍵條款：{{key_terms}}",
+        "雙方依電子簽章法第 4 條規定，同意以電子簽章方式簽署本合約，其法律效力等同書面簽章。",
+        "因本合約所生爭議，雙方同意以 {{jurisdiction}} 為第一審管轄法院。"
+      ]
+    }
+  ],
+  "globalClauses": {
+    "footer": "本合約一式兩份，雙方各執一份為憑。電子簽章經雙方確認後即生效，依電子簽章法第 4 條具備與書面簽章相同之法律效力。",
+    "auditFields": [
+      "簽署時間（伺服器時間戳）",
+      "簽署 IP 位址",
+      "簽署裝置 User-Agent",
+      "雙方簽名圖檔 SHA-256 雜湊"
+    ]
+  }
+}
