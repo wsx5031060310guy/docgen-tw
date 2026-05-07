@@ -47,10 +47,13 @@ export function decodeTradeInfo(hex: string, hashKey: string, hashIv: string): R
   return Object.fromEntries(new URLSearchParams(stripped));
 }
 
-// SHA256 input MUST be HashKey={KEY}&TradeInfo={ENC}&HashIV={IV} (non-obvious "TradeInfo=" prefix)
+// SHA256 input format per MPG 1.1 spec: `HashKey={KEY}&{HEX}&HashIV={IV}`.
+// The encrypted hex is concatenated raw — there is NO `TradeInfo=` prefix.
+// (Older notes claiming a `TradeInfo=` prefix were wrong; the canonical
+// node-newebpay SDK and the official NewebPay PHP sample both omit it.)
 export function computeTradeSha(tradeInfoHex: string, hashKey: string, hashIv: string): string {
   return createHash("sha256")
-    .update(`HashKey=${hashKey}&TradeInfo=${tradeInfoHex}&HashIV=${hashIv}`)
+    .update(`HashKey=${hashKey}&${tradeInfoHex}&HashIV=${hashIv}`)
     .digest("hex")
     .toUpperCase();
 }
