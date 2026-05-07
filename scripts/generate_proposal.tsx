@@ -23,8 +23,7 @@ const MyDocument = () => (
       <Text style={styles.text}>- StayMini: 抽成制 (每訂單 5%) 或 訂閱制 $1999/月。</Text>
       
       <Text style={styles.sectionTitle}>3. 支付架構</Text>
-      <Text style={styles.text}>- 藍新金流 (國內): 提供信用卡、ATM、超商支付，符合台灣在地法規。</Text>
-      <Text style={styles.text}>- Stripe (國際): 支援全球主流信用卡、多元幣別，無縫串接跨境收款。</Text>
+      <Text style={styles.text}>- 藍新金流 (NewebPay): 提供信用卡、ATM、超商支付，符合台灣在地法規，串接 MPG/退款 API 完整流程。</Text>
       
       <Text style={styles.sectionTitle}>4. 預期效益</Text>
       <Text style={styles.text}>- 營運效率: 自動化工作流減少 60% 人工文書處理時間。</Text>

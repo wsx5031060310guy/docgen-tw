@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildCheckoutParams } from "@/lib/payment/ecpay";
+import { buildCheckoutPayload } from "@/lib/payment/newebpay";
 import { getPlan } from "@/lib/payment/pricing";
 import { prisma } from "@/lib/prisma";
 
@@ -14,21 +14,22 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const planCode = String(body.plan ?? "single");
   const contractId = body.contractId ? String(body.contractId) : null;
+  const email = String(body.email ?? "buyer@docgen.tw");
 
   const plan = getPlan(planCode);
   if (!plan) {
     return NextResponse.json({ error: "invalid plan" }, { status: 400 });
   }
 
-  const merchantTradeNo = `DOC${Date.now()}${Math.floor(Math.random() * 1000)
+  const merchantOrderNo = `DOC${Date.now()}${Math.floor(Math.random() * 1000)
     .toString()
     .padStart(3, "0")}`.slice(0, 20);
 
   await prisma.order.create({
     data: {
-      merchantTradeNo,
+      merchantTradeNo: merchantOrderNo,
       contractId,
-      provider: "ecpay",
+      provider: "newebpay",
       amount: plan.amount,
       itemName: plan.name,
       status: "PENDING",
@@ -36,15 +37,15 @@ export async function POST(req: NextRequest) {
   });
 
   const base = siteUrl(req);
-  const { endpoint, params } = buildCheckoutParams({
-    merchantTradeNo,
+  const { endpoint, params } = buildCheckoutPayload({
+    merchantOrderNo,
     amount: plan.amount,
-    itemName: plan.name,
-    tradeDesc: plan.description,
-    returnUrl: `${base}/api/payment/ecpay/callback`,
-    clientBackUrl: `${base}/payment/success?order=${merchantTradeNo}`,
-    orderResultUrl: `${base}/payment/success?order=${merchantTradeNo}`,
+    itemDesc: plan.name,
+    email,
+    returnUrl: `${base}/api/payment/newebpay/return`,
+    notifyUrl: `${base}/api/payment/newebpay/notify`,
+    clientBackUrl: `${base}/payment/success?order=${merchantOrderNo}`,
   });
 
-  return NextResponse.json({ endpoint, params, merchantTradeNo });
+  return NextResponse.json({ endpoint, params, merchantOrderNo });
 }

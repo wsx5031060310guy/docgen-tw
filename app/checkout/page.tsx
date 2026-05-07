@@ -9,7 +9,7 @@ export default function CheckoutPage() {
   async function pay(planCode: string) {
     setSubmitting(planCode);
     try {
-      const res = await fetch("/api/payment/ecpay/checkout", {
+      const res = await fetch("/api/payment/newebpay/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ plan: planCode }),
@@ -41,7 +41,7 @@ export default function CheckoutPage() {
     <main className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="text-3xl font-bold mb-2">解鎖完整合約</h1>
       <p className="text-gray-600 mb-8">
-        透過綠界（ECPay）完成付款後即可下載完整合約 PDF 並儲存簽署紀錄。
+        透過藍新金流（NewebPay）完成付款後即可下載完整合約 PDF 並儲存簽署紀錄。
       </p>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -71,9 +71,9 @@ export default function CheckoutPage() {
       </div>
 
       <p className="mt-8 text-xs text-gray-500">
-        測試模式：使用綠界官方測試商店代號 2000132，可用測試卡號
-        4311-9522-2222-2222（有效期/CVV 任填，OTP 1234）。正式環境請於 .env 設定
-        ECPAY_MERCHANT_ID / HASH_KEY / HASH_IV 並將 ECPAY_ENV 設為 production。
+        正式環境請於 .env 設定 NEWEBPAY_MERCHANT_ID / NEWEBPAY_HASH_KEY /
+        NEWEBPAY_HASH_IV / NEWEBPAY_API_BASE。Sandbox base
+        為 https://ccore.newebpay.com，Production 為 https://core.newebpay.com。
       </p>
     </main>
   );
