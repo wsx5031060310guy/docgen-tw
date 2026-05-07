@@ -8,11 +8,13 @@ export type NewebpayConfig = {
 };
 
 export function getNewebpayConfig(): NewebpayConfig {
+  // .trim() defensively — pasting from the NewebPay merchant console often
+  // brings along an invisible trailing whitespace that makes AES + SHA fail.
   return {
-    merchantId: process.env.NEWEBPAY_MERCHANT_ID || "",
-    hashKey: process.env.NEWEBPAY_HASH_KEY || "",
-    hashIv: process.env.NEWEBPAY_HASH_IV || "",
-    apiBase: process.env.NEWEBPAY_API_BASE || "https://ccore.newebpay.com",
+    merchantId: (process.env.NEWEBPAY_MERCHANT_ID || "").trim(),
+    hashKey: (process.env.NEWEBPAY_HASH_KEY || "").trim(),
+    hashIv: (process.env.NEWEBPAY_HASH_IV || "").trim(),
+    apiBase: (process.env.NEWEBPAY_API_BASE || "https://ccore.newebpay.com").trim(),
   };
 }
 
