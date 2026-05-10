@@ -13,6 +13,7 @@ datasource db {
 model Contract {
   id                     String    @id @default(cuid())
   templateId             String?
+  values                 Json?
   client                 String
   content                String
   signatureUrl           String?

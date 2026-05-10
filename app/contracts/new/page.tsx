@@ -29,6 +29,7 @@ function NewInner() {
   const [submitErr, setSubmitErr] = useState<string | null>(null);
   const [contractId, setContractId] = useState<string | null>(null);
   const [recipientUrl, setRecipientUrl] = useState<string | null>(null);
+  const [signingToken, setSigningToken] = useState<string | null>(null);
 
   useEffect(() => {
     setValues({ ...tpl.defaults });
@@ -84,6 +85,7 @@ function NewInner() {
       if (!res.ok) throw new Error(json.error || "送出失敗");
       setContractId(json.id);
       setRecipientUrl(json.recipientSignUrl || null);
+      setSigningToken(json.signingToken || null);
     } catch (e) {
       setSubmitErr((e as Error).message);
       throw e;
@@ -399,6 +401,7 @@ function NewInner() {
           signedB={signedB}
           contractId={contractId}
           recipientUrl={recipientUrl}
+          signingToken={signingToken}
           onHome={() => router.push("/")}
         />
       )}
@@ -415,6 +418,7 @@ function CompleteView({
   signedB,
   contractId,
   recipientUrl,
+  signingToken,
   onHome,
 }: {
   tpl: ReturnType<typeof getTemplate>;
@@ -425,8 +429,10 @@ function CompleteView({
   signedB: string;
   contractId: string | null;
   recipientUrl: string | null;
+  signingToken: string | null;
   onHome: () => void;
 }) {
+  const pdfUrl = contractId && signingToken ? `/api/contracts/${contractId}/pdf?token=${signingToken}` : null;
   if (!tpl) return null;
   return (
     <div
@@ -469,9 +475,16 @@ function CompleteView({
             <code style={{ fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>{recipientUrl}</code>
           </div>
         )}
-        <button className="btn btn-stamp btn-lg">
+        <a
+          className="btn btn-stamp btn-lg"
+          href={pdfUrl || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-disabled={!pdfUrl}
+          style={{ opacity: pdfUrl ? 1 : 0.5, pointerEvents: pdfUrl ? "auto" : "none" }}
+        >
           <Icon name="download" size={14} /> 下載 PDF
-        </button>
+        </a>
         <button
           className="btn btn-ghost"
           onClick={() => recipientUrl && navigator.clipboard.writeText(recipientUrl)}

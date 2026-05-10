@@ -14,6 +14,7 @@ export type SigningStatus =
 export interface StoredContract {
   id: string;
   templateId: string;
+  values: Record<string, string>;
   client: string;
   content: string;
   senderSignatureUrl: string | null;
@@ -50,6 +51,7 @@ function fromRow(r: any): StoredContract {
   return {
     id: r.id,
     templateId: r.templateId ?? "",
+    values: (r.values ?? {}) as Record<string, string>,
     client: r.client ?? "",
     content: r.content ?? "",
     senderSignatureUrl: r.signatureUrl ?? null,
@@ -71,6 +73,7 @@ function fromRow(r: any): StoredContract {
 
 export async function createContract(input: {
   templateId: string;
+  values: Record<string, string>;
   client: string;
   content: string;
   senderSignatureUrl: string;
@@ -85,28 +88,27 @@ export async function createContract(input: {
   if (useDb()) {
     const row = await prisma.contract.create({
       data: {
+        templateId: input.templateId,
+        values: input.values as object,
         client: input.client,
         content: input.content,
         signatureUrl: input.senderSignatureUrl,
         senderSignedAt: now,
+        senderSignatureHash: input.senderSignatureHash,
+        senderIp: input.senderIp,
         recipientName: input.recipientName ?? null,
         recipientEmail: input.recipientEmail ?? null,
         signingToken: token,
         signingStatus: "AWAITING_RECIPIENT",
       },
     });
-    // Stash extras Prisma model doesn't yet have (templateId, hashes, IPs).
-    return {
-      ...fromRow(row),
-      templateId: input.templateId,
-      senderSignatureHash: input.senderSignatureHash,
-      senderIp: input.senderIp,
-    };
+    return fromRow(row);
   }
 
   const c: StoredContract = {
     id: makeId(),
     templateId: input.templateId,
+    values: input.values,
     client: input.client,
     content: input.content,
     senderSignatureUrl: input.senderSignatureUrl,
@@ -166,19 +168,14 @@ export async function recordRecipientSignature(input: {
       where: { id: input.id },
       data: {
         recipientSignatureUrl: input.recipientSignatureUrl,
+        recipientSignatureHash: input.recipientSignatureHash,
         recipientSignedAt: new Date(),
+        recipientIp: input.recipientIp,
         recipientName: input.recipientName ?? c.recipientName,
         signingStatus: "FULLY_SIGNED",
       },
     });
-    return {
-      ...fromRow(updated),
-      senderSignatureHash: c.senderSignatureHash,
-      recipientSignatureHash: input.recipientSignatureHash,
-      senderIp: c.senderIp,
-      recipientIp: input.recipientIp,
-      templateId: c.templateId,
-    };
+    return fromRow(updated);
   }
 
   c.recipientSignatureUrl = input.recipientSignatureUrl;

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { persistSignaturePng } from "@/lib/services/signing_service";
 import { recordRecipientSignature } from "@/lib/contract-store";
+import { notifyFullySigned } from "@/lib/notify";
+
+export const runtime = "nodejs";
 
 interface SignPayload {
   token: string;
@@ -36,6 +39,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 403 });
   }
+
+  // Best-effort: PDF + email both parties. Don't block the response on it.
+  notifyFullySigned(result).catch((e) =>
+    console.error("[recipient-sign] notify failed:", (e as Error).message),
+  );
 
   return NextResponse.json({
     id: result.id,

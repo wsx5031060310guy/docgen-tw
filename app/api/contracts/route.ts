@@ -38,6 +38,7 @@ export async function POST(req: Request) {
 
   const stored = await createContract({
     templateId,
+    values,
     client: values.party_a_name || values.party_b_name || "",
     content: [
       document.title,
@@ -60,6 +61,7 @@ export async function POST(req: Request) {
       id: stored.id,
       document,
       signingStatus: stored.signingStatus,
+      signingToken: stored.signingToken,
       recipientSignUrl,
     },
     { status: 201 }

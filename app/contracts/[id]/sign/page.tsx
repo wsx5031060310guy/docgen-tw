@@ -101,10 +101,15 @@ function SignInner({ id }: { id: string }) {
           <h2>合約已雙方簽署完成</h2>
           <p style={{ color: "var(--ink-soft)", marginTop: 8 }}>系統已將正式版本寄送至雙方信箱。</p>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 24 }}>
-            <button className="btn btn-stamp btn-lg">
+            <a
+              className="btn btn-stamp btn-lg"
+              href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Icon name="download" size={14} />
               下載 PDF
-            </button>
+            </a>
             <button className="btn btn-ghost" onClick={() => router.push("/")}>
               回首頁
             </button>

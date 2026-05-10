@@ -34,8 +34,8 @@ const FREELANCE: Template = {
   description: "適用於設計、開發、文案等一次性專案承攬。明定交付物、報酬、智慧財產權歸屬。",
   legal: ["民法 §490", "民法 §505", "著作權法 §12", "民法 §250"],
   defaults: {
-    party_a_name: "", party_a_id: "",
-    party_b_name: "", party_b_id: "",
+    party_a_name: "", party_a_id: "", party_a_email: "",
+    party_b_name: "", party_b_id: "", party_b_email: "",
     scope: "", deliverable: "", deadline: "",
     amount: "", payment_terms: "完工驗收後 14 日內一次給付",
     ip_owner: "a", penalty_rate: "0.1", sign_date: todayMinguo(),
@@ -43,8 +43,10 @@ const FREELANCE: Template = {
   fields: [
     { id: "party_a_name", label: "委任方姓名 / 公司", placeholder: "王小明 / 某某有限公司", required: true, group: "parties" },
     { id: "party_a_id",   label: "委任方統編 / 身分證", placeholder: "12345678", group: "parties" },
+    { id: "party_a_email", label: "委任方 Email", placeholder: "a@example.com", group: "parties" },
     { id: "party_b_name", label: "受任方姓名 / 公司", placeholder: "陳設計", required: true, group: "parties" },
     { id: "party_b_id",   label: "受任方統編 / 身分證", placeholder: "A123456789", group: "parties" },
+    { id: "party_b_email", label: "受任方 Email（簽完後寄送 PDF）", placeholder: "b@example.com", group: "parties" },
     { id: "scope", label: "工作項目", placeholder: "品牌識別系統設計，含 logo、配色與字型規範", required: true, type: "textarea", span: 2, group: "work" },
     { id: "deliverable", label: "交付物", placeholder: "AI 原始檔、PDF 規範手冊各一份", type: "textarea", span: 2, group: "work" },
     { id: "deadline", label: "交付期限", placeholder: "2026/06/30", required: true, group: "work" },
