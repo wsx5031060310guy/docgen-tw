@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
-import { buildContractDocument } from "@/lib/contract-engine";
+import { buildContractDocument } from "@/lib/templates";
 import { persistSignaturePng } from "@/lib/services/signing_service";
 import { createContract } from "@/lib/contract-store";
 
 interface CreateContractPayload {
   templateId: string;
-  values: Record<string, string | number | boolean>;
-  partyASignature: string; // base64 PNG data URL — sender signs at creation
+  values: Record<string, string>;
+  partyASignature: string;
   recipientName?: string;
   recipientEmail?: string;
 }
@@ -38,8 +38,12 @@ export async function POST(req: Request) {
 
   const stored = await createContract({
     templateId,
-    client: typeof values.甲方 === "string" ? values.甲方 : (values.乙方 as string) ?? "",
-    content: [document.title, ...document.clauses, document.footer].join("\n\n"),
+    client: values.party_a_name || values.party_b_name || "",
+    content: [
+      document.title,
+      ...document.clauses.map((c) => `第 ${c.n} 條  ${c.title}\n${c.body}`),
+      document.footer,
+    ].join("\n\n"),
     senderSignatureUrl: sigRecord.url,
     senderSignatureHash: sigRecord.sha256,
     senderIp: req.headers.get("x-forwarded-for") ?? "unknown",
