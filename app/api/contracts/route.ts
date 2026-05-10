@@ -34,9 +34,9 @@ export async function POST(req: Request) {
 
   // Persist sender signature image, hash for audit
   const tempId = crypto.randomBytes(8).toString("hex");
-  const sigRecord = persistSignaturePng(tempId, partyASignature);
+  const sigRecord = await persistSignaturePng(tempId, partyASignature);
 
-  const stored = createContract({
+  const stored = await createContract({
     templateId,
     client: typeof values.甲方 === "string" ? values.甲方 : (values.乙方 as string) ?? "",
     content: [document.title, ...document.clauses, document.footer].join("\n\n"),

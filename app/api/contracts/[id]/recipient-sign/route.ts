@@ -22,9 +22,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "缺少 token 或簽名" }, { status: 400 });
   }
 
-  const sig = persistSignaturePng(`${id}_recipient`, body.signature);
+  const sig = await persistSignaturePng(`${id}_recipient`, body.signature);
 
-  const result = recordRecipientSignature({
+  const result = await recordRecipientSignature({
     id,
     token: body.token,
     recipientSignatureUrl: sig.url,

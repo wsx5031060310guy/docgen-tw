@@ -9,14 +9,19 @@ datasource db {
 
 model Contract {
   id                     String    @id @default(cuid())
+  templateId             String?
   client                 String
   content                String
   signatureUrl           String?
   senderSignedAt         DateTime?
+  senderSignatureHash    String?
+  senderIp               String?
   recipientName          String?
   recipientEmail         String?
   recipientSignatureUrl  String?
   recipientSignedAt      DateTime?
+  recipientSignatureHash String?
+  recipientIp            String?
   signingToken           String?   @unique
   signingStatus          String    @default("UNSIGNED")
   // Lifecycle: UNSIGNED -> SENDER_SIGNED -> AWAITING_RECIPIENT -> FULLY_SIGNED
@@ -27,18 +32,18 @@ model Contract {
 }
 
 model Order {
-  id             String    @id @default(cuid())
-  merchantTradeNo String   @unique
-  contractId     String?
-  contract       Contract? @relation(fields: [contractId], references: [id])
-  provider       String
-  amount         Int
-  currency       String    @default("TWD")
-  itemName       String
-  status         String    @default("PENDING")
-  paymentMethod  String?
-  paymentDate    DateTime?
-  rawCallback    String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  merchantTradeNo String    @unique
+  contractId      String?
+  contract        Contract? @relation(fields: [contractId], references: [id])
+  provider        String
+  amount          Int
+  currency        String    @default("TWD")
+  itemName        String
+  status          String    @default("PENDING")
+  paymentMethod   String?
+  paymentDate     DateTime?
+  rawCallback     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
