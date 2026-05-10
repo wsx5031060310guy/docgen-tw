@@ -361,4 +361,12 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   /* Templates page filter row */
   .dg-templates-filter { flex-direction: column; align-items: stretch !important; gap: 8px; }
   .dg-templates-filter input { width: 100% !important; }
+
+  /* Stepper — shrink + hide labels on mobile, keep just numbered dots */
+  .stepper { gap: 4px; }
+  .stepper-item span:not(.stepper-dot) { display: none; }
+  .stepper-line { min-width: 16px; }
+
+  /* "自動儲存於本機" indicator on NewContract — hide on mobile */
+  .dg-autosave-indicator { display: none !important; }
 }

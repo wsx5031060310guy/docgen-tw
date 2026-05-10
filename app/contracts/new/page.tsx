@@ -117,7 +117,7 @@ function NewInner() {
       <div style={{ borderBottom: "1px solid var(--line)", background: "var(--bg-elev)", padding: "14px 32px" }}>
         <div className="container row" style={{ justifyContent: "space-between" }}>
           <Stepper steps={stepNames} current={step - 1} />
-          <div className="row gap-3" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
+          <div className="row gap-3 dg-autosave-indicator" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
             <Icon name="save" size={13} /> 自動儲存於本機
           </div>
         </div>
