@@ -13,10 +13,7 @@ export default function Home() {
     <>
       <TopNav />
       <main className="page paper-bg">
-        <section
-          className="container"
-          style={{ padding: "60px 32px 56px", display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 56, alignItems: "center" }}
-        >
+        <section className="container dg-hero-grid">
           <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
             <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
               <span style={{ width: 24, height: 1, background: "var(--ink-muted)" }} />
@@ -36,7 +33,7 @@ export default function Home() {
               從 8 種常用範本開始，逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
               <span style={{ color: "var(--ink)" }}> 比律師快、比範本可信。</span>
             </p>
-            <div className="row gap-3" style={{ marginTop: 6 }}>
+            <div className="row gap-3 dg-hero-cta" style={{ marginTop: 6 }}>
               <Link href="/contracts/new" className="btn btn-primary btn-lg">
                 <Icon name="sparkles" size={15} />
                 開始建立合約
@@ -67,7 +64,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ position: "relative", height: 480 }}>
+          <div className="dg-hero-visual">
             <div
               className="paper"
               style={{
@@ -146,7 +143,7 @@ export default function Home() {
         </section>
 
         <section id="templates" className="container" style={{ padding: "24px 32px 64px" }}>
-          <div className="row" style={{ justifyContent: "space-between", marginBottom: 24, alignItems: "flex-end" }}>
+          <div className="row dg-templates-filter" style={{ justifyContent: "space-between", marginBottom: 24, alignItems: "flex-end" }}>
             <div>
               <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
                 合約範本
@@ -160,7 +157,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 18 }}>
+          <div className="dg-templates-grid">
             {TEMPLATES.map((t) => (
               <TemplateCard key={t.id} tpl={t} />
             ))}
@@ -172,7 +169,7 @@ export default function Home() {
             運作方式
           </div>
           <h2 style={{ marginBottom: 32 }}>三步完成，無需法律背景</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+          <div className="dg-howit-grid">
             {[
               { n: "01", icon: "fileText", t: "挑選範本", d: "從 8 種常用合約挑一個，或從空白模板自訂。每個範本均附法條依據。" },
               { n: "02", icon: "pen", t: "填寫表單", d: "左側填寫，右側即時預覽。系統自動將數字轉為國字大寫，逐條編號。" },

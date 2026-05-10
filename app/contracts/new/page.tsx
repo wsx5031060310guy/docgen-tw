@@ -124,15 +124,8 @@ function NewInner() {
       </div>
 
       {step < 4 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(420px, 42%) 1fr", minHeight: 0, flex: 1 }}>
-          <div
-            style={{
-              padding: "28px 32px 120px",
-              borderRight: "1px solid var(--line)",
-              overflowY: "auto",
-              maxHeight: "calc(100vh - 60px - 56px)",
-            }}
-          >
+        <div className="dg-newcontract-grid">
+          <div className="dg-newcontract-form">
             {step === 1 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
                 <div>
@@ -141,7 +134,7 @@ function NewInner() {
                     不同類型適用不同民法章節，選錯不影響，後面隨時可換。
                   </p>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+                <div className="dg-templates-pick">
                   {TEMPLATES.map((t) => (
                     <button
                       key={t.id}
@@ -217,7 +210,7 @@ function NewInner() {
                     >
                       {tpl.groups[gid]}
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+                    <div className="dg-fields-2col">
                       {fs.map((f) => (
                         <div
                           key={f.id}
@@ -279,7 +272,7 @@ function NewInner() {
                     示範：你可以同時為甲乙雙方簽名。實際情境，乙方會收到簽署連結。
                   </p>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <div className="dg-fields-2col" style={{ gap: 16 }}>
                   <SignaturePad
                     label={`甲方　${values.party_a_name || "請先填姓名"}`}
                     value={sigA}
@@ -316,17 +309,7 @@ function NewInner() {
               </div>
             )}
 
-            <div
-              style={{
-                position: "fixed", bottom: 0, left: 0, width: "42%",
-                padding: "16px 32px",
-                background: "color-mix(in oklab, var(--bg) 92%, transparent)",
-                backdropFilter: "blur(8px)",
-                borderTop: "1px solid var(--line)",
-                borderRight: "1px solid var(--line)",
-                zIndex: 20, display: "flex", justifyContent: "space-between", gap: 12,
-              }}
-            >
+            <div className="dg-newcontract-cta">
               <button
                 className="btn btn-soft"
                 onClick={() => (step === 1 ? router.push("/") : setStep((s) => s - 1))}
@@ -358,13 +341,7 @@ function NewInner() {
             </div>
           </div>
 
-          <div
-            style={{
-              overflowY: "auto",
-              maxHeight: "calc(100vh - 60px - 56px)",
-              background: "var(--bg-soft)",
-            }}
-          >
+          <div className="dg-newcontract-preview">
             <div
               style={{
                 position: "sticky", top: 0, zIndex: 5, padding: "12px 24px",
@@ -435,10 +412,7 @@ function CompleteView({
   const pdfUrl = contractId && signingToken ? `/api/contracts/${contractId}/pdf?token=${signingToken}` : null;
   if (!tpl) return null;
   return (
-    <div
-      className="container"
-      style={{ padding: "40px 32px 80px", display: "grid", gridTemplateColumns: "320px 1fr", gap: 32 }}
-    >
+    <div className="container dg-complete-grid" style={{ padding: "40px 32px 80px" }}>
       <aside
         style={{
           position: "sticky", top: 80, alignSelf: "flex-start",

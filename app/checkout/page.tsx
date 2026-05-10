@@ -80,10 +80,7 @@ export default function CheckoutPage() {
           </p>
         </div>
 
-        <div
-          className="container"
-          style={{ padding: "36px 32px 56px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 22, alignItems: "stretch" }}
-        >
+        <div className="container dg-checkout-grid" style={{ padding: "36px 32px 56px" }}>
           {PLANS.map((p, i) => (
             <PlanCard
               key={p.code}
@@ -95,10 +92,7 @@ export default function CheckoutPage() {
         </div>
 
         <div className="container" style={{ padding: "0 32px 32px" }}>
-          <div
-            className="card"
-            style={{ padding: 22, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center" }}
-          >
+          <div className="card dg-payment-bar" style={{ padding: 22 }}>
             <div>
               <div
                 style={{
@@ -148,7 +142,7 @@ export default function CheckoutPage() {
           >
             常見問題
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div className="dg-faq-grid">
             {[
               ["這些合約具法律效力嗎？", "是的。合約內容均依中華民國法律編製，並透過電子簽章法 §4、§9 保障雙方簽署效力。但重大或複雜爭議仍建議委請律師。"],
               ["可以客製條款嗎？", "Pack 與 Pro 方案支援自訂條款。系統 AI 會即時提示對應的法條依據。"],

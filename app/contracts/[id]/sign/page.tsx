@@ -204,10 +204,7 @@ function SignInner({ id }: { id: string }) {
           padding: "16px 24px",
         }}
       >
-        <div
-          className="container-narrow"
-          style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr auto", gap: 18, alignItems: "flex-end" }}
-        >
+        <div className="container-narrow dg-sign-bottom-grid">
           <div className="field">
             <label className="field-label">
               姓名 / 公司 <span className="field-required">*</span>
