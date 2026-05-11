@@ -22,6 +22,19 @@ type OverdueMs = {
   } | null;
 };
 
+type Referral = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  city: string | null;
+  topic: string | null;
+  budget: string | null;
+  description: string;
+  status: string;
+  createdAt: string;
+};
+
 type Overview = {
   stats: {
     cases: number;
@@ -53,6 +66,7 @@ function AdminInner() {
   const params = useSearchParams();
   const keyParam = params.get("key");
   const [data, setData] = useState<Overview | null>(null);
+  const [referrals, setReferrals] = useState<Referral[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,14 +75,31 @@ function AdminInner() {
       return;
     }
     document.cookie = `docgen_admin=${encodeURIComponent(keyParam)}; path=/; max-age=86400; SameSite=Lax`;
-    fetch(`/api/admin/overview?key=${encodeURIComponent(keyParam)}`)
-      .then(async (r) => {
-        if (r.status === 401) throw new Error("ADMIN_KEY 不正確或未設定");
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        setData(await r.json());
+    Promise.all([
+      fetch(`/api/admin/overview?key=${encodeURIComponent(keyParam)}`),
+      fetch(`/api/admin/referrals?key=${encodeURIComponent(keyParam)}`),
+    ])
+      .then(async ([ro, rr]) => {
+        if (ro.status === 401) throw new Error("ADMIN_KEY 不正確或未設定");
+        if (!ro.ok) throw new Error(`HTTP ${ro.status}`);
+        setData(await ro.json());
+        if (rr.ok) {
+          const j = await rr.json();
+          setReferrals(j.referrals ?? []);
+        }
       })
       .catch((e) => setErr((e as Error).message));
   }, [keyParam]);
+
+  async function setReferralStatus(id: string, status: string) {
+    if (!keyParam) return;
+    await fetch(`/api/admin/referrals?key=${encodeURIComponent(keyParam)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+    setReferrals((rs) => rs.map((r) => (r.id === id ? { ...r, status } : r)));
+  }
 
   if (err) {
     return (
@@ -202,6 +233,50 @@ function AdminInner() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
+        <h2 style={{ fontSize: 22, marginBottom: 12 }}>律師轉介 ({referrals.length})</h2>
+        {referrals.length === 0 ? (
+          <div className="card" style={{ padding: 16, color: "var(--ink-muted)" }}>目前無轉介需求。</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {referrals.map((r) => (
+              <details key={r.id} className="card" style={{
+                padding: 14, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
+              }}>
+                <summary style={{ cursor: "pointer", listStyle: "none" }}>
+                  <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                    <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+                      <b>{r.name}</b>
+                      <span style={{ fontSize: 12, color: "var(--ink-muted)" }}>{r.email}</span>
+                      {r.topic && <span className="chip chip-zinc" style={{ fontSize: 11 }}>{r.topic}</span>}
+                      {r.city && <span className="chip chip-zinc" style={{ fontSize: 11 }}>{r.city}</span>}
+                      {r.budget && <span className="chip chip-zinc" style={{ fontSize: 11 }}>{r.budget}</span>}
+                    </div>
+                    <div className="row gap-2">
+                      <span style={{ fontSize: 11, color: "var(--ink-muted)" }}>
+                        {new Date(r.createdAt).toLocaleDateString("zh-Hant")}
+                      </span>
+                      <select value={r.status} onChange={(e) => setReferralStatus(r.id, e.target.value)} className="input" style={{ fontSize: 12, padding: "2px 6px" }}>
+                        <option value="NEW">新進</option>
+                        <option value="CONTACTED">已聯絡</option>
+                        <option value="MATCHED">已媒合</option>
+                        <option value="CLOSED">結案</option>
+                      </select>
+                    </div>
+                  </div>
+                </summary>
+                <div style={{ marginTop: 10, fontSize: 13.5, lineHeight: 1.7, color: "var(--ink-soft)", whiteSpace: "pre-wrap" }}>
+                  {r.description}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-muted)", marginTop: 8 }}>
+                  電話：{r.phone || "—"}
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
       </section>
 
       <Footer />

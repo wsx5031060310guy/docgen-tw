@@ -84,6 +84,22 @@ model Milestone {
   updatedAt   DateTime  @updatedAt
 }
 
+model LawyerReferral {
+  id            String   @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  city          String?
+  topic         String?
+  budget        String?
+  description   String
+  contractId    String?
+  status        String   @default("NEW")
+  internalNotes String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model Order {
   id              String    @id @default(cuid())
   merchantTradeNo String    @unique

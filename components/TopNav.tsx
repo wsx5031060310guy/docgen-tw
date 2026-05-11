@@ -5,7 +5,9 @@ import { Icon } from "./Icon";
 
 const LINKS: { href: string; label: string; match: (p: string) => boolean }[] = [
   { href: "/", label: "模板", match: (p) => p === "/" },
-  { href: "/contracts/new", label: "建立合約", match: (p) => p.startsWith("/contracts/new") },
+  { href: "/contracts/new", label: "建立合約", match: (p) => p === "/contracts/new" },
+  { href: "/contracts", label: "我的合約", match: (p) => p === "/contracts" || (p.startsWith("/contracts/") && p !== "/contracts/new") },
+  { href: "/cases", label: "案件", match: (p) => p.startsWith("/cases") },
   { href: "/checkout", label: "方案", match: (p) => p === "/checkout" },
 ];
 

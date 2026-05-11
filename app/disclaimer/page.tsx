@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
-import { LawyerReferralCTA } from "@/components/LawyerReferralCTA";
+import { ReferralFormSection } from "./referral-section";
 
 export const metadata = {
   title: "法律免責 / 律師轉介 · DocGen TW",
@@ -94,8 +95,10 @@ export default function DisclaimerPage() {
           </div>
         </section>
 
-        <section className="container" style={{ padding: "24px 32px 64px", maxWidth: 860 }}>
-          <LawyerReferralCTA variant="card" context="一般法律諮詢" />
+        <section id="referral" className="container" style={{ padding: "24px 32px 64px", maxWidth: 860 }}>
+          <Suspense fallback={<div style={{ color: "var(--ink-muted)" }}>載入表單…</div>}>
+            <ReferralFormSection />
+          </Suspense>
           <div style={{ marginTop: 20, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
             最後更新：2026 年。如本頁與您簽署的服務條款衝突，以服務條款為準。
             <br />

@@ -15,6 +15,49 @@ interface CreateContractPayload {
   autoMilestones?: boolean;
 }
 
+// GET /api/contracts?status=&template=&q=
+// List recent contracts with optional filters. Open endpoint; UI is the only
+// listing surface (would gate behind auth in a real multi-tenant build).
+export async function GET(req: Request) {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ contracts: [], note: "database not configured" });
+  }
+  const url = new URL(req.url);
+  const status = url.searchParams.get("status") || undefined;
+  const template = url.searchParams.get("template") || undefined;
+  const q = (url.searchParams.get("q") || "").trim();
+
+  const where: Record<string, unknown> = {};
+  if (status) where.signingStatus = status;
+  if (template) where.templateId = template;
+  if (q) {
+    where.OR = [
+      { client: { contains: q, mode: "insensitive" } },
+      { recipientName: { contains: q, mode: "insensitive" } },
+      { recipientEmail: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  const rows = await prisma.contract.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 100,
+    select: {
+      id: true,
+      templateId: true,
+      client: true,
+      recipientName: true,
+      recipientEmail: true,
+      signingStatus: true,
+      caseId: true,
+      expiryDate: true,
+      createdAt: true,
+      case: { select: { id: true, title: true } },
+      milestones: { select: { id: true, status: true } },
+    },
+  });
+  return NextResponse.json({ contracts: rows });
+}
+
 export async function POST(req: Request) {
   let body: CreateContractPayload;
   try {

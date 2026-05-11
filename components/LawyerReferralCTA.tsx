@@ -10,11 +10,12 @@ export function LawyerReferralCTA({
   variant?: Variant;
   context?: string;
 }) {
-  const subject = encodeURIComponent("DocGen TW 律師轉介需求");
-  const body = encodeURIComponent(
-    `(系統自動帶入，可自行修改)\n\n合約類型 / 情境：${context ?? "—"}\n\n我希望由合作律師審閱本合約或進行諮詢，請與我聯繫。`,
-  );
-  const mailto = `mailto:lawyer-referral@docgen.tw?subject=${subject}&body=${body}`;
+  const href =
+    context && context.trim()
+      ? `/disclaimer?topic=${encodeURIComponent(context)}#referral`
+      : `/disclaimer#referral`;
+  // Reuse the variable name so the rest of the file stays unchanged.
+  const mailto = href;
 
   if (variant === "footer") {
     return (
