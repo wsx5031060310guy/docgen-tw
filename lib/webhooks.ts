@@ -123,11 +123,48 @@ export async function dispatchWebhook(
   return result;
 }
 
+const ADMIN_ALERT_THRESHOLD = Number(process.env.WEBHOOK_FAIL_ALERT_THRESHOLD || 10);
+const ADMIN_ALERT_WEBHOOK = process.env.ADMIN_ALERT_WEBHOOK;
+
+/** If 24h failure count exceeds threshold AND we haven't pinged in the last
+ *  6h, ping the admin alert webhook. State is held in process memory so we
+ *  don't spam between cron runs (Vercel functions are warm enough for the
+ *  single-daily cron cadence we use). */
+declare global {
+  // eslint-disable-next-line no-var
+  var __docgenAdminAlertLastAt: number | undefined;
+}
+
+async function maybeAlertAdmin(fails24h: number) {
+  if (!ADMIN_ALERT_WEBHOOK) return;
+  if (fails24h < ADMIN_ALERT_THRESHOLD) return;
+  const last = globalThis.__docgenAdminAlertLastAt ?? 0;
+  if (Date.now() - last < 6 * 3600_000) return;
+  globalThis.__docgenAdminAlertLastAt = Date.now();
+  const body = JSON.stringify({
+    event: "admin.webhook_alarm",
+    summary: `🚨 DocGen TW webhook 失敗 ${fails24h} 次（最近 24 小時，門檻 ${ADMIN_ALERT_THRESHOLD}）`,
+    text: `🚨 DocGen TW webhook 失敗 ${fails24h} 次（最近 24 小時，門檻 ${ADMIN_ALERT_THRESHOLD}）`,
+    data: { fails24h, threshold: ADMIN_ALERT_THRESHOLD },
+    timestamp: new Date().toISOString(),
+    source: "docgen-tw",
+  });
+  try {
+    await fetch(ADMIN_ALERT_WEBHOOK, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+  } catch (e) {
+    console.error("[admin-alert] failed", (e as Error).message);
+  }
+}
+
 /** Run by cron. Picks rows where nextRetryAt<=now and retries them. */
 export async function retryPendingWebhooks(now = new Date()): Promise<{
-  retried: number; succeeded: number; gaveUp: number;
+  retried: number; succeeded: number; gaveUp: number; fails24h: number;
 }> {
-  if (!process.env.DATABASE_URL) return { retried: 0, succeeded: 0, gaveUp: 0 };
+  if (!process.env.DATABASE_URL) return { retried: 0, succeeded: 0, gaveUp: 0, fails24h: 0 };
   const { prisma } = await import("./prisma");
   const due = await prisma.webhookDelivery.findMany({
     where: { succeeded: false, giveUpAt: null, nextRetryAt: { lte: now } },
@@ -178,7 +215,13 @@ export async function retryPendingWebhooks(now = new Date()): Promise<{
       });
     }
   }
-  return { retried, succeeded, gaveUp };
+  // Count failures in the last 24 hours and maybe alert admin.
+  const fails24h = await prisma.webhookDelivery.count({
+    where: { ok: false, createdAt: { gte: new Date(now.getTime() - 86400_000) } },
+  });
+  await maybeAlertAdmin(fails24h);
+
+  return { retried, succeeded, gaveUp, fails24h };
 }
 
 /** Fire-and-forget convenience. Looks up the user's webhook by uid and sends. */

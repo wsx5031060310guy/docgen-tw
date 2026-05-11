@@ -4,6 +4,7 @@ import { runTextOnlyRiskCheck, summarizeRisk } from "@/lib/risk-rules-text";
 import { runLlmRiskCheck } from "@/lib/llm-risk";
 import { suggestTemplate } from "@/lib/template-suggest";
 import { prisma } from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -12,15 +13,37 @@ export const maxDuration = 30;
 // Body: { text: string, llm?: boolean, share?: boolean }
 // Returns: { summary, findings, llm: { findings, reason? }, chars, shareId? }
 export async function POST(req: Request) {
+  // IP-based rate limit (public endpoint). Lenient for non-LLM (cheap),
+  // tighter for LLM mode (cost guard against scraping our free Gemini tier).
+  const fwd = req.headers.get("x-forwarded-for") || "";
+  const ip = fwd.split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+
   let body;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "invalid json" }, { status: 400 });
   }
+  const wantLlm = Boolean(body?.llm);
+  const wantShare = Boolean(body?.share);
+  const rlLimit = wantLlm ? 5 : 30; // per minute per IP
+  const rl = checkRateLimit(`check:${ip}:${wantLlm ? "llm" : "rules"}`, rlLimit);
+  if (!rl.ok) {
+    const retrySec = Math.ceil(rl.resetMs / 1000);
+    return new NextResponse(
+      JSON.stringify({ error: `rate limited (${rlLimit}/min per IP)`, retryAfter: retrySec }),
+      {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": String(retrySec),
+        },
+      },
+    );
+  }
   const text = String(body?.text ?? "");
-  const llm = Boolean(body?.llm);
-  const share = Boolean(body?.share);
+  const llm = wantLlm;
+  const share = wantShare;
   if (!text.trim()) return NextResponse.json({ error: "text required" }, { status: 400 });
   if (text.length > 50_000) {
     return NextResponse.json({ error: "text too long (max 50,000 chars)" }, { status: 413 });

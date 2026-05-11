@@ -41,6 +41,18 @@ model Contract {
   orders                 Order[]
 }
 
+model ContractVersion {
+  id         String   @id @default(cuid())
+  contractId String
+  version    Int
+  values     Json
+  note       String?
+  authorUid  String?
+  createdAt  DateTime @default(now())
+  @@unique([contractId, version])
+  @@index([contractId])
+}
+
 model Case {
   id           String           @id @default(cuid())
   title        String

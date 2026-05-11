@@ -165,6 +165,22 @@ function AdminInner() {
     if (data) loadContracts();
   }, [data, contractQ, contractStatus]);
 
+  async function reassignContract(id: string, currentUid: string | null) {
+    if (!keyParam) return;
+    const newUid = prompt(`重指派此合約的 owner uid（空白 = 解除指派）`, currentUid || "");
+    if (newUid === null) return; // cancelled
+    const r = await fetch(`/api/admin/contracts?id=${encodeURIComponent(id)}&key=${encodeURIComponent(keyParam)}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ uid: newUid || null }),
+    });
+    if (!r.ok) {
+      alert((await r.json().catch(() => ({})))?.error || `HTTP ${r.status}`);
+      return;
+    }
+    await loadContracts();
+  }
+
   async function deleteContract(id: string) {
     if (!keyParam) return;
     if (!confirm(`真的要刪除合約 ${id.slice(0, 8)}…？（會 detach 訂單 + 連同 milestone 刪除）`)) return;
@@ -222,7 +238,21 @@ function AdminInner() {
         <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
           <Icon name="shield" size={13} /> Admin
         </div>
-        <h1 style={{ fontSize: 40 }}>後台總覽</h1>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
+          <h1 style={{ fontSize: 40 }}>後台總覽</h1>
+          <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+            {(["contracts", "orders", "referrals", "usage", "deliveries"] as const).map((t) => (
+              <a
+                key={t}
+                className="btn btn-soft btn-sm"
+                href={`/api/admin/export/${t}?key=${encodeURIComponent(keyParam || "")}`}
+                download
+              >
+                <Icon name="download" size={11} />{t}.csv
+              </a>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
@@ -492,6 +522,9 @@ function AdminInner() {
                   <a href={`/contracts/${c.id}`} target="_blank" rel="noreferrer" className="btn btn-soft btn-sm">
                     <Icon name="eye" size={11} />開
                   </a>
+                  <button className="btn btn-soft btn-sm" onClick={() => reassignContract(c.id, c.uid)}>
+                    <Icon name="users" size={11} />重指派
+                  </button>
                   <button className="btn btn-ghost btn-sm" onClick={() => deleteContract(c.id)} style={{ color: "#7a1f1f" }}>
                     <Icon name="trash" size={11} />刪除
                   </button>

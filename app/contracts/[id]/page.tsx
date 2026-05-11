@@ -109,6 +109,9 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
                 <Icon name="folder" size={13} />
                 {data.case ? `案件：${data.case.title}` : "指派到案件"}
               </button>
+              <Link href={`/contracts/${data.contract.id}/versions`} className="btn btn-soft">
+                <Icon name="hash" size={13} />版本紀錄
+              </Link>
             </div>
           </div>
           <div className="row gap-3" style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8, flexWrap: "wrap" }}>

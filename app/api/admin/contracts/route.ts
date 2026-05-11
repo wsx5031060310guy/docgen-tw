@@ -38,6 +38,29 @@ export async function GET(req: Request) {
   return NextResponse.json({ contracts: rows });
 }
 
+// PATCH /api/admin/contracts?id=…  Body: { uid?: string | null, caseId?: string | null }
+// Allows admin to re-attribute a contract to a different uid (e.g. when the
+// original cookie was lost) or move it to a different case.
+export async function PATCH(req: Request) {
+  if (!isAdminAuthorised(req)) return unauthorisedResponse();
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ error: "database not configured" }, { status: 503 });
+  }
+  const id = new URL(req.url).searchParams.get("id") || "";
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+  const body = (await req.json().catch(() => null)) as { uid?: string | null; caseId?: string | null } | null;
+  if (!body) return NextResponse.json({ error: "invalid json" }, { status: 400 });
+  const data: Record<string, unknown> = {};
+  if (body.uid !== undefined) data.uid = body.uid || null;
+  if (body.caseId !== undefined) data.caseId = body.caseId || null;
+  const updated = await prisma.contract.update({
+    where: { id },
+    data,
+    select: { id: true, uid: true, caseId: true },
+  });
+  return NextResponse.json({ contract: updated });
+}
+
 export async function DELETE(req: Request) {
   if (!isAdminAuthorised(req)) return unauthorisedResponse();
   if (!process.env.DATABASE_URL) {
