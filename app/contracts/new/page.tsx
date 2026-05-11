@@ -8,6 +8,8 @@ import { ContractPreview } from "@/components/ContractPreview";
 import { SignaturePad } from "@/components/SignaturePad";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { RiskCheckPanel } from "@/components/RiskCheckPanel";
+import { AttachToCaseModal } from "@/components/AttachToCaseModal";
+import Link from "next/link";
 import { TEMPLATES, getTemplate, type Values } from "@/lib/templates";
 import { LEGAL } from "@/lib/legal";
 
@@ -420,6 +422,7 @@ function CompleteView({
   onHome: () => void;
 }) {
   const pdfUrl = contractId && signingToken ? `/api/contracts/${contractId}/pdf?token=${signingToken}` : null;
+  const [showAttach, setShowAttach] = useState(false);
   if (!tpl) return null;
   return (
     <div className="container dg-complete-grid" style={{ padding: "40px 32px 80px" }}>
@@ -475,11 +478,29 @@ function CompleteView({
         >
           <Icon name="copy" size={14} /> 複製分享連結
         </button>
+        {contractId && (
+          <Link href={`/contracts/${contractId}`} className="btn btn-soft">
+            <Icon name="folder" size={14} /> 開啟合約頁（管理 milestone）
+          </Link>
+        )}
+        {contractId && (
+          <button className="btn btn-soft" onClick={() => setShowAttach(true)}>
+            <Icon name="folder" size={14} /> 指派到案件
+          </button>
+        )}
         <button className="btn btn-soft" onClick={onHome}>
           <Icon name="home" size={14} /> 回首頁
         </button>
         <LegalDisclaimer compact />
       </aside>
+      {showAttach && contractId && (
+        <AttachToCaseModal
+          contractId={contractId}
+          currentCaseId={null}
+          onClose={() => setShowAttach(false)}
+          onDone={() => setShowAttach(false)}
+        />
+      )}
       <div
         style={{
           background: "var(--bg-soft)",

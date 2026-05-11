@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
+import { MilestoneModal } from "@/components/MilestoneModal";
 
 type Milestone = {
   id: string;
@@ -61,6 +62,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   const [data, setData] = useState<CaseFull | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [msFor, setMsFor] = useState<string | null>(null);
 
   async function load() {
     try {
@@ -75,38 +77,6 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     load();
   }, [id]);
-
-  async function addMilestone(contractId: string) {
-    const title = prompt("Milestone 標題（例：頭期款 30%）");
-    if (!title) return;
-    const kind = prompt("類型：PAYMENT / DELIVERY / RENEWAL / CUSTOM", "PAYMENT") || "PAYMENT";
-    const dueRaw = prompt("到期日（YYYY-MM-DD）");
-    if (!dueRaw) return;
-    const amountRaw = kind === "PAYMENT" ? prompt("金額（TWD，可空白）") : null;
-    setBusy(true);
-    try {
-      const r = await fetch("/api/milestones", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          contractId,
-          kind,
-          title,
-          dueDate: dueRaw,
-          amount: amountRaw ? Number(amountRaw) : undefined,
-        }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || `HTTP ${r.status}`);
-      }
-      await load();
-    } catch (e) {
-      alert((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function setStatus(mid: string, status: string) {
     setBusy(true);
@@ -183,7 +153,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
                     <Link href={`/contracts/${c.id}`} className="btn btn-soft btn-sm">
                       <Icon name="eye" size={12} />查看
                     </Link>
-                    <button className="btn btn-soft btn-sm" onClick={() => addMilestone(c.id)} disabled={busy}>
+                    <button className="btn btn-soft btn-sm" onClick={() => setMsFor(c.id)} disabled={busy}>
                       <Icon name="plus" size={12} />新增追蹤
                     </button>
                   </div>
@@ -286,6 +256,17 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
         </section>
 
         <Footer />
+
+        {msFor && (
+          <MilestoneModal
+            contractId={msFor}
+            onClose={() => setMsFor(null)}
+            onDone={() => {
+              setMsFor(null);
+              load();
+            }}
+          />
+        )}
       </main>
     </>
   );
