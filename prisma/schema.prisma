@@ -120,10 +120,33 @@ model Order {
   amount          Int
   currency        String    @default("TWD")
   itemName        String
+  planCode        String?
+  uid             String?
+  buyerEmail      String?
   status          String    @default("PENDING")
   paymentMethod   String?
   paymentDate     DateTime?
   rawCallback     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+model BillingProfile {
+  uid        String    @id
+  email      String?
+  plan       String    @default("FREE")
+  periodEnd  DateTime?
+  lastOrderId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Usage {
+  id        String   @id @default(cuid())
+  uid       String
+  month     String   // YYYY-MM, Asia/Taipei
+  count     Int      @default(0)
+  updatedAt DateTime @updatedAt
+  @@unique([uid, month])
+  @@index([month])
 }

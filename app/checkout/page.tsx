@@ -28,14 +28,23 @@ const PLANS: Plan[] = [
 
 export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [emailErr, setEmailErr] = useState<string | null>(null);
 
   async function pay(planCode: string) {
+    setEmailErr(null);
+    const e = email.trim();
+    if (!e || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e)) {
+      setEmailErr("請先輸入有效 Email（付款收據與 Pro 啟用憑據用）");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setSubmitting(planCode);
     try {
       const res = await fetch("/api/payment/newebpay/checkout", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ plan: planCode }),
+        body: JSON.stringify({ plan: planCode, email: e }),
       });
       if (!res.ok) {
         alert("建立訂單失敗");
@@ -78,6 +87,24 @@ export default function CheckoutPage() {
           <p style={{ color: "var(--ink-soft)", marginTop: 12, fontSize: 16, maxWidth: 540, margin: "12px auto 0" }}>
             所有方案都包含完整法條引用與電子簽章存證。新創常見組合是「先買單份、頻繁使用後升級 Pro」。
           </p>
+          <div style={{ maxWidth: 420, margin: "20px auto 0" }}>
+            <label style={{ fontSize: 12, color: "var(--ink-muted)", display: "block", textAlign: "left", marginBottom: 4 }}>
+              Email（收據 + Pro 帳號識別）
+            </label>
+            <input
+              className="input"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(ev) => setEmail(ev.target.value)}
+              style={{ width: "100%" }}
+            />
+            {emailErr && (
+              <div className="field-error" style={{ marginTop: 6, textAlign: "left" }}>
+                <Icon name="alert" size={12} />{emailErr}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="container dg-checkout-grid" style={{ padding: "36px 32px 56px" }}>

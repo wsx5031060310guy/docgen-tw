@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { decodeTradeInfo, getNewebpayConfig } from "@/lib/payment/newebpay";
 import { prisma } from "@/lib/prisma";
+import { activatePro } from "@/lib/billing";
+
+const PRO_PLAN_DAYS: Record<string, number> = {
+  pro: 30,   // monthly subscription (single-payment, 30 days of Pro)
+  pack: 90,  // pack = 10 contracts; we map to 90 days of Pro for simplicity
+};
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +53,23 @@ export async function POST(req: NextRequest) {
         rawCallback: JSON.stringify({ status, decoded, tradeNo }),
       },
     });
+
+    // Activate Pro plan on successful payment when planCode warrants it.
+    if (status === "SUCCESS" && order.uid && order.planCode) {
+      const days = PRO_PLAN_DAYS[order.planCode];
+      if (days) {
+        try {
+          await activatePro({
+            uid: order.uid,
+            email: order.buyerEmail,
+            orderId: order.id,
+            days,
+          });
+        } catch (err) {
+          console.error("[newebpay/notify] activatePro failed", err);
+        }
+      }
+    }
   } catch (e) {
     console.error("[newebpay/notify]", e);
   }

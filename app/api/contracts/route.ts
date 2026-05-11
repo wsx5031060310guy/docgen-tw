@@ -5,6 +5,14 @@ import { persistSignaturePng } from "@/lib/services/signing_service";
 import { createContract } from "@/lib/contract-store";
 import { parseMilestonesFromValues } from "@/lib/milestone-parser";
 import { prisma } from "@/lib/prisma";
+import {
+  getBillingStatus,
+  incrementUsage,
+  newUid,
+  readUidFromRequest,
+  UID_COOKIE,
+  UID_COOKIE_MAX_AGE,
+} from "@/lib/billing";
 
 interface CreateContractPayload {
   templateId: string;
@@ -71,6 +79,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "缺少必要欄位（範本/欄位/甲方簽名）" }, { status: 400 });
   }
 
+  // Identity + monthly quota gate (FREE = 3 / month).
+  let uid = readUidFromRequest(req as unknown as Request);
+  const setUidCookie = !uid;
+  if (!uid) uid = newUid();
+  const status = await getBillingStatus(uid);
+  if (status.quotaExceeded) {
+    return NextResponse.json(
+      {
+        error: "本月免費額度已用完",
+        quotaExceeded: true,
+        usedThisMonth: status.usedThisMonth,
+        upgradeUrl: "/checkout",
+      },
+      { status: 402 },
+    );
+  }
+
   let document;
   try {
     document = buildContractDocument(templateId, values);
@@ -130,7 +155,14 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json(
+  // Best-effort usage increment (only counts successful creates).
+  try {
+    await incrementUsage(uid);
+  } catch (err) {
+    console.error("usage increment failed", err);
+  }
+
+  const res = NextResponse.json(
     {
       id: stored.id,
       document,
@@ -138,7 +170,14 @@ export async function POST(req: Request) {
       signingToken: stored.signingToken,
       recipientSignUrl,
       milestonesCreated,
+      uid,
     },
-    { status: 201 }
+    { status: 201 },
   );
+  if (setUidCookie) {
+    res.cookies.set(UID_COOKIE, uid, {
+      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
+    });
+  }
+  return res;
 }

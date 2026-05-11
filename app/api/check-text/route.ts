@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { runTextOnlyRiskCheck, summarizeRisk } from "@/lib/risk-rules-text";
 import { runLlmRiskCheck } from "@/lib/llm-risk";
+import { suggestTemplate } from "@/lib/template-suggest";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -62,11 +63,22 @@ export async function POST(req: Request) {
     }
   }
 
+  const suggestion = suggestTemplate(text);
+  const templateSuggestion = suggestion
+    ? {
+        templateId: suggestion.templateId,
+        name: suggestion.template.name,
+        score: suggestion.score,
+        reasonMatches: suggestion.reasonMatches.slice(0, 4),
+      }
+    : null;
+
   return NextResponse.json({
     summary,
     findings: ruleFindings,
     llm: llmResult,
     chars: text.length,
     shareId,
+    templateSuggestion,
   });
 }

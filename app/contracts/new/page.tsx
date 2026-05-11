@@ -9,6 +9,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { RiskCheckPanel } from "@/components/RiskCheckPanel";
 import { AttachToCaseModal } from "@/components/AttachToCaseModal";
+import { BillingBanner } from "@/components/BillingBanner";
 import Link from "next/link";
 import { TEMPLATES, getTemplate, type Values } from "@/lib/templates";
 import { LEGAL } from "@/lib/legal";
@@ -108,6 +109,9 @@ function NewInner() {
         }),
       });
       const json = await res.json();
+      if (res.status === 402 && json.quotaExceeded) {
+        throw new Error("本月免費額度 (3 份) 已用完。請升級 Pro 方案以解鎖無限合約。");
+      }
       if (!res.ok) throw new Error(json.error || "送出失敗");
       setContractId(json.id);
       setRecipientUrl(json.recipientSignUrl || null);
@@ -154,6 +158,7 @@ function NewInner() {
           <div className="dg-newcontract-form">
             {step === 1 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <BillingBanner />
                 <div>
                   <h2 style={{ fontSize: 24 }}>步驟 1 · 選擇合約類型</h2>
                   <p style={{ color: "var(--ink-soft)", fontSize: 14, marginTop: 4 }}>

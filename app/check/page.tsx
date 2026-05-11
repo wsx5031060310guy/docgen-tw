@@ -24,6 +24,12 @@ type Result = {
   llm?: { findings: LlmFinding[]; reason?: string };
   chars: number;
   shareId?: string;
+  templateSuggestion?: {
+    templateId: string;
+    name: string;
+    score: number;
+    reasonMatches: string[];
+  } | null;
 };
 
 const LEVEL_STYLE: Record<RiskLevel, { bg: string; border: string; ink: string; chip: string }> = {
@@ -262,6 +268,27 @@ export default function CheckPage() {
                   )}
                   {result.summary.needsLawyer && (
                     <LawyerReferralCTA variant="card" context="貼上合約風險檢查（含紅燈）" />
+                  )}
+                  {result.templateSuggestion && (
+                    <div className="card" style={{
+                      padding: 16, background: "#eef4ff",
+                      border: "1px solid #b9cdf2", color: "#1f3a5a",
+                      borderRadius: "var(--radius)", display: "flex", flexDirection: "column", gap: 8,
+                    }}>
+                      <div className="row gap-2"><Icon name="sparkles" size={14} /><b style={{ fontSize: 14 }}>建議改用合規範本</b></div>
+                      <div style={{ fontSize: 13, lineHeight: 1.65 }}>
+                        本合約內容最接近 <b>{result.templateSuggestion.name}</b>。
+                        直接用 DocGen 內建範本重新產出可一次解掉多數紅旗（IP 歸屬、違約金上限、管轄條款都會合規）。
+                      </div>
+                      <Link
+                        href={`/contracts/new?tpl=${result.templateSuggestion.templateId}`}
+                        className="btn btn-primary btn-sm"
+                        style={{ alignSelf: "flex-start" }}
+                      >
+                        <Icon name="fileText" size={11} />
+                        用「{result.templateSuggestion.name}」範本重寫
+                      </Link>
+                    </div>
                   )}
                   <div className="card" style={{
                     padding: 14, background: "var(--bg-soft)",
