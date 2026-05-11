@@ -30,7 +30,7 @@ export default function Home() {
               附完整法條依據。
             </h1>
             <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--ink-soft)", maxWidth: 540 }}>
-              從 8 種常用範本開始，逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
+              從 10 種常用範本開始（含催款通知書、存證信函草稿），逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
               <span style={{ color: "var(--ink)" }}> 比律師快、比範本可信。</span>
             </p>
             <div className="row gap-3 dg-hero-cta" style={{ marginTop: 6 }}>
@@ -43,7 +43,7 @@ export default function Home() {
                 onClick={() => document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" })}
               >
                 <Icon name="bookOpen" size={15} />
-                瀏覽 8 種範本
+                瀏覽 10 種範本
               </a>
             </div>
             <div className="row gap-3" style={{ marginTop: 12, fontSize: 12.5, color: "var(--ink-muted)" }}>
@@ -153,7 +153,7 @@ export default function Home() {
             <div className="row gap-2">
               <input className="input" placeholder="搜尋範本..." style={{ width: 240 }} />
               <button className="btn btn-soft btn-sm">
-                <Icon name="list" size={13} />全部 8 種
+                <Icon name="list" size={13} />全部 10 種
               </button>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function Home() {
           <h2 style={{ marginBottom: 32 }}>三步完成，無需法律背景</h2>
           <div className="dg-howit-grid">
             {[
-              { n: "01", icon: "fileText", t: "挑選範本", d: "從 8 種常用合約挑一個，或從空白模板自訂。每個範本均附法條依據。" },
+              { n: "01", icon: "fileText", t: "挑選範本", d: "從 10 種常用合約挑一個，或從空白模板自訂。每個範本均附法條依據。" },
               { n: "02", icon: "pen", t: "填寫表單", d: "左側填寫，右側即時預覽。系統自動將數字轉為國字大寫，逐條編號。" },
               { n: "03", icon: "fileSig", t: "雙方簽署", d: "寄送簽署連結給對方，IP 與時間戳自動留存，PDF 一鍵下載。" },
             ].map((s, i) => (

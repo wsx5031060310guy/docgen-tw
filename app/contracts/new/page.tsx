@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { ContractPreview } from "@/components/ContractPreview";
 import { SignaturePad } from "@/components/SignaturePad";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
+import { RiskCheckPanel } from "@/components/RiskCheckPanel";
 import { TEMPLATES, getTemplate, type Values } from "@/lib/templates";
 import { LEGAL } from "@/lib/legal";
 
@@ -261,6 +262,15 @@ function NewInner() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div style={{ marginTop: 22 }}>
+                <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+                  風險檢查 · Risk Check
+                </div>
+                <RiskCheckPanel templateId={tpl.id} values={values} context={tpl.name} />
               </div>
             )}
 

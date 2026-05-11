@@ -20,8 +20,11 @@ export function LegalDisclaimer({ compact }: { compact?: boolean }) {
     >
       <Icon name="fileWarn" size={18} style={{ marginTop: 2, color: "var(--amber-600)", flexShrink: 0 }} />
       <div style={{ fontSize: 13, lineHeight: 1.6 }}>
-        <b style={{ color: "#5b3f10" }}>法律免責聲明</b>　本平台提供之合約模板與條款建議，係依中華民國現行法律一般情形編製，僅供一般參考用途。
-        重大交易、跨境合作或具爭議性事項，建議委請執業律師審閱。本平台不負法律責任。
+        <b style={{ color: "#5b3f10" }}>法律免責聲明</b>　DocGen TW 提供
+        <b>文件自動化與風險提示</b>，並非執業律師、不取代法律意見。本平台輸出之合約模板與風險檢查結果，
+        係依中華民國現行法律一般情形編製，僅供一般參考用途。重大金額、跨境、訴訟或客製條款，
+        建議委請<a href="/disclaimer" style={{ color: "#5b3f10", textDecoration: "underline" }}>合作律師</a>審閱。
+        因使用本平台所生之爭議，本平台不負法律責任。
       </div>
     </div>
   );

@@ -30,9 +30,58 @@ model Contract {
   signingStatus          String    @default("UNSIGNED")
   // Lifecycle: UNSIGNED -> SENDER_SIGNED -> AWAITING_RECIPIENT -> FULLY_SIGNED
   contractPdfUrl         String?
+  effectiveDate          DateTime?
+  expiryDate             DateTime?
+  caseId                 String?
+  case                   Case?       @relation(fields: [caseId], references: [id])
+  milestones             Milestone[]
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   orders                 Order[]
+}
+
+model Case {
+  id           String           @id @default(cuid())
+  title        String
+  clientName   String?
+  counterparty String?
+  notes        String?
+  status       String           @default("OPEN")
+  ownerEmail   String?
+  contracts    Contract[]
+  attachments  CaseAttachment[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model CaseAttachment {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  filename  String
+  blobUrl   String
+  mimeType  String?
+  sizeBytes Int?
+  createdAt DateTime @default(now())
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  contractId  String
+  contract    Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  kind        String
+  title       String
+  amount      Int?
+  dueDate     DateTime
+  status      String    @default("PENDING")
+  doneAt      DateTime?
+  note        String?
+  remindedD7  Boolean   @default(false)
+  remindedD1  Boolean   @default(false)
+  remindedD0  Boolean   @default(false)
+  remindedD1p Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Order {

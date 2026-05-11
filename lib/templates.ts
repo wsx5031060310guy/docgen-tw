@@ -252,7 +252,91 @@ const CUSTOM: Template = {
   ],
 };
 
-export const TEMPLATES: Template[] = [FREELANCE, NDA, LOAN, CONSIGN, EMPLOY, LEASE, SALE, CUSTOM];
+const DUNNING: Template = {
+  id: "dunning", name: "催款通知書", category: "債權催告", icon: "alert",
+  description: "對逾期付款相對人發出之催告函（民法 §229 給付遲延）。可作為日後存證信函或起訴前之證據。",
+  legal: ["民法 §229", "民法 §233", "民法 §250"],
+  defaults: {
+    party_a_name: "", party_a_address: "",
+    party_b_name: "", party_b_address: "",
+    contract_subject: "", original_due_date: "",
+    amount_owed: "", interest_rate: "5",
+    grace_days: "7", sign_date: todayMinguo(),
+  },
+  fields: [
+    { id: "party_a_name", label: "債權人（您方）", required: true, group: "parties" },
+    { id: "party_a_address", label: "債權人地址", type: "textarea", span: 2, group: "parties" },
+    { id: "party_b_name", label: "債務人（相對人）", required: true, group: "parties" },
+    { id: "party_b_address", label: "債務人地址", type: "textarea", span: 2, group: "parties" },
+    { id: "contract_subject", label: "原契約 / 債權緣由", required: true, type: "textarea", span: 2, group: "work",
+      placeholder: "例：2026/03/01 簽訂之承攬契約第三條報酬" },
+    { id: "original_due_date", label: "原應給付日", required: true, group: "work",
+      placeholder: "2026/04/30" },
+    { id: "amount_owed", label: "尚欠金額（新臺幣）", type: "number", required: true, group: "work" },
+    { id: "interest_rate", label: "法定遲延利息（年息 %，民法 §233 預設 5）", type: "number", group: "work" },
+    { id: "grace_days", label: "催告寬限期（日）", type: "number", required: true, group: "work" },
+  ],
+  groups: { parties: "雙方資訊", work: "債權內容" },
+  clauses: () => [
+    { n: 1, title: "事實摘要",
+      body: `茲就 台端「{{party_b_name}}」與本人「{{party_a_name}}」間，因 {{contract_subject}} 所生之債務，依約應於 {{original_due_date}} 給付新臺幣 {{amount_owed_chinese}} 元整（NT$ {{amount_owed}}），惟迄今尚未獲清償。`,
+      ref: ["民法 §229"] },
+    { n: 2, title: "催告意旨",
+      body: `依民法第二二九條規定，給付有確定期限者，債務人自期限屆滿時起，負遲延責任。台端既已逾原約定給付期，自應負給付遲延之責。`,
+      ref: ["民法 §229"] },
+    { n: 3, title: "法定遲延利息",
+      body: `依民法第二三三條，遲延之債務，以支付金錢為標的者，債權人得請求依法定利率計算之遲延利息。本債務自 {{original_due_date}} 翌日起，按年息百分之 {{interest_rate}} 計算遲延利息。`,
+      ref: ["民法 §233"] },
+    { n: 4, title: "寬限期與後續處理",
+      body: `為維雙方情誼，本人特給予 {{grace_days}} 日寬限期，請台端自收受本通知翌日起 {{grace_days}} 日內，將前述本金及利息匯入本人指定帳戶。逾期未獲清償者，本人將依法另以存證信函正式催告並保留一切法律追訴權利，包括但不限於聲請支付命令、強制執行及訴訟程序。`,
+      ref: ["民法 §250"] },
+    { n: 5, title: "本通知性質",
+      body: `本通知為民事債務之催告通知，不具強制執行效力。如台端對本債務有異議，請於前述寬限期內以書面提出，逾期未提出視為無異議。`, ref: [] },
+  ],
+};
+
+const CERT_MAIL: Template = {
+  id: "cert-mail", name: "存證信函草稿", category: "債權催告", icon: "mail",
+  description: "依郵政存證信函格式產出之草稿 PDF。本平台僅產 PDF，使用者需親至郵局以掛號方式寄出。",
+  legal: ["郵政法 §10", "民法 §94", "民法 §95"],
+  defaults: {
+    party_a_name: "", party_a_address: "",
+    party_b_name: "", party_b_address: "",
+    subject: "", facts: "", request: "",
+    deadline_days: "10", sign_date: todayMinguo(),
+  },
+  fields: [
+    { id: "party_a_name", label: "寄件人姓名 / 公司", required: true, group: "parties" },
+    { id: "party_a_address", label: "寄件人地址", type: "textarea", span: 2, required: true, group: "parties" },
+    { id: "party_b_name", label: "收件人姓名 / 公司", required: true, group: "parties" },
+    { id: "party_b_address", label: "收件人地址", type: "textarea", span: 2, required: true, group: "parties" },
+    { id: "subject", label: "主旨（一句話）", required: true, type: "textarea", span: 2, group: "work",
+      placeholder: "例：請於收文 10 日內給付承攬報酬新臺幣 12 萬元" },
+    { id: "facts", label: "事實經過", required: true, type: "textarea", span: 2, group: "work",
+      placeholder: "簡述締約、履約、違約事實，分點寫" },
+    { id: "request", label: "請求事項", required: true, type: "textarea", span: 2, group: "work",
+      placeholder: "請台端為何種行為，例如：給付款項 / 返還物品 / 停止侵害" },
+    { id: "deadline_days", label: "期限（自收文起算 日）", type: "number", required: true, group: "work" },
+  ],
+  groups: { parties: "寄收件人", work: "信函內容" },
+  clauses: () => [
+    { n: 1, title: "主旨",
+      body: `{{subject}}`, ref: [] },
+    { n: 2, title: "說明 ── 事實",
+      body: `一、緣下列事實：\n{{facts}}`, ref: ["民法 §94"] },
+    { n: 3, title: "說明 ── 請求",
+      body: `二、為此特函請台端：\n{{request}}\n請於收受本存證信函翌日起 {{deadline_days}} 日內辦理為荷。`,
+      ref: ["民法 §95"] },
+    { n: 4, title: "說明 ── 法律保留",
+      body: `三、本函依郵政存證信函辦法製作，作為意思表示送達之證據。倘逾期未獲處理，本人將依法循民事或刑事程序主張權利，特此通知，俾免訟累。`,
+      ref: ["郵政法 §10"] },
+    { n: 5, title: "使用方式（非信函內容，僅為說明）",
+      body: `※ 本 PDF 為草稿，請依下列步驟辦理：\n1. 至全台各郵局櫃台索取「郵政存證信函」三聯式專用紙，將本草稿內容謄寫或列印於專用紙。\n2. 一式三份（寄件人、收件人、郵局存查各一份）。\n3. 以雙掛號方式寄出，保留收據與回執。\n4. 收件人收受後即生「意思表示到達」效力（民法 §95）。`,
+      ref: [] },
+  ],
+};
+
+export const TEMPLATES: Template[] = [FREELANCE, NDA, LOAN, CONSIGN, EMPLOY, LEASE, SALE, DUNNING, CERT_MAIL, CUSTOM];
 
 export function getTemplate(id: string): Template | undefined {
   return TEMPLATES.find((t) => t.id === id);
