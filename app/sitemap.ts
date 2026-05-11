@@ -20,5 +20,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
       lastModified: now,
     })),
+    ...TEMPLATES.map((t) => ({
+      url: `${base}/en/templates/${t.id}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.75,
+      lastModified: now,
+    })),
   ];
 }

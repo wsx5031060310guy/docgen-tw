@@ -231,6 +231,13 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return {
     title: `${tpl.name} 線上產生 + 電子簽署 · DocGen TW`,
     description: `${tpl.name}範本，引用 ${tpl.legal.join("、")} 等中華民國法令；3 分鐘填表、雙方電子簽署、留存 IP/時間戳/簽名雜湊。`,
+    alternates: {
+      canonical: `/templates/${id}`,
+      languages: {
+        "zh-Hant": `/templates/${id}`,
+        en: `/en/templates/${id}`,
+      },
+    },
     openGraph: {
       title: `${tpl.name} 線上產生器 · 附法條依據`,
       description: COPY[id]?.intent ?? `${tpl.name}範本`,
