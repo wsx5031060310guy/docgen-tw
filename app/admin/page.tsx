@@ -22,6 +22,18 @@ type OverdueMs = {
   } | null;
 };
 
+type WebhookDelivery = {
+  id: string;
+  uid: string;
+  event: string;
+  url: string;
+  status: number | null;
+  ok: boolean;
+  durationMs: number;
+  reason: string | null;
+  createdAt: string;
+};
+
 type UsageStats = {
   month: string;
   stats: {
@@ -91,6 +103,7 @@ function AdminInner() {
   const [data, setData] = useState<Overview | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [hooks, setHooks] = useState<{ deliveries: WebhookDelivery[]; fails24h: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -103,8 +116,9 @@ function AdminInner() {
       fetch(`/api/admin/overview?key=${encodeURIComponent(keyParam)}`),
       fetch(`/api/admin/referrals?key=${encodeURIComponent(keyParam)}`),
       fetch(`/api/admin/usage?key=${encodeURIComponent(keyParam)}`),
+      fetch(`/api/admin/webhooks?key=${encodeURIComponent(keyParam)}`),
     ])
-      .then(async ([ro, rr, ru]) => {
+      .then(async ([ro, rr, ru, rw]) => {
         if (ro.status === 401) throw new Error("ADMIN_KEY 不正確或未設定");
         if (!ro.ok) throw new Error(`HTTP ${ro.status}`);
         setData(await ro.json());
@@ -113,6 +127,7 @@ function AdminInner() {
           setReferrals(j.referrals ?? []);
         }
         if (ru.ok) setUsage(await ru.json());
+        if (rw.ok) setHooks(await rw.json());
       })
       .catch((e) => setErr((e as Error).message));
   }, [keyParam]);
@@ -328,6 +343,50 @@ function AdminInner() {
               )}
             </div>
           </div>
+        </section>
+      )}
+
+      {hooks && (
+        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
+          <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+            <h2 style={{ fontSize: 22 }}>Webhook 投遞紀錄</h2>
+            <span style={{ fontSize: 12.5, color: hooks.fails24h > 0 ? "#7a1f1f" : "var(--ink-muted)" }}>
+              近 24 小時失敗 {hooks.fails24h} 次
+            </span>
+          </div>
+          {hooks.deliveries.length === 0 ? (
+            <div className="card" style={{ padding: 16, color: "var(--ink-muted)", fontSize: 13 }}>尚無投遞紀錄。</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {hooks.deliveries.slice(0, 30).map((d) => (
+                <div key={d.id} className="row" style={{
+                  padding: "8px 12px", background: d.ok ? "var(--bg-elev)" : "#fde9e9",
+                  border: `1px solid ${d.ok ? "var(--line)" : "#f1b5b5"}`, borderRadius: "var(--radius)",
+                  justifyContent: "space-between", flexWrap: "wrap", gap: 8, fontSize: 12.5,
+                }}>
+                  <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+                    <span style={{ color: d.ok ? "#1f5a35" : "#7a1f1f", fontWeight: 600 }}>
+                      {d.ok ? "✓" : "✗"} {d.status ?? "—"}
+                    </span>
+                    <span className="chip chip-zinc" style={{ fontSize: 11 }}>{d.event}</span>
+                    <code style={{ fontFamily: "var(--font-mono)", fontSize: 11 }}>{d.uid.slice(0, 10)}…</code>
+                    <span style={{ color: "var(--ink-muted)", maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {d.url}
+                    </span>
+                  </div>
+                  <div className="row gap-2" style={{ color: "var(--ink-muted)" }}>
+                    <span>{d.durationMs} ms</span>
+                    <span>{new Date(d.createdAt).toLocaleTimeString("zh-Hant")}</span>
+                  </div>
+                  {!d.ok && d.reason && (
+                    <div style={{ flexBasis: "100%", fontSize: 11.5, color: "#7a1f1f", fontFamily: "var(--font-mono)" }}>
+                      {d.reason}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 

@@ -147,6 +147,44 @@ model BillingProfile {
   updatedAt  DateTime  @updatedAt
 }
 
+model ApiKey {
+  id         String    @id @default(cuid())
+  uid        String
+  // sha256 hex digest of the raw key. We never store the plaintext key.
+  hashedKey  String    @unique
+  prefix     String    // first 8 chars of the raw key, shown as 'dk_xxxxxxxx…' to the owner
+  label      String?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  @@index([uid])
+}
+
+model MagicLink {
+  id        String    @id @default(cuid())
+  email     String
+  uid       String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  @@index([email])
+}
+
+model WebhookDelivery {
+  id          String   @id @default(cuid())
+  uid         String
+  event       String
+  url         String
+  status      Int?     // http status (null = network failure)
+  ok          Boolean
+  durationMs  Int
+  reason      String?  // truncated response body or error message
+  createdAt   DateTime @default(now())
+  @@index([uid])
+  @@index([createdAt])
+}
+
 model Usage {
   id        String   @id @default(cuid())
   uid       String

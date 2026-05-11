@@ -30,10 +30,11 @@ function summaryFor(ev: WebhookEvent): string {
 export async function dispatchWebhook(
   url: string,
   ev: WebhookEvent,
-  opts: { secret?: string | null; timeoutMs?: number } = {},
-): Promise<{ ok: boolean; status?: number; reason?: string }> {
+  opts: { secret?: string | null; timeoutMs?: number; uid?: string | null } = {},
+): Promise<{ ok: boolean; status?: number; reason?: string; durationMs: number }> {
+  const started = Date.now();
   if (!url || !/^https?:\/\//i.test(url)) {
-    return { ok: false, reason: "invalid url" };
+    return { ok: false, reason: "invalid url", durationMs: 0 };
   }
   const body = JSON.stringify({
     event: ev.type,
@@ -52,18 +53,43 @@ export async function dispatchWebhook(
 
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), opts.timeoutMs ?? 5_000);
+  let result: { ok: boolean; status?: number; reason?: string };
   try {
     const res = await fetch(url, { method: "POST", headers, body, signal: controller.signal });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      return { ok: false, status: res.status, reason: text.slice(0, 200) };
+      result = { ok: false, status: res.status, reason: text.slice(0, 200) };
+    } else {
+      result = { ok: true, status: res.status };
     }
-    return { ok: true, status: res.status };
   } catch (err) {
-    return { ok: false, reason: (err as Error).message };
+    result = { ok: false, reason: (err as Error).message };
   } finally {
     clearTimeout(t);
   }
+  const durationMs = Date.now() - started;
+
+  // Log delivery (best-effort, fire-and-forget).
+  if (opts.uid && process.env.DATABASE_URL) {
+    (async () => {
+      try {
+        const { prisma } = await import("./prisma");
+        await prisma.webhookDelivery.create({
+          data: {
+            uid: opts.uid!,
+            event: ev.type,
+            url,
+            status: result.status ?? null,
+            ok: result.ok,
+            durationMs,
+            reason: result.reason ?? null,
+          },
+        });
+      } catch {}
+    })();
+  }
+
+  return { ...result, durationMs };
 }
 
 /** Fire-and-forget convenience. Looks up the user's webhook by uid and sends. */
@@ -79,7 +105,10 @@ export async function fireUserWebhook(
       select: { webhookUrl: true, webhookSecret: true },
     });
     if (!profile?.webhookUrl) return;
-    const r = await dispatchWebhook(profile.webhookUrl, ev, { secret: profile.webhookSecret });
+    const r = await dispatchWebhook(profile.webhookUrl, ev, {
+      secret: profile.webhookSecret,
+      uid,
+    });
     if (!r.ok) console.error("[webhook] dispatch failed", uid, ev.type, r.reason);
   } catch (err) {
     console.error("[webhook] fireUserWebhook err", err);
