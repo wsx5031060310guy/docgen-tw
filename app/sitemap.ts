@@ -10,6 +10,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/contracts/new`, changeFrequency: "monthly", priority: 0.8, lastModified: now },
     { url: `${base}/disclaimer`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     { url: `${base}/checkout`, changeFrequency: "monthly", priority: 0.6, lastModified: now },
+    // English mirrors
+    { url: `${base}/en`, changeFrequency: "weekly", priority: 0.9, lastModified: now },
+    { url: `${base}/en/check`, changeFrequency: "monthly", priority: 0.85, lastModified: now },
+    { url: `${base}/en/disclaimer`, changeFrequency: "monthly", priority: 0.7, lastModified: now },
     ...TEMPLATES.map((t) => ({
       url: `${base}/templates/${t.id}`,
       changeFrequency: "monthly" as const,
