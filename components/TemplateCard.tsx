@@ -10,7 +10,7 @@ export function TemplateCard({ tpl }: { tpl: Template }) {
     <div
       className="card card-hover"
       style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer" }}
-      onClick={() => router.push(`/contracts/new?tpl=${tpl.id}`)}
+      onClick={() => router.push(`/templates/${tpl.id}`)}
     >
       <div className="row" style={{ justifyContent: "space-between" }}>
         <div
@@ -35,7 +35,7 @@ export function TemplateCard({ tpl }: { tpl: Template }) {
         className="row"
         style={{ justifyContent: "space-between", marginTop: 4, fontSize: 13, color: "var(--primary)", fontWeight: 500 }}
       >
-        <span>使用此模板</span>
+        <span>查看法條 + 使用</span>
         <Icon name="arrowRight" size={15} />
       </div>
     </div>

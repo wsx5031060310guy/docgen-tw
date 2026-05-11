@@ -52,6 +52,34 @@ const s = StyleSheet.create({
     position: "absolute", bottom: 30, left: 60, right: 60,
     fontFamily: "NotoSansTC", fontSize: 7, color: "#9a8868", textAlign: "center", borderTopWidth: 0.5, borderTopColor: "#e5dfd0", paddingTop: 6,
   },
+  footerLine1: { fontWeight: 700, marginBottom: 1, color: "#7a6943" },
+  footerLine2: { color: "#9a8868" },
+  pageNum: {
+    position: "absolute", bottom: 14, right: 60,
+    fontFamily: "NotoSansTC", fontSize: 7, color: "#bfaf82",
+  },
+  watermark: {
+    position: "absolute",
+    top: "45%",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    fontFamily: "NotoSansTC",
+    fontSize: 48,
+    color: "#e8dfca",
+    opacity: 0.55,
+    letterSpacing: 18,
+  },
+  disclaimerBlock: {
+    marginTop: 14,
+    paddingTop: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: "#e5dfd0",
+    fontFamily: "NotoSansTC",
+    fontSize: 8,
+    color: "#7a6943",
+    lineHeight: 1.55,
+  },
 });
 
 export type PdfInput = {
@@ -71,10 +99,15 @@ function ContractDoc({ input }: { input: PdfInput }) {
   const partyA = v.party_a_name || "___________";
   const partyB = v.party_b_name || "___________";
   const clauses = tpl.clauses(v);
+  const fullySigned = Boolean(input.senderSignatureUrl && input.recipientSignatureUrl);
+  const senderHashShort = (input.senderAudit?.match(/#([0-9a-f]+)/i)?.[1] ?? "").slice(0, 8);
+  const recipientHashShort = (input.recipientAudit?.match(/#([0-9a-f]+)/i)?.[1] ?? "").slice(0, 8);
 
   return (
     <Document title={`${tpl.name} - ${input.contractId}`}>
       <Page size="A4" style={s.page}>
+        {/* Diagonal-ish text watermark for un-signed / draft renderings */}
+        {!fullySigned && <Text style={s.watermark} fixed>D R A F T</Text>}
         <Text style={s.topMeta}>DOCGEN TW · 電子契約</Text>
         <Text style={s.title}>{tpl.name}</Text>
         <Text style={s.parties}>立契約書人　{partyA}（甲方）　·　{partyB}（乙方）</Text>
@@ -108,9 +141,33 @@ function ContractDoc({ input }: { input: PdfInput }) {
 
         <Text style={s.date}>立契約書日期： {v.sign_date || todayMinguo()}</Text>
 
-        <Text style={s.footer} fixed>
-          DocGen TW · 編號 {input.contractId} · 本電子契約依電子簽章法 §4、§9 與紙本具同等效力。
-        </Text>
+        <View style={s.disclaimerBlock}>
+          <Text>
+            ※ 法律免責：本合約由 DocGen TW（文件自動化平台）依使用者填寫之資料及中華民國現行法律一般情形產出，
+            僅供當事人交易參考。本平台非執業律師、不取代法律意見；如涉訴訟、重大金額或客製條款，
+            建議委請執業律師審閱。因使用本合約所生之爭議，本平台不負法律責任。
+          </Text>
+          {senderHashShort && (
+            <Text style={{ marginTop: 4 }}>
+              存證雜湊（SHA-256 前 8 碼）：甲方 #{senderHashShort}
+              {recipientHashShort ? `　·　乙方 #${recipientHashShort}` : ""}
+            </Text>
+          )}
+        </View>
+
+        <View style={s.footer} fixed>
+          <Text style={s.footerLine1}>
+            DocGen TW · 編號 {input.contractId} · 依電子簽章法 §4、§9 與紙本具同等效力
+          </Text>
+          <Text style={s.footerLine2}>
+            本平台僅提供文件自動化與風險提示，非法律意見。詳見 docgen-tw.vercel.app/disclaimer
+          </Text>
+        </View>
+        <Text
+          style={s.pageNum}
+          fixed
+          render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
+        />
       </Page>
     </Document>
   );
