@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { listMilestonesNeedingReminder, markOverdue } from "@/lib/case-store";
 import { sendEmail } from "@/lib/mailgun";
+import { fireUserWebhook } from "@/lib/webhooks";
 
 export const runtime = "nodejs";
 // Vercel Hobby cron: max 2 invocations/day. We run this once daily; it handles
@@ -98,6 +99,20 @@ export async function GET(req: Request) {
             `逾期款項可一鍵生成催款通知書草稿：\n${dunningLink}\n`
           : `請於到期日前完成處理。如已完成請於系統中標記為「已完成」以停止提醒。\n`) +
         `\n— DocGen TW 自動通知（請勿直接回覆）`;
+
+      // Fire user webhook in parallel with email — fail-silent.
+      if (m.contract?.uid) {
+        fireUserWebhook(m.contract.uid, {
+          type: bucket === "D1p" ? "milestone.overdue" : "milestone.due",
+          milestoneId: m.id,
+          contractId: m.contractId,
+          title: m.title,
+          dueDate: due,
+          ...(bucket === "D1p"
+            ? { amount: m.amount }
+            : { bucket: bucket as "D7" | "D1" | "D0" }),
+        } as Parameters<typeof fireUserWebhook>[1]).catch(() => undefined);
+      }
 
       const r = await sendEmail({ to: email, subject, text });
       if (!r.ok) {

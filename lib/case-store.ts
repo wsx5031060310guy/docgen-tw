@@ -93,6 +93,7 @@ export async function listMilestonesNeedingReminder(now = new Date()) {
           recipientName: true,
           values: true,
           templateId: true,
+          uid: true,
         },
       },
     },

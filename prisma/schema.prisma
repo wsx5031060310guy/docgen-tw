@@ -32,6 +32,7 @@ model Contract {
   contractPdfUrl         String?
   effectiveDate          DateTime?
   expiryDate             DateTime?
+  uid                    String?
   caseId                 String?
   case                   Case?       @relation(fields: [caseId], references: [id])
   milestones             Milestone[]
@@ -137,6 +138,11 @@ model BillingProfile {
   plan       String    @default("FREE")
   periodEnd  DateTime?
   lastOrderId String?
+  // User-configurable generic webhook URL (Slack/Discord/Make/n8n/Zapier all
+  // accept POST JSON). Single column keeps the model simple; we don't need
+  // per-platform parsing here.
+  webhookUrl   String?
+  webhookSecret String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 }

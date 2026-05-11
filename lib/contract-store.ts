@@ -81,6 +81,7 @@ export async function createContract(input: {
   senderIp: string;
   recipientName?: string | null;
   recipientEmail?: string | null;
+  uid?: string | null;
 }): Promise<StoredContract> {
   const now = new Date();
   const token = makeToken();
@@ -100,6 +101,7 @@ export async function createContract(input: {
         recipientEmail: input.recipientEmail ?? null,
         signingToken: token,
         signingStatus: "AWAITING_RECIPIENT",
+        uid: input.uid ?? null,
       },
     });
     return fromRow(row);

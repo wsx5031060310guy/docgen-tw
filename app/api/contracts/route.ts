@@ -121,6 +121,7 @@ export async function POST(req: Request) {
     senderIp: req.headers.get("x-forwarded-for") ?? "unknown",
     recipientName: recipientName ?? null,
     recipientEmail: recipientEmail ?? null,
+    uid,
   });
 
   const origin =

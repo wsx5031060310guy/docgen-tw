@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { persistSignaturePng } from "@/lib/services/signing_service";
 import { recordRecipientSignature } from "@/lib/contract-store";
 import { notifyFullySigned } from "@/lib/notify";
+import { fireUserWebhook } from "@/lib/webhooks";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -44,6 +46,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   notifyFullySigned(result).catch((e) =>
     console.error("[recipient-sign] notify failed:", (e as Error).message),
   );
+
+  // Best-effort user webhook (Slack/Discord/n8n/…). Owner uid is on the row.
+  (async () => {
+    try {
+      if (!process.env.DATABASE_URL) return;
+      const row = await prisma.contract.findUnique({
+        where: { id: result.id },
+        select: { uid: true },
+      });
+      if (!row?.uid) return;
+      await fireUserWebhook(row.uid, {
+        type: "contract.signed.full",
+        contractId: result.id,
+        templateId: result.templateId,
+        senderName: result.client || "—",
+        recipientName: result.recipientName ?? null,
+      });
+    } catch (e) {
+      console.error("[recipient-sign] webhook err", (e as Error).message);
+    }
+  })();
 
   return NextResponse.json({
     id: result.id,

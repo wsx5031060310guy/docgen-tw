@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { TopNav } from "@/components/TopNav";
 import { Icon } from "@/components/Icon";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
+import { BillingBanner } from "@/components/BillingBanner";
 
 type Order = {
   merchantTradeNo: string;
@@ -136,16 +137,23 @@ function SuccessInner() {
         )}
 
         {status === "PAID" && (
-          <div className="row gap-3" style={{ justifyContent: "center" }}>
-            <button className="btn btn-stamp btn-lg" onClick={() => router.push("/contracts/new")}>
-              <Icon name="sparkles" size={14} />
-              開始建立第一份合約
-            </button>
-            <button className="btn btn-ghost" onClick={() => router.push("/")}>
-              <Icon name="home" size={14} />
-              回首頁
-            </button>
-          </div>
+          <>
+            <BillingBanner />
+            <div className="row gap-3" style={{ justifyContent: "center", flexWrap: "wrap" }}>
+              <button className="btn btn-stamp btn-lg" onClick={() => router.push("/contracts/new")}>
+                <Icon name="sparkles" size={14} />
+                開始建立合約
+              </button>
+              <button className="btn btn-soft" onClick={() => router.push("/settings")}>
+                <Icon name="zap" size={13} />
+                設定 webhook 通知
+              </button>
+              <button className="btn btn-ghost" onClick={() => router.push("/")}>
+                <Icon name="home" size={14} />
+                回首頁
+              </button>
+            </div>
+          </>
         )}
         {status === "FAILED" && (
           <div className="row gap-3" style={{ justifyContent: "center" }}>
