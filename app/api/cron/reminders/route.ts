@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { listMilestonesNeedingReminder, markOverdue } from "@/lib/case-store";
 import { sendEmail } from "@/lib/mailgun";
-import { fireUserWebhook } from "@/lib/webhooks";
+import { fireUserWebhook, retryPendingWebhooks } from "@/lib/webhooks";
 
 export const runtime = "nodejs";
 // Vercel Hobby cron: max 2 invocations/day. We run this once daily; it handles
@@ -48,6 +48,14 @@ export async function GET(req: Request) {
       if (purged.count > 0) log.push(`purged ${purged.count} expired shared checks`);
     } catch {
       // SharedCheck table may not exist yet on first deploy — ignore
+    }
+
+    // 0.5. Retry pending webhook deliveries
+    try {
+      const retry = await retryPendingWebhooks(now);
+      log.push(`webhook retries: ${retry.retried} attempted (${retry.succeeded} ok, ${retry.gaveUp} gave up)`);
+    } catch {
+      // table may not exist on first deploy
     }
 
     // 1. Mark anything past due as OVERDUE

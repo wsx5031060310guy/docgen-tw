@@ -172,17 +172,25 @@ model MagicLink {
 }
 
 model WebhookDelivery {
-  id          String   @id @default(cuid())
-  uid         String
-  event       String
-  url         String
-  status      Int?     // http status (null = network failure)
-  ok          Boolean
-  durationMs  Int
-  reason      String?  // truncated response body or error message
-  createdAt   DateTime @default(now())
+  id           String    @id @default(cuid())
+  uid          String
+  event        String
+  url          String
+  payload      String?   // serialised JSON body, kept for retries
+  secret       String?   // copied at dispatch time so retries don't break if user rotates
+  status       Int?
+  ok           Boolean
+  durationMs   Int
+  reason       String?
+  attempt      Int       @default(1)
+  nextRetryAt  DateTime?
+  giveUpAt     DateTime?
+  succeeded    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   @@index([uid])
   @@index([createdAt])
+  @@index([nextRetryAt, succeeded])
 }
 
 model Usage {

@@ -5,6 +5,7 @@ import { persistSignaturePng } from "@/lib/services/signing_service";
 import { createContract } from "@/lib/contract-store";
 import { resolveBearer } from "@/lib/api-keys";
 import { getBillingStatus, incrementUsage } from "@/lib/billing";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { parseMilestonesFromValues } from "@/lib/milestone-parser";
 import { prisma } from "@/lib/prisma";
 
@@ -25,7 +26,31 @@ export async function POST(req: Request) {
   if (!m) return NextResponse.json({ error: "missing bearer token" }, { status: 401 });
   const resolved = await resolveBearer(m[1]);
   if (!resolved) return NextResponse.json({ error: "invalid or revoked key" }, { status: 401 });
-  const { uid } = resolved;
+  const { uid, keyId } = resolved;
+
+  // Rate limit BEFORE quota check (so abuse can't burn a free user's quota).
+  // PRO users get a higher ceiling; otherwise FREE rate applies.
+  const statusEarly = await getBillingStatus(uid);
+  const limit = statusEarly.plan === "PRO" ? 600 : 60;
+  const rl = checkRateLimit(`v1:${keyId}`, limit);
+  if (!rl.ok) {
+    const retrySec = Math.ceil(rl.resetMs / 1000);
+    return new NextResponse(
+      JSON.stringify({
+        error: `rate limited (${limit}/min for ${statusEarly.plan})`,
+        retryAfter: retrySec,
+      }),
+      {
+        status: 429,
+        headers: {
+          "content-type": "application/json",
+          "retry-after": String(retrySec),
+          "x-ratelimit-limit": String(limit),
+          "x-ratelimit-remaining": "0",
+        },
+      },
+    );
+  }
 
   let body;
   try {
@@ -43,11 +68,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "templateId / values / partyASignature required" }, { status: 400 });
   }
 
-  // Quota check (same as internal route)
-  const status = await getBillingStatus(uid);
-  if (status.quotaExceeded) {
+  // Quota check (re-use statusEarly fetched for rate-limit decision)
+  if (statusEarly.quotaExceeded) {
     return NextResponse.json(
-      { error: "monthly free quota exceeded", quotaExceeded: true, plan: status.plan, usedThisMonth: status.usedThisMonth },
+      { error: "monthly free quota exceeded", quotaExceeded: true, plan: statusEarly.plan, usedThisMonth: statusEarly.usedThisMonth },
       { status: 402 },
     );
   }

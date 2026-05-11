@@ -22,6 +22,20 @@ type OverdueMs = {
   } | null;
 };
 
+type AdminContract = {
+  id: string;
+  templateId: string | null;
+  client: string;
+  recipientName: string | null;
+  recipientEmail: string | null;
+  signingStatus: string;
+  uid: string | null;
+  caseId: string | null;
+  createdAt: string;
+  milestones: { id: string; status: string }[];
+  orders: { merchantTradeNo: string; planCode: string | null; amount: number; status: string }[];
+};
+
 type WebhookDelivery = {
   id: string;
   uid: string;
@@ -104,6 +118,9 @@ function AdminInner() {
   const [referrals, setReferrals] = useState<Referral[]>([]);
   const [usage, setUsage] = useState<UsageStats | null>(null);
   const [hooks, setHooks] = useState<{ deliveries: WebhookDelivery[]; fails24h: number } | null>(null);
+  const [contracts, setContracts] = useState<AdminContract[]>([]);
+  const [contractQ, setContractQ] = useState("");
+  const [contractStatus, setContractStatus] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -131,6 +148,49 @@ function AdminInner() {
       })
       .catch((e) => setErr((e as Error).message));
   }, [keyParam]);
+
+  async function loadContracts() {
+    if (!keyParam) return;
+    const sp = new URLSearchParams({ key: keyParam });
+    if (contractQ.trim()) sp.set("q", contractQ.trim());
+    if (contractStatus) sp.set("status", contractStatus);
+    try {
+      const r = await fetch(`/api/admin/contracts?${sp.toString()}`);
+      if (!r.ok) return;
+      const j = await r.json();
+      setContracts(j.contracts ?? []);
+    } catch {}
+  }
+  useEffect(() => {
+    if (data) loadContracts();
+  }, [data, contractQ, contractStatus]);
+
+  async function deleteContract(id: string) {
+    if (!keyParam) return;
+    if (!confirm(`真的要刪除合約 ${id.slice(0, 8)}…？（會 detach 訂單 + 連同 milestone 刪除）`)) return;
+    const r = await fetch(`/api/admin/contracts?id=${encodeURIComponent(id)}&key=${encodeURIComponent(keyParam)}`, { method: "DELETE" });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 409 && j.error) {
+      if (!confirm(`此合約有 PAID 訂單 (${j.paidOrderId})。仍要強制刪除？`)) return;
+      await fetch(`/api/admin/contracts?id=${encodeURIComponent(id)}&force=1&key=${encodeURIComponent(keyParam)}`, { method: "DELETE" });
+    } else if (!r.ok) {
+      alert(j.error || `HTTP ${r.status}`);
+      return;
+    }
+    await loadContracts();
+  }
+
+  async function retryWebhooks() {
+    if (!keyParam) return;
+    const r = await fetch(`/api/admin/webhooks/retry?key=${encodeURIComponent(keyParam)}`, { method: "POST" });
+    const j = await r.json();
+    alert(j.error || `已重試 ${j.retried} 筆（${j.succeeded} 成功，${j.gaveUp} 放棄）`);
+    // refresh deliveries panel
+    fetch(`/api/admin/webhooks?key=${encodeURIComponent(keyParam)}`)
+      .then((rr) => rr.ok && rr.json())
+      .then((d) => d && setHooks(d))
+      .catch(() => undefined);
+  }
 
   async function setReferralStatus(id: string, status: string) {
     if (!keyParam) return;
@@ -350,9 +410,14 @@ function AdminInner() {
         <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <h2 style={{ fontSize: 22 }}>Webhook 投遞紀錄</h2>
-            <span style={{ fontSize: 12.5, color: hooks.fails24h > 0 ? "#7a1f1f" : "var(--ink-muted)" }}>
-              近 24 小時失敗 {hooks.fails24h} 次
-            </span>
+            <div className="row gap-2" style={{ alignItems: "center" }}>
+              <span style={{ fontSize: 12.5, color: hooks.fails24h > 0 ? "#7a1f1f" : "var(--ink-muted)" }}>
+                近 24 小時失敗 {hooks.fails24h} 次
+              </span>
+              <button className="btn btn-soft btn-sm" onClick={retryWebhooks}>
+                <Icon name="refresh" size={11} />立即重試
+              </button>
+            </div>
           </div>
           {hooks.deliveries.length === 0 ? (
             <div className="card" style={{ padding: 16, color: "var(--ink-muted)", fontSize: 13 }}>尚無投遞紀錄。</div>
@@ -389,6 +454,53 @@ function AdminInner() {
           )}
         </section>
       )}
+
+      <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
+        <h2 style={{ fontSize: 22, marginBottom: 12 }}>合約搜尋 & 強制刪除</h2>
+        <div className="row gap-2" style={{ marginBottom: 12, flexWrap: "wrap" }}>
+          <input className="input" placeholder="搜尋 id / 甲方 / 乙方 / Email / uid" value={contractQ} onChange={(e) => setContractQ(e.target.value)} style={{ minWidth: 240 }} />
+          <select className="input" value={contractStatus} onChange={(e) => setContractStatus(e.target.value)}>
+            <option value="">所有狀態</option>
+            <option value="AWAITING_RECIPIENT">待乙方簽</option>
+            <option value="FULLY_SIGNED">已雙簽</option>
+            <option value="SENDER_SIGNED">僅甲方簽</option>
+            <option value="UNSIGNED">未簽</option>
+          </select>
+        </div>
+        {contracts.length === 0 ? (
+          <div className="card" style={{ padding: 14, color: "var(--ink-muted)", fontSize: 13 }}>
+            {(contractQ || contractStatus) ? "無符合條件" : "尚無合約"}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {contracts.map((c) => (
+              <div key={c.id} className="row" style={{
+                padding: "10px 14px", background: "var(--bg-elev)",
+                border: "1px solid var(--line)", borderRadius: "var(--radius)",
+                justifyContent: "space-between", flexWrap: "wrap", gap: 8,
+              }}>
+                <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+                  <code style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>{c.id.slice(0, 10)}…</code>
+                  <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.templateId || "—"}</span>
+                  <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.signingStatus}</span>
+                  <span style={{ fontSize: 12.5 }}>{c.client || "—"} → {c.recipientName || "—"}</span>
+                  {c.orders.some((o) => o.status === "PAID") && (
+                    <span className="chip chip-zinc" style={{ fontSize: 11, background: "#e8f5ed", color: "#1f5a35" }}>有 PAID 訂單</span>
+                  )}
+                </div>
+                <div className="row gap-2">
+                  <a href={`/contracts/${c.id}`} target="_blank" rel="noreferrer" className="btn btn-soft btn-sm">
+                    <Icon name="eye" size={11} />開
+                  </a>
+                  <button className="btn btn-ghost btn-sm" onClick={() => deleteContract(c.id)} style={{ color: "#7a1f1f" }}>
+                    <Icon name="trash" size={11} />刪除
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
         <h2 style={{ fontSize: 22, marginBottom: 12 }}>律師轉介 ({referrals.length})</h2>
