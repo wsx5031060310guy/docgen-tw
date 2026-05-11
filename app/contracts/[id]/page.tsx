@@ -193,6 +193,11 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
                       <span style={{ color: STATUS_COLOR[m.status] || "#444", fontWeight: 600 }}>
                         {STATUS_LABEL[m.status] || m.status}
                       </span>
+                      {(m.status === "OVERDUE" || diff < 0) && m.status !== "DONE" && m.kind === "PAYMENT" && (
+                        <Link href={`/contracts/new?fromMilestone=${m.id}`} className="btn btn-soft btn-sm" title="從本逾期項目自動產生催款通知書">
+                          <Icon name="mail" size={11} />催款
+                        </Link>
+                      )}
                       {m.status !== "DONE" && (
                         <button className="btn btn-soft btn-sm" onClick={() => setStatus(m.id, "DONE")} disabled={busy}>
                           <Icon name="check" size={11} />完成

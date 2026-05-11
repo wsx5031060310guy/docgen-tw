@@ -17,11 +17,13 @@ function NewInner() {
   const router = useRouter();
   const params = useSearchParams();
   const tplParam = params.get("tpl") || TEMPLATES[0].id;
+  const fromMilestone = params.get("fromMilestone");
 
   const [tplId, setTplId] = useState<string>(tplParam);
   const tpl = getTemplate(tplId) || TEMPLATES[0];
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<Values>({ ...tpl.defaults });
+  const [prefillBanner, setPrefillBanner] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLegal, setShowLegal] = useState(false);
   const [sigA, setSigA] = useState("");
@@ -38,6 +40,27 @@ function NewInner() {
     setValues({ ...tpl.defaults });
     setErrors({});
   }, [tplId]);
+
+  // Prefill from a milestone (e.g., overdue → 催款通知書)
+  useEffect(() => {
+    if (!fromMilestone) return;
+    (async () => {
+      try {
+        const r = await fetch(`/api/milestones/${fromMilestone}/dunning-prefill`);
+        if (!r.ok) return;
+        const j = await r.json();
+        if (j.templateId) setTplId(j.templateId);
+        if (j.values) {
+          // Apply after the tplId-change effect resets defaults, so values win.
+          setTimeout(() => setValues((cur) => ({ ...cur, ...j.values })), 0);
+        }
+        setPrefillBanner("已從逾期項目自動帶入收件人 / 金額 / 原約定到期日。請覆核後送出。");
+        setStep(2);
+      } catch {
+        // silent; user can fill manually
+      }
+    })();
+  }, [fromMilestone]);
 
   const setVal = (k: string, v: string) => {
     setValues((s) => ({ ...s, [k]: v }));
@@ -203,6 +226,15 @@ function NewInner() {
                     右側即時更新，未填欄位顯示為灰色虛線，<b>數字會自動轉為國字大寫</b>。
                   </p>
                 </div>
+                {prefillBanner && (
+                  <div className="card" style={{
+                    padding: "12px 14px", background: "var(--amber-50)",
+                    border: "1px solid #f0d9a4", color: "#5b3f10",
+                    borderRadius: "var(--radius)", fontSize: 13,
+                  }}>
+                    <Icon name="info" size={13} /> {prefillBanner}
+                  </div>
+                )}
                 {Object.entries(groupedFields).map(([gid, fs]) => (
                   <div key={gid}>
                     <div

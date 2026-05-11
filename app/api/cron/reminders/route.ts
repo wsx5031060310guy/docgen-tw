@@ -77,13 +77,15 @@ export async function GET(req: Request) {
         bucket === "D0" ? `[DocGen TW] ${m.title} 今日到期（${due}）` :
         `[DocGen TW] ${m.title} 已逾期 1 日（原定 ${due}）`;
       const amountLine = m.amount != null ? `\n金額：NT$ ${m.amount.toLocaleString()}` : "";
+      const dunningLink = `${APP_URL}/contracts/new?fromMilestone=${m.id}`;
       const text =
         `您好 ${m.contract?.recipientName || ""}，\n\n` +
         `這是來自 DocGen TW 的自動提醒：\n\n` +
         `項目：${m.title}\n類型：${m.kind}\n到期日：${due}${amountLine}\n\n` +
         `合約：${APP_URL}/contracts/${m.contractId}\n\n` +
         (bucket === "D1p"
-          ? `此項已逾原訂期限 1 日。若已處理請忽略本通知；如有疑慮請與對方聯繫。\n如逾期款項，您可於 DocGen TW 產出「催款通知書」草稿。\n`
+          ? `此項已逾原訂期限 1 日。若已處理請忽略本通知；如有疑慮請與對方聯繫。\n` +
+            `逾期款項可一鍵生成催款通知書草稿：\n${dunningLink}\n`
           : `請於到期日前完成處理。如已完成請於系統中標記為「已完成」以停止提醒。\n`) +
         `\n— DocGen TW 自動通知（請勿直接回覆）`;
 
