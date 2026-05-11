@@ -39,6 +39,16 @@ export async function GET(req: Request) {
   const log: string[] = [];
 
   try {
+    // 0. Purge expired SharedCheck rows
+    try {
+      const purged = await prisma.sharedCheck.deleteMany({
+        where: { expiresAt: { lt: now } },
+      });
+      if (purged.count > 0) log.push(`purged ${purged.count} expired shared checks`);
+    } catch {
+      // SharedCheck table may not exist yet on first deploy — ignore
+    }
+
     // 1. Mark anything past due as OVERDUE
     const overdue = await markOverdue(now);
     log.push(`marked ${overdue.count} milestones OVERDUE`);

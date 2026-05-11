@@ -8,10 +8,22 @@ import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { LawyerReferralCTA } from "@/components/LawyerReferralCTA";
 import type { RiskFinding, RiskLevel } from "@/lib/risk-rules";
 
+type LlmFinding = {
+  source: "llm";
+  level: RiskLevel;
+  title: string;
+  detail: string;
+  suggestion: string;
+  legalBasis: string[];
+  referLawyer: boolean;
+  id: string;
+};
 type Result = {
   summary: { level: RiskLevel; reds: number; yellows: number; needsLawyer: boolean; oneliner: string };
   findings: RiskFinding[];
+  llm?: { findings: LlmFinding[]; reason?: string };
   chars: number;
+  shareId?: string;
 };
 
 const LEVEL_STYLE: Record<RiskLevel, { bg: string; border: string; ink: string; chip: string }> = {
@@ -33,6 +45,8 @@ export default function CheckPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [useLlm, setUseLlm] = useState(true);
+  const [doShare, setDoShare] = useState(false);
 
   async function run() {
     setErr(null);
@@ -42,7 +56,7 @@ export default function CheckPage() {
       const r = await fetch("/api/check-text", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, llm: useLlm, share: doShare }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
@@ -52,6 +66,12 @@ export default function CheckPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function copyShareLink() {
+    if (!result?.shareId) return;
+    const url = `${window.location.origin}/shared/check/${result.shareId}`;
+    navigator.clipboard.writeText(url).catch(() => undefined);
   }
 
   return (
@@ -105,6 +125,16 @@ export default function CheckPage() {
                     清除
                   </button>
                 )}
+              </div>
+              <div className="row gap-3" style={{ marginTop: 10, flexWrap: "wrap", fontSize: 13 }}>
+                <label className="row gap-2" style={{ cursor: "pointer" }}>
+                  <input type="checkbox" checked={useLlm} onChange={(e) => setUseLlm(e.target.checked)} />
+                  <span>AI 補充檢查（Gemini 2.5）</span>
+                </label>
+                <label className="row gap-2" style={{ cursor: "pointer" }}>
+                  <input type="checkbox" checked={doShare} onChange={(e) => setDoShare(e.target.checked)} />
+                  <span>產生分享連結（30 天）</span>
+                </label>
               </div>
               {err && <div className="field-error" style={{ marginTop: 8 }}><Icon name="alert" size={12} />{err}</div>}
               <button
@@ -174,6 +204,62 @@ export default function CheckPage() {
                       </div>
                     );
                   })}
+                  {result.llm && result.llm.findings.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div className="row gap-2" style={{ marginTop: 4, fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                        <Icon name="sparkles" size={12} />AI 補充發現
+                      </div>
+                      {result.llm.findings.map((f) => {
+                        const fs = LEVEL_STYLE[f.level];
+                        return (
+                          <div key={f.id} className="card" style={{
+                            padding: 14, background: "var(--bg-elev)",
+                            border: "1px dashed var(--line)", borderRadius: "var(--radius)",
+                          }}>
+                            <div className="row gap-2" style={{ alignItems: "center", marginBottom: 6 }}>
+                              <span style={{
+                                display: "inline-flex", padding: "2px 8px", borderRadius: 999,
+                                background: fs.bg, color: fs.ink, border: `1px solid ${fs.border}`,
+                                fontSize: 11, fontWeight: 600,
+                              }}>
+                                {LEVEL_LABEL[f.level]} · AI
+                              </span>
+                              <b style={{ fontSize: 14 }}>{f.title}</b>
+                            </div>
+                            <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.65, marginBottom: 6 }}>{f.detail}</div>
+                            {f.suggestion && <div style={{ fontSize: 12.5 }}><b>建議：</b>{f.suggestion}</div>}
+                            {f.legalBasis.length > 0 && (
+                              <div className="row gap-2" style={{ marginTop: 8, flexWrap: "wrap" }}>
+                                {f.legalBasis.map((b) => (
+                                  <span key={b} className="chip chip-mono" style={{ fontSize: 11, padding: "2px 8px" }}>{b}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {result.llm && result.llm.reason && result.llm.findings.length === 0 && (
+                    <div className="card" style={{ padding: 12, fontSize: 12, color: "var(--ink-muted)" }}>
+                      AI 補充檢查暫不可用：{result.llm.reason}
+                    </div>
+                  )}
+                  {result.shareId && (
+                    <div className="card" style={{
+                      padding: 14, background: "var(--bg-soft)",
+                      border: "1px solid var(--line)", borderRadius: "var(--radius)",
+                      display: "flex", flexDirection: "column", gap: 8,
+                    }}>
+                      <div className="row gap-2"><Icon name="copy" size={12} /><b style={{ fontSize: 13 }}>分享連結（30 天有效）</b></div>
+                      <code style={{ fontFamily: "var(--font-mono)", fontSize: 12, wordBreak: "break-all" }}>
+                        {typeof window !== "undefined" ? window.location.origin : ""}/shared/check/{result.shareId}
+                      </code>
+                      <button className="btn btn-soft btn-sm" onClick={copyShareLink} style={{ alignSelf: "flex-start" }}>
+                        <Icon name="copy" size={11} />複製連結
+                      </button>
+                    </div>
+                  )}
                   {result.summary.needsLawyer && (
                     <LawyerReferralCTA variant="card" context="貼上合約風險檢查（含紅燈）" />
                   )}

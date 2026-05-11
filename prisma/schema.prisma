@@ -84,6 +84,17 @@ model Milestone {
   updatedAt   DateTime  @updatedAt
 }
 
+model SharedCheck {
+  id        String   @id
+  text      String
+  summary   Json
+  findings  Json
+  llmReason String?
+  views     Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model LawyerReferral {
   id            String   @id @default(cuid())
   name          String
