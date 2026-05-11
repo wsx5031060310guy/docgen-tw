@@ -4,7 +4,10 @@ import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
+import { JsonLd } from "@/components/JsonLd";
 import { TEMPLATES, getTemplate } from "@/lib/templates";
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://docgen-tw.vercel.app";
 
 // Static SEO landing pages — one per contract template.
 // Pre-rendered, indexable, with rich content (FAQ, legal basis explanations,
@@ -241,9 +244,54 @@ export default async function TemplateLandingPage({ params }: { params: Promise<
   if (!tpl) notFound();
   const copy = COPY[id];
 
+  const pageUrl = `${SITE_URL}/templates/${tpl.id}`;
+  const serviceLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: tpl.name,
+    serviceType: "Contract document automation",
+    provider: {
+      "@type": "Organization",
+      name: "DocGen TW",
+      url: SITE_URL,
+    },
+    areaServed: { "@type": "Country", name: "Taiwan" },
+    description: copy?.intent ?? tpl.description,
+    url: pageUrl,
+    offers: {
+      "@type": "Offer",
+      price: "99",
+      priceCurrency: "TWD",
+      availability: "https://schema.org/InStock",
+    },
+  };
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "首頁", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: tpl.category, item: `${SITE_URL}/#templates` },
+      { "@type": "ListItem", position: 3, name: tpl.name, item: pageUrl },
+    ],
+  };
+  const faqLd = copy && copy.faqs.length > 0
+    ? {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: copy.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      }
+    : null;
+
   return (
     <>
       <TopNav />
+      <JsonLd data={serviceLd} />
+      <JsonLd data={breadcrumbLd} />
+      {faqLd && <JsonLd data={faqLd} />}
       <main className="page paper-bg">
         <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 900 }}>
           <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
