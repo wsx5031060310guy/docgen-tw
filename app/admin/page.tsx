@@ -22,6 +22,29 @@ type OverdueMs = {
   } | null;
 };
 
+type UsageStats = {
+  month: string;
+  stats: {
+    proActive: number;
+    proExpired: number;
+    totalUidsWithProfile: number;
+    totalContracts: number;
+    paidOrdersLast30: number;
+    revenueLast30Ntd: number;
+    conversionPct: number;
+  };
+  topUsageThisMonth: { id: string; uid: string; month: string; count: number }[];
+  paidOrdersThisMonth: {
+    id: string;
+    merchantTradeNo: string;
+    planCode: string | null;
+    buyerEmail: string | null;
+    amount: number;
+    paymentDate: string | null;
+    uid: string | null;
+  }[];
+};
+
 type Referral = {
   id: string;
   name: string;
@@ -67,6 +90,7 @@ function AdminInner() {
   const keyParam = params.get("key");
   const [data, setData] = useState<Overview | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
+  const [usage, setUsage] = useState<UsageStats | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,8 +102,9 @@ function AdminInner() {
     Promise.all([
       fetch(`/api/admin/overview?key=${encodeURIComponent(keyParam)}`),
       fetch(`/api/admin/referrals?key=${encodeURIComponent(keyParam)}`),
+      fetch(`/api/admin/usage?key=${encodeURIComponent(keyParam)}`),
     ])
-      .then(async ([ro, rr]) => {
+      .then(async ([ro, rr, ru]) => {
         if (ro.status === 401) throw new Error("ADMIN_KEY 不正確或未設定");
         if (!ro.ok) throw new Error(`HTTP ${ro.status}`);
         setData(await ro.json());
@@ -87,6 +112,7 @@ function AdminInner() {
           const j = await rr.json();
           setReferrals(j.referrals ?? []);
         }
+        if (ru.ok) setUsage(await ru.json());
       })
       .catch((e) => setErr((e as Error).message));
   }, [keyParam]);
@@ -234,6 +260,76 @@ function AdminInner() {
           </div>
         </div>
       </section>
+
+      {usage && (
+        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
+          <h2 style={{ fontSize: 22, marginBottom: 12 }}>用量 & 收入</h2>
+          <div className="dg-fields-2col" style={{ gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+            {[
+              { label: `本月 (${usage.month})`, value: usage.month, icon: "calendar" },
+              { label: "PRO 啟用中", value: usage.stats.proActive, icon: "shieldCheck" },
+              { label: "PRO 已過期", value: usage.stats.proExpired, icon: "clock" },
+              { label: "近 30 日訂單", value: usage.stats.paidOrdersLast30, icon: "fileText" },
+              { label: "近 30 日營收", value: `NT$ ${usage.stats.revenueLast30Ntd.toLocaleString()}`, icon: "dollar" },
+              { label: "轉換率 (PRO/總)", value: `${usage.stats.conversionPct}%`, icon: "hash" },
+            ].map((c) => (
+              <div key={c.label} className="card" style={{ padding: 14, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
+                <div className="row gap-2" style={{ color: "var(--ink-muted)", fontSize: 11.5 }}>
+                  <Icon name={c.icon} size={11} />
+                  {c.label}
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 600, marginTop: 4 }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dg-fields-2col" style={{ gap: 16, marginTop: 20, alignItems: "flex-start" }}>
+            <div>
+              <h3 style={{ fontSize: 16, marginBottom: 8 }}>本月用量 Top 20</h3>
+              {usage.topUsageThisMonth.length === 0 ? (
+                <div className="card" style={{ padding: 14, color: "var(--ink-muted)", fontSize: 13 }}>本月尚無使用紀錄</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {usage.topUsageThisMonth.map((u) => (
+                    <div key={u.id} className="row" style={{
+                      padding: "8px 12px", background: "var(--bg-elev)",
+                      border: "1px solid var(--line)", borderRadius: "var(--radius)",
+                      justifyContent: "space-between",
+                    }}>
+                      <code style={{ fontSize: 11.5, fontFamily: "var(--font-mono)" }}>{u.uid.slice(0, 12)}…</code>
+                      <span style={{ fontSize: 13, fontWeight: 600 }}>{u.count} 份</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 style={{ fontSize: 16, marginBottom: 8 }}>本月付款訂單</h3>
+              {usage.paidOrdersThisMonth.length === 0 ? (
+                <div className="card" style={{ padding: 14, color: "var(--ink-muted)", fontSize: 13 }}>本月尚無付款訂單</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {usage.paidOrdersThisMonth.map((o) => (
+                    <div key={o.id} className="row" style={{
+                      padding: "8px 12px", background: "var(--bg-elev)",
+                      border: "1px solid var(--line)", borderRadius: "var(--radius)",
+                      justifyContent: "space-between", flexWrap: "wrap", gap: 6,
+                    }}>
+                      <span style={{ fontSize: 12.5 }}>
+                        <span className="chip chip-zinc" style={{ fontSize: 10, marginRight: 6 }}>{o.planCode || "—"}</span>
+                        {o.buyerEmail || "—"}
+                      </span>
+                      <span style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
+                        NT$ {o.amount.toLocaleString()} · {o.paymentDate ? new Date(o.paymentDate).toLocaleDateString("zh-Hant") : "—"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1200 }}>
         <h2 style={{ fontSize: 22, marginBottom: 12 }}>律師轉介 ({referrals.length})</h2>

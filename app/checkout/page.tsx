@@ -7,22 +7,28 @@ import { PlanCard, type Plan } from "@/components/PlanCard";
 
 const PLANS: Plan[] = [
   {
-    code: "single", tag: "Single", name: "單份合約",
-    tagline: "臨時急用、一次性合作",
-    price: "99", unit: "份", cta: "立即購買",
-    features: ["1 份合約自動產生", "所有 8 種範本", "法條引用 + 法律依據", "PDF 永久下載", "雙方電子簽署存證"],
+    code: "pro", tag: "Pro", name: "Pro 月方案",
+    tagline: "頻繁建合約 / 接案 / 小公司",
+    price: "299", unit: "月", cta: "升級 Pro 30 天",
+    features: [
+      "無限合約建立（解除每月 3 份限制）",
+      "10 種台灣法律範本",
+      "AI 風險檢查（Gemini 2.5）",
+      "milestone Email 自動提醒",
+      "Pro Badge + 優先客服",
+    ],
   },
   {
-    code: "pack", tag: "Pack", name: "範本包",
-    tagline: "小公司常用組合",
-    price: "499", unit: "一次性", cta: "購買範本包",
-    features: ["10 份合約額度", "全部範本 + 進階條款", "客製化條款 AI 建議", "優先 Email 客服", "雜湊存證 + 區塊鏈時間戳"],
-  },
-  {
-    code: "pro", tag: "Pro", name: "Pro 訂閱",
-    tagline: "頻繁使用者、新創、自由工作者",
-    price: "299", unit: "月", cta: "開始 7 日試用",
-    features: ["無限合約產生", "團隊共享 5 席", "API 串接", "專屬律師審閱（每月 1 份）", "客製模板 + 公司用印", "自動續約管理"],
+    code: "pack", tag: "Pack", name: "90 日方案",
+    tagline: "三個月集中跑案、季結算",
+    price: "499", unit: "3 個月", cta: "購買 90 日方案",
+    features: [
+      "Pro 全部功能 × 90 天",
+      "一次性付款，不自動續約",
+      "比月繳省 NT$398",
+      "適合短期專案爆量",
+      "到期降回 Free（不扣款）",
+    ],
   },
 ];
 
@@ -84,8 +90,9 @@ export default function CheckoutPage() {
             解鎖付費
           </div>
           <h1 style={{ fontSize: 44 }}>挑一個適合的方案</h1>
-          <p style={{ color: "var(--ink-soft)", marginTop: 12, fontSize: 16, maxWidth: 540, margin: "12px auto 0" }}>
-            所有方案都包含完整法條引用與電子簽章存證。新創常見組合是「先買單份、頻繁使用後升級 Pro」。
+          <p style={{ color: "var(--ink-soft)", marginTop: 12, fontSize: 16, maxWidth: 580, margin: "12px auto 0" }}>
+            Free 方案每月可建 <b>3 份</b>合約 — 多數使用者夠用。需要更多請選下列付費方案，皆以
+            <b>藍新金流</b>結帳、<b>不自動續約</b>。
           </p>
           <div style={{ maxWidth: 420, margin: "20px auto 0" }}>
             <label style={{ fontSize: 12, color: "var(--ink-muted)", display: "block", textAlign: "left", marginBottom: 4 }}>
@@ -149,7 +156,7 @@ export default function CheckoutPage() {
               {[
                 { i: "lock", t: "SSL 加密" },
                 { i: "shieldCheck", t: "不儲存信用卡資訊" },
-                { i: "rotateCcw", t: "7 天無條件退款" },
+                { i: "scale", t: "藍新金流 · 合規收單" },
               ].map((x) => (
                 <div key={x.t} className="row gap-2" style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
                   <Icon name={x.i} size={13} style={{ color: "var(--primary)" }} />
@@ -171,10 +178,11 @@ export default function CheckoutPage() {
           </div>
           <div className="dg-faq-grid">
             {[
-              ["這些合約具法律效力嗎？", "是的。合約內容均依中華民國法律編製，並透過電子簽章法 §4、§9 保障雙方簽署效力。但重大或複雜爭議仍建議委請律師。"],
-              ["可以客製條款嗎？", "Pack 與 Pro 方案支援自訂條款。系統 AI 會即時提示對應的法條依據。"],
-              ["退款政策？", "購買後 7 天內如未使用任何合約，皆可申請全額退款。"],
-              ["合約如何保存？", "PDF 與簽署存證資訊永久保存於你的帳戶。Pro 方案另支援匯出至 Google Drive / Dropbox。"],
+              ["這些合約具法律效力嗎？", "是的。合約內容均依中華民國法律編製，並透過電子簽章法 §4、§9 保障雙方簽署效力。但重大或複雜爭議仍建議委請律師審閱。"],
+              ["Free 方案 3 份用完了怎麼辦？", "等下個月（每月 1 日重置），或現在升級 Pro / Pack 立即解除限制。系統會在你嘗試送出第 4 份合約時擋下並導向升級。"],
+              ["會自動續訂嗎？", "不會。Pro 月方案是「付一次給 30 天」，Pack 是「付一次給 90 天」，到期降回 Free，不會繼續扣款。"],
+              ["怎麼辨識我是 Pro？", "用 Email 結帳後，系統會把你的瀏覽器（cookie uid）綁定到 PRO，效期內任何裝置只要保持同一個瀏覽器 cookie 就是 Pro。要換裝置請告知客服重綁。"],
+              ["合約如何保存？", "簽完的合約 PDF 永久保存於你的後台 /contracts；簽名圖片 + 雜湊 + IP + 時間戳均存證。"],
             ].map(([q, a]) => (
               <div key={q} className="card" style={{ padding: 18 }}>
                 <div className="row gap-2" style={{ marginBottom: 6 }}>

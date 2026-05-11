@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { TrustBar } from "@/components/TrustBar";
 import { TemplateCard } from "@/components/TemplateCard";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
+import { BillingBanner } from "@/components/BillingBanner";
 import { TEMPLATES } from "@/lib/templates";
 
 export default function Home() {
@@ -33,6 +34,9 @@ export default function Home() {
               從 10 種常用範本開始（含催款通知書、存證信函草稿），逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
               <span style={{ color: "var(--ink)" }}> 比律師快、比範本可信。</span>
             </p>
+            <div style={{ marginTop: 6, marginBottom: -8 }}>
+              <BillingBanner compact />
+            </div>
             <div className="row gap-3 dg-hero-cta" style={{ marginTop: 6 }}>
               <Link href="/contracts/new" className="btn btn-primary btn-lg">
                 <Icon name="sparkles" size={15} />
@@ -194,6 +198,94 @@ export default function Home() {
                 <p style={{ color: "var(--ink-soft)", fontSize: 14, lineHeight: 1.6 }}>{s.d}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section id="pricing" className="container" style={{ padding: "24px 32px 60px" }}>
+          <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+            價格
+          </div>
+          <h2 style={{ marginBottom: 12 }}>免費先用，需要再升級</h2>
+          <p style={{ color: "var(--ink-soft)", fontSize: 15, lineHeight: 1.7, maxWidth: 640, marginBottom: 24 }}>
+            所有方案均含 10 種範本、雙方電子簽署、PDF 存證、規則式風險檢查。差別只在<b>每月可建立的合約數</b>與<b>進階功能</b>。
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
+            {[
+              {
+                code: "free", name: "Free", price: "0", unit: "/月",
+                tag: "適合偶爾接案",
+                cta: "直接開始",
+                href: "/contracts/new",
+                features: [
+                  "每月 3 份合約",
+                  "10 種台灣法律範本",
+                  "雙方電子簽署 + PDF",
+                  "規則式風險檢查（15 條）",
+                  "案件資料夾 + milestone 追蹤",
+                ],
+                featured: false,
+              },
+              {
+                code: "pro", name: "Pro", price: "299", unit: "/月",
+                tag: "頻繁使用 + Email 自動提醒",
+                cta: "升級 Pro",
+                href: "/checkout",
+                features: [
+                  "✓ Free 所有功能",
+                  "**無限合約建立**",
+                  "AI 風險檢查（Gemini 2.5）",
+                  "milestone Email 自動提醒",
+                  "Pro Badge + 優先客服",
+                ],
+                featured: true,
+              },
+              {
+                code: "pack", name: "Pack", price: "499", unit: "/3 個月",
+                tag: "三個月集中跑案",
+                cta: "購買 90 日方案",
+                href: "/checkout",
+                features: [
+                  "✓ Pro 所有功能",
+                  "90 天無限合約（一次性付款）",
+                  "省下 NT$398 (比月繳)",
+                  "適合短期專案爆量",
+                ],
+                featured: false,
+              },
+            ].map((p) => (
+              <div key={p.code} className="card" style={{
+                padding: 22,
+                background: p.featured ? "var(--primary-soft)" : "var(--bg-elev)",
+                border: `${p.featured ? 2 : 1}px solid ${p.featured ? "var(--primary)" : "var(--line)"}`,
+                borderRadius: "var(--radius)",
+                display: "flex", flexDirection: "column", gap: 12,
+              }}>
+                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ fontSize: 22 }}>{p.name}</h3>
+                  {p.featured && <span className="chip chip-zinc" style={{ background: "var(--primary)", color: "var(--primary-ink)", fontSize: 11 }}>推薦</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--ink-muted)" }}>{p.tag}</div>
+                <div>
+                  <span style={{ fontSize: 36, fontWeight: 600 }}>NT$ {p.price}</span>
+                  <span style={{ fontSize: 13, color: "var(--ink-muted)", marginLeft: 4 }}>{p.unit}</span>
+                </div>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+                  {p.features.map((f) => (
+                    <li key={f} style={{ fontSize: 13.5, color: "var(--ink-soft)", display: "flex", gap: 6 }}>
+                      <Icon name="check" size={13} style={{ color: "var(--primary)", marginTop: 3 }} />
+                      <span dangerouslySetInnerHTML={{ __html: f.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") }} />
+                    </li>
+                  ))}
+                </ul>
+                <Link href={p.href} className={`btn ${p.featured ? "btn-primary" : "btn-soft"}`} style={{ marginTop: "auto" }}>
+                  {p.cta}
+                  <Icon name="arrowRight" size={13} />
+                </Link>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 18, fontSize: 12.5, color: "var(--ink-muted)" }}>
+            * Pro / Pack 用藍新金流結帳，不自動續約；到期後降回 Free（不會繼續扣款）。
           </div>
         </section>
 
