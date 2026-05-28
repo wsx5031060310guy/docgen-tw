@@ -26,7 +26,14 @@ export function TopNav() {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [open, setOpen] = useState(false);
   useEffect(() => { setLocale(detectLocale(pathname)); }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
 
   const p = prefix(locale);
   const links: { href: string; label: string; match: (path: string) => boolean }[] = [
@@ -56,16 +63,55 @@ export function TopNav() {
           ))}
         </div>
       </div>
-      <div className="row gap-3">
+      <div className="row gap-3 nav-right">
         <LocaleSwitcher current={locale} />
-        <div className="row gap-2" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
+        <div className="row gap-2 nav-trust" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
           <Icon name="lock" size={13} />
           <span>SSL · {t(locale, "home.trust.signlaw")}</span>
         </div>
-        <button className="btn btn-primary btn-sm" onClick={() => router.push(`${p}/contracts/new`)}>
+        <button className="btn btn-primary btn-sm nav-cta" onClick={() => router.push(`${p}/contracts/new`)}>
           {t(locale, "nav.start")}
         </button>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          onClick={() => setOpen((v) => !v)}
+        >
+          <Icon name={open ? "x" : "list"} size={22} />
+        </button>
       </div>
+
+      {open && (
+        <>
+          <div className="nav-drawer-backdrop" onClick={() => setOpen(false)} />
+          <div className="nav-drawer" role="dialog" aria-label="Main menu">
+            <div className="nav-drawer-list">
+              {links.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`nav-drawer-link ${l.match(pathname) ? "active" : ""}`}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+            <button
+              className="btn btn-primary btn-lg"
+              style={{ width: "100%", marginTop: 12 }}
+              onClick={() => { setOpen(false); router.push(`${p}/contracts/new`); }}
+            >
+              {t(locale, "nav.start")}
+            </button>
+            <div className="row gap-2" style={{ marginTop: 14, fontSize: 12.5, color: "var(--ink-muted)" }}>
+              <Icon name="lock" size={13} />
+              <span>SSL · {t(locale, "home.trust.signlaw")}</span>
+            </div>
+          </div>
+        </>
+      )}
     </nav>
   );
 }

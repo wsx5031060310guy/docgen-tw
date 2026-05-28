@@ -117,7 +117,7 @@ export default function CheckPage() {
                 </button>
               </div>
               <textarea
-                className="input"
+                className="input dg-check-textarea"
                 rows={14}
                 style={{ resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1.7 }}
                 placeholder="把整份合約 / 條款文字直接貼進來，建議至少 200 字以獲得有意義的檢查結果"

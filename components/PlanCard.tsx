@@ -57,8 +57,9 @@ export function PlanCard({
       <div className="row" style={{ alignItems: "baseline", gap: 4 }}>
         <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--ink-muted)" }}>NT$</span>
         <span
+          className="dg-plan-price"
           style={{
-            fontFamily: "var(--font-display)", fontSize: 48, fontWeight: 600,
+            fontFamily: "var(--font-display)", fontWeight: 600,
             lineHeight: 1, fontVariantNumeric: "tabular-nums",
           }}
         >

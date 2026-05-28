@@ -46,11 +46,12 @@ export function ContractPreview({
   const partyB = values.party_b_name || "___________";
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 24 }}>
+    <div className="dg-contract-wrap" style={{ display: "flex", justifyContent: "center", padding: 24 }}>
       <div
-        className={paper ? "paper" : ""}
+        className={`dg-contract-paper ${paper ? "paper" : ""}`}
         style={{
           width: 720,
+          maxWidth: "100%",
           minHeight: 1020,
           padding: "70px 80px 80px",
           boxShadow: paper
@@ -96,7 +97,7 @@ export function ContractPreview({
           ))}
         </div>
 
-        <div style={{ marginTop: 60, paddingTop: 30, borderTop: "1px solid rgba(0,0,0,0.12)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 50 }}>
+        <div className="dg-contract-sigs" style={{ marginTop: 60, paddingTop: 30, borderTop: "1px solid rgba(0,0,0,0.12)", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 50 }}>
           {[
             { label: "甲方（委任 / 出資方）", name: partyA, sig: sigA, signed: signedA },
             { label: "乙方（受任 / 受聘方）", name: partyB, sig: sigB, signed: signedB },
