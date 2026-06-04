@@ -70,34 +70,34 @@ export function LawyerReferralForm({ contractId, defaultTopic }: { contractId?: 
 
       <div className="dg-fields-2col" style={{ gap: 12 }}>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>姓名 / 公司 *</label>
-          <input className="input" style={{ marginTop: 4 }} value={name} onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="referral-name" style={{ fontSize: 12, color: "var(--ink-muted)" }}>姓名 / 公司 *</label>
+          <input id="referral-name" className="input" style={{ marginTop: 4 }} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>Email *</label>
-          <input className="input" style={{ marginTop: 4 }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <label htmlFor="referral-email" style={{ fontSize: 12, color: "var(--ink-muted)" }}>Email *</label>
+          <input id="referral-email" className="input" style={{ marginTop: 4 }} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>電話</label>
-          <input className="input" style={{ marginTop: 4 }} value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <label htmlFor="referral-phone" style={{ fontSize: 12, color: "var(--ink-muted)" }}>電話</label>
+          <input id="referral-phone" className="input" style={{ marginTop: 4 }} value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>城市</label>
-          <select className="input" style={{ marginTop: 4 }} value={city} onChange={(e) => setCity(e.target.value)}>
+          <label htmlFor="referral-city" style={{ fontSize: 12, color: "var(--ink-muted)" }}>城市</label>
+          <select id="referral-city" className="input" style={{ marginTop: 4 }} value={city} onChange={(e) => setCity(e.target.value)}>
             <option value="">請選擇</option>
             {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>主題</label>
-          <select className="input" style={{ marginTop: 4 }} value={topic} onChange={(e) => setTopic(e.target.value)}>
+          <label htmlFor="referral-topic" style={{ fontSize: 12, color: "var(--ink-muted)" }}>主題</label>
+          <select id="referral-topic" className="input" style={{ marginTop: 4 }} value={topic} onChange={(e) => setTopic(e.target.value)}>
             <option value="">請選擇</option>
             {TOPICS.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>預算</label>
-          <select className="input" style={{ marginTop: 4 }} value={budget} onChange={(e) => setBudget(e.target.value)}>
+          <label htmlFor="referral-budget" style={{ fontSize: 12, color: "var(--ink-muted)" }}>預算</label>
+          <select id="referral-budget" className="input" style={{ marginTop: 4 }} value={budget} onChange={(e) => setBudget(e.target.value)}>
             <option value="">請選擇</option>
             {BUDGETS.map((b) => <option key={b} value={b}>{b}</option>)}
           </select>
@@ -105,8 +105,8 @@ export function LawyerReferralForm({ contractId, defaultTopic }: { contractId?: 
       </div>
 
       <div>
-        <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>案情描述 *</label>
-        <textarea className="input" rows={5} style={{ marginTop: 4, resize: "vertical" }}
+        <label htmlFor="referral-description" style={{ fontSize: 12, color: "var(--ink-muted)" }}>案情描述 *</label>
+        <textarea id="referral-description" className="input" rows={5} style={{ marginTop: 4, resize: "vertical" }}
           placeholder="簡述：發生什麼事、目前進度、希望律師處理什麼。請勿提供身分證號或其他敏感個資。"
           value={description} onChange={(e) => setDescription(e.target.value)} />
       </div>
