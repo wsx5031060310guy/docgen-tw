@@ -94,13 +94,13 @@ export default function ContractsListPage() {
             borderRadius: "var(--radius)", display: "flex", gap: 10, flexWrap: "wrap",
             alignItems: "center",
           }}>
-            <input className="input" placeholder="搜尋甲方/乙方/Email…" value={q} onChange={(e) => setQ(e.target.value)} style={{ minWidth: 220 }} />
-            <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
+            <input className="input" aria-label="搜尋合約（甲方/乙方/Email）" placeholder="搜尋甲方/乙方/Email…" value={q} onChange={(e) => setQ(e.target.value)} style={{ minWidth: 220 }} />
+            <select className="input" aria-label="依狀態篩選" value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <select className="input" value={template} onChange={(e) => setTemplate(e.target.value)}>
+            <select className="input" aria-label="依模板篩選" value={template} onChange={(e) => setTemplate(e.target.value)}>
               <option value="">所有模板</option>
               {TEMPLATES.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
