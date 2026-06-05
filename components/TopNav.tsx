@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "./Icon";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { t, type Locale, DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/dict";
-import { LOCALE_COOKIE } from "@/lib/i18n/locale-shared";
+import { LOCALE_COOKIE, pathForLocale } from "@/lib/i18n/locale-shared";
 
 function detectLocale(pathname: string): Locale {
   if (pathname.startsWith("/en/") || pathname === "/en") return "en";
@@ -36,14 +36,19 @@ export function TopNav() {
   }, [open]);
 
   const p = prefix(locale);
+  // Resolve every nav target through pathForLocale so routes without a page in
+  // the current locale (the zh-Hant-only functional pages) fall back to the
+  // unprefixed path instead of an /en/* URL that 404s.
+  const href = (base: string) => pathForLocale(locale, base);
+  const startHref = href("/contracts/new");
   const links: { href: string; label: string; match: (path: string) => boolean }[] = [
-    { href: `${p || "/"}`, label: t(locale, "nav.templates"), match: (x) => x === (p || "/") },
-    { href: `${p}/check`, label: t(locale, "nav.check"), match: (x) => x.startsWith(`${p}/check`) },
-    { href: `${p}/contracts/new`, label: t(locale, "nav.new_contract"), match: (x) => x === `${p}/contracts/new` },
-    { href: `${p}/contracts`, label: t(locale, "nav.my_contracts"), match: (x) => x === `${p}/contracts` || (x.startsWith(`${p}/contracts/`) && x !== `${p}/contracts/new`) },
-    { href: `${p}/cases`, label: t(locale, "nav.cases"), match: (x) => x.startsWith(`${p}/cases`) },
-    { href: `${p}/checkout`, label: t(locale, "nav.pricing"), match: (x) => x === `${p}/checkout` },
-    { href: `${p}/settings`, label: t(locale, "nav.settings"), match: (x) => x.startsWith(`${p}/settings`) },
+    { href: href("/"), label: t(locale, "nav.templates"), match: (x) => x === (p || "/") },
+    { href: href("/check"), label: t(locale, "nav.check"), match: (x) => x.startsWith(`${p}/check`) },
+    { href: startHref, label: t(locale, "nav.new_contract"), match: (x) => x === "/contracts/new" },
+    { href: href("/contracts"), label: t(locale, "nav.my_contracts"), match: (x) => x === "/contracts" || (x.startsWith("/contracts/") && x !== "/contracts/new") },
+    { href: href("/cases"), label: t(locale, "nav.cases"), match: (x) => x.startsWith("/cases") },
+    { href: href("/checkout"), label: t(locale, "nav.pricing"), match: (x) => x === "/checkout" },
+    { href: href("/settings"), label: t(locale, "nav.settings"), match: (x) => x.startsWith("/settings") },
   ];
 
   return (
@@ -69,7 +74,7 @@ export function TopNav() {
           <Icon name="lock" size={13} />
           <span>SSL · {t(locale, "home.trust.signlaw")}</span>
         </div>
-        <button className="btn btn-primary btn-sm nav-cta" onClick={() => router.push(`${p}/contracts/new`)}>
+        <button className="btn btn-primary btn-sm nav-cta" onClick={() => router.push(startHref)}>
           {t(locale, "nav.start")}
         </button>
         <button
@@ -101,7 +106,7 @@ export function TopNav() {
             <button
               className="btn btn-primary btn-lg"
               style={{ width: "100%", marginTop: 12 }}
-              onClick={() => { setOpen(false); router.push(`${p}/contracts/new`); }}
+              onClick={() => { setOpen(false); router.push(startHref); }}
             >
               {t(locale, "nav.start")}
             </button>
