@@ -39,7 +39,7 @@ export default function HomeEn() {
               <BillingBanner compact />
             </div>
             <div className="row gap-3 dg-hero-cta" style={{ marginTop: 6 }}>
-              <Link href="/en/contracts/new" className="btn btn-primary btn-lg">
+              <Link href="/contracts/new" className="btn btn-primary btn-lg">
                 <Icon name="sparkles" size={15} />
                 {t(L, "home.cta_start")}
               </Link>

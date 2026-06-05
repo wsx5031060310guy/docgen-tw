@@ -178,7 +178,7 @@ export default function CheckEn() {
                         Closest DocGen template: <b>{result.templateSuggestion.name}</b>. Re-issuing from a
                         compliant template fixes most red flags in one pass.
                       </div>
-                      <Link href={`/en/contracts/new?tpl=${result.templateSuggestion.templateId}`} className="btn btn-primary btn-sm" style={{ marginTop: 8 }}>
+                      <Link href={`/contracts/new?tpl=${result.templateSuggestion.templateId}`} className="btn btn-primary btn-sm" style={{ marginTop: 8 }}>
                         <Icon name="fileText" size={11} />Use template
                       </Link>
                     </div>

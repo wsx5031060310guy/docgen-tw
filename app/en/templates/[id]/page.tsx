@@ -102,7 +102,7 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
             This page is the English explainer for international counterparties to understand what they will sign.
           </div>
           <div className="row gap-2" style={{ marginTop: 18, flexWrap: "wrap" }}>
-            <Link href={`/en/contracts/new?tpl=${tpl.id}`} className="btn btn-primary btn-lg">
+            <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary btn-lg">
               <Icon name="sparkles" size={14} />Use this template
             </Link>
             <a href="#legal" className="btn btn-soft">
@@ -189,7 +189,7 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
             <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>
               3-minute form, auto-cited Taiwan statutes, dual e-signature with IP + hash audit trail.
             </p>
-            <Link href={`/en/contracts/new?tpl=${tpl.id}`} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
+            <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
               <Icon name="sparkles" size={13} />Create {tpl.name}
             </Link>
           </div>
