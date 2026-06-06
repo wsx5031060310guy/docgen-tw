@@ -6,6 +6,7 @@ import { fireUserWebhook } from "@/lib/webhooks";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 interface SignPayload {
   token: string;
@@ -42,31 +43,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: 403 });
   }
 
-  // Best-effort: PDF + email both parties. Don't block the response on it.
-  notifyFullySigned(result).catch((e) =>
-    console.error("[recipient-sign] notify failed:", (e as Error).message),
-  );
+  // PDF + email both parties. Awaited so the Vercel serverless instance is not
+  // frozen/terminated at res.end() before the (async) Mailgun send completes —
+  // notifyFullySigned never throws (it swallows + logs its own errors).
+  await notifyFullySigned(result);
 
   // Best-effort user webhook (Slack/Discord/n8n/…). Owner uid is on the row.
-  (async () => {
-    try {
-      if (!process.env.DATABASE_URL) return;
+  // Awaited for the same lifecycle reason; failures are logged, never fatal.
+  try {
+    if (process.env.DATABASE_URL) {
       const row = await prisma.contract.findUnique({
         where: { id: result.id },
         select: { uid: true },
       });
-      if (!row?.uid) return;
-      await fireUserWebhook(row.uid, {
-        type: "contract.signed.full",
-        contractId: result.id,
-        templateId: result.templateId,
-        senderName: result.client || "—",
-        recipientName: result.recipientName ?? null,
-      });
-    } catch (e) {
-      console.error("[recipient-sign] webhook err", (e as Error).message);
+      if (row?.uid) {
+        await fireUserWebhook(row.uid, {
+          type: "contract.signed.full",
+          contractId: result.id,
+          templateId: result.templateId,
+          senderName: result.client || "—",
+          recipientName: result.recipientName ?? null,
+        });
+      }
     }
-  })();
+  } catch (e) {
+    console.error("[recipient-sign] webhook err", (e as Error).message);
+  }
 
   return NextResponse.json({
     id: result.id,
