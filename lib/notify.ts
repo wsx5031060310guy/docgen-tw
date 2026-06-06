@@ -37,7 +37,7 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
     `甲方：${c.values?.party_a_name || "—"}\n` +
     `乙方：${c.values?.party_b_name || c.recipientName || "—"}\n` +
     `簽署狀態：FULLY_SIGNED\n\n` +
-    `完整契約 PDF 可至 DocGen TW 合約頁面下載，依電子簽章法 §4、§9 與紙本具同等效力。\n` +
+    `完整契約 PDF 可至 DocGen TW 合約頁面下載，依電子簽章法 §5 與紙本具同等效力。\n` +
     `本郵件由 DocGen TW 系統自動發送。`;
 
   for (const to of recipients) {

@@ -157,7 +157,7 @@ function ContractDoc({ input }: { input: PdfInput }) {
 
         <View style={s.footer} fixed>
           <Text style={s.footerLine1}>
-            DocGen TW · 編號 {input.contractId} · 依電子簽章法 §4、§9 與紙本具同等效力
+            DocGen TW · 編號 {input.contractId} · 依電子簽章法 §5 與紙本具同等效力
           </Text>
           <Text style={s.footerLine2}>
             本平台僅提供文件自動化與風險提示，非法律意見。詳見 docgen-tw.vercel.app/disclaimer
