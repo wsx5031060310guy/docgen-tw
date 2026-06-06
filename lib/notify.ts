@@ -15,21 +15,30 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
   const tpl = getTemplate(c.templateId);
   const tplName = tpl?.name || "電子合約";
 
+  // The PDF render fetches multi-MB CJK fonts from a CDN on cold start and can
+  // hang well past the function limit. Cap it so the completion email is still
+  // sent when the render is slow — without the attachment rather than not at all.
   let pdfBuf: Buffer | null = null;
   try {
-    pdfBuf = await renderContractPdf({
-      contractId: c.id,
-      templateId: c.templateId,
-      values: c.values,
-      senderSignatureUrl: c.senderSignatureUrl,
-      recipientSignatureUrl: c.recipientSignatureUrl,
-      senderAudit: c.senderSignedAt
-        ? `${c.senderSignedAt.toISOString().slice(0, 19).replace("T", " ")} IP ${c.senderIp || "?"} #${(c.senderSignatureHash || "").slice(0, 8)}`
-        : null,
-      recipientAudit: c.recipientSignedAt
-        ? `${c.recipientSignedAt.toISOString().slice(0, 19).replace("T", " ")} IP ${c.recipientIp || "?"} #${(c.recipientSignatureHash || "").slice(0, 8)}`
-        : null,
-    });
+    const PDF_TIMEOUT_MS = 45_000;
+    pdfBuf = await Promise.race([
+      renderContractPdf({
+        contractId: c.id,
+        templateId: c.templateId,
+        values: c.values,
+        senderSignatureUrl: c.senderSignatureUrl,
+        recipientSignatureUrl: c.recipientSignatureUrl,
+        senderAudit: c.senderSignedAt
+          ? `${c.senderSignedAt.toISOString().slice(0, 19).replace("T", " ")} IP ${c.senderIp || "?"} #${(c.senderSignatureHash || "").slice(0, 8)}`
+          : null,
+        recipientAudit: c.recipientSignedAt
+          ? `${c.recipientSignedAt.toISOString().slice(0, 19).replace("T", " ")} IP ${c.recipientIp || "?"} #${(c.recipientSignatureHash || "").slice(0, 8)}`
+          : null,
+      }),
+      new Promise<null>((_, reject) =>
+        setTimeout(() => reject(new Error("pdf render timeout (45s)")), PDF_TIMEOUT_MS),
+      ),
+    ]);
   } catch (e) {
     console.error("[notify] pdf render failed:", (e as Error).message);
   }

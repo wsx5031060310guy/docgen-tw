@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { persistSignaturePng } from "@/lib/services/signing_service";
 import { recordRecipientSignature } from "@/lib/contract-store";
 import { notifyFullySigned } from "@/lib/notify";
@@ -43,32 +43,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: 403 });
   }
 
-  // PDF + email both parties. Awaited so the Vercel serverless instance is not
-  // frozen/terminated at res.end() before the (async) Mailgun send completes —
-  // notifyFullySigned never throws (it swallows + logs its own errors).
-  await notifyFullySigned(result);
+  // Completion notification (PDF render + Mailgun) and the user webhook are slow
+  // and must NOT block the signer's response: awaiting inline overran the function
+  // limit on the PDF font fetch and 504'd, while fire-and-forget got frozen at
+  // res.end() before Mailgun sent. `after` returns the response immediately and
+  // keeps the instance alive until the work finishes (bounded by maxDuration).
+  // notifyFullySigned swallows its own errors; the webhook is wrapped here.
+  after(async () => {
+    await notifyFullySigned(result);
 
-  // Best-effort user webhook (Slack/Discord/n8n/…). Owner uid is on the row.
-  // Awaited for the same lifecycle reason; failures are logged, never fatal.
-  try {
-    if (process.env.DATABASE_URL) {
+    // Best-effort user webhook (Slack/Discord/n8n/…). Owner uid is on the row.
+    try {
+      if (!process.env.DATABASE_URL) return;
       const row = await prisma.contract.findUnique({
         where: { id: result.id },
         select: { uid: true },
       });
-      if (row?.uid) {
-        await fireUserWebhook(row.uid, {
-          type: "contract.signed.full",
-          contractId: result.id,
-          templateId: result.templateId,
-          senderName: result.client || "—",
-          recipientName: result.recipientName ?? null,
-        });
-      }
+      if (!row?.uid) return;
+      await fireUserWebhook(row.uid, {
+        type: "contract.signed.full",
+        contractId: result.id,
+        templateId: result.templateId,
+        senderName: result.client || "—",
+        recipientName: result.recipientName ?? null,
+      });
+    } catch (e) {
+      console.error("[recipient-sign] webhook err", (e as Error).message);
     }
-  } catch (e) {
-    console.error("[recipient-sign] webhook err", (e as Error).message);
-  }
+  });
 
   return NextResponse.json({
     id: result.id,
