@@ -7,7 +7,7 @@
 // render-free makes the completion email fast and reliable. Failures are swallowed
 // and logged — signing never blocks on email delivery.
 
-import { sendEmail } from "@/lib/mailgun";
+import { sendEmail, mailgunConfigured } from "@/lib/mailgun";
 import type { StoredContract } from "@/lib/contract-store";
 import { getTemplate } from "@/lib/templates";
 
@@ -19,6 +19,14 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
       .filter((x): x is string => Boolean(x && x.includes("@"))),
   )];
   if (recipients.length === 0) return;
+
+  // A deployment may intentionally run without email configured. Skip cleanly —
+  // signing already succeeded; the completion email is best-effort. Logged at info
+  // (not error) so an email-less deployment doesn't raise an error on every signature.
+  if (!mailgunConfigured()) {
+    console.info("[notify] mailgun not configured — completion email skipped");
+    return;
+  }
 
   const tpl = getTemplate(c.templateId);
   const tplName = tpl?.name || "電子合約";

@@ -15,6 +15,12 @@ function configured(): { apiKey: string; domain: string; from: string; base: str
   };
 }
 
+/** True when MAILGUN_API_KEY + MAILGUN_DOMAIN are both set. Lets callers skip the
+ *  completion email cleanly (no error log) on deployments running without email. */
+export function mailgunConfigured(): boolean {
+  return configured() !== null;
+}
+
 export type MailgunSendInput = {
   to: string | string[];
   subject: string;
