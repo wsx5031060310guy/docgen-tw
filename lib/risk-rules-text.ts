@@ -62,8 +62,8 @@ export function runTextOnlyRiskCheck(fullText: string): RiskFinding[] {
       level: "yellow",
       title: "未提及簽署 / 簽章方式",
       detail: "合約未明定簽署 / 蓋章方式，可能影響成立要件之認定。",
-      legalBasis: ["民法 §3", "電子簽章法 §4"],
-      suggestion: "明列：本契約一式二份，雙方簽署後各執一份為憑；或約定電子簽章方式（電子簽章法 §4）。",
+      legalBasis: ["民法 §3", "電子簽章法 §5"],
+      suggestion: "明列：本契約一式二份，雙方簽署後各執一份為憑；或約定電子簽章方式（電子簽章法 §5）。",
       referLawyer: false,
     });
   }
