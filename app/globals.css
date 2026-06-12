@@ -230,19 +230,23 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 
 .tt-host { position: relative; }
 .tt {
+  display: none;
   position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
   background: var(--ink); color: var(--bg-elev);
   padding: 8px 10px; border-radius: 6px; font-size: 12px;
   white-space: normal; max-width: 280px; width: max-content;
   box-shadow: var(--shadow-md); pointer-events: none;
-  opacity: 0; transition: opacity .14s ease;
+  opacity: 0; transition: opacity .14s ease, display .14s allow-discrete;
   z-index: 50; font-family: var(--font-sans); line-height: 1.5;
 }
 .tt::after {
   content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
   border: 5px solid transparent; border-top-color: var(--ink);
 }
-.tt-host:hover .tt { opacity: 1; }
+.tt-host:hover .tt { display: block; opacity: 1; }
+@starting-style {
+  .tt-host:hover .tt { opacity: 0; }
+}
 
 .page { animation: fadeIn .3s ease-out; }
 
