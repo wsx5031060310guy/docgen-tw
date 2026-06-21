@@ -16,11 +16,12 @@ export function Footer() {
             <a href="/disclaimer">法律免責 / 律師轉介</a>
             <a href="/cases">案件資料夾</a>
             <a href="/contracts/new">建立合約</a>
-            <a href="mailto:hello@docgen.tw">聯絡我們</a>
+            <a href={`mailto:${COMPANY.email}`}>聯絡我們</a>
           </div>
         </div>
         <div style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.6 }}>
-          {COMPANY.name}｜統一編號 {COMPANY.taxId}｜{COMPANY.address}｜{COMPANY.email}｜{COMPANY.phone}
+          {COMPANY.name}｜統一編號 {COMPANY.taxId}｜{COMPANY.address}｜
+          <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>｜{COMPANY.phone}
         </div>
         <div style={{ fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
           DocGen TW 為文件自動化與風險提示服務，<b>不取代執業律師意見</b>。涉及訴訟、重大金額或客製條款者，請洽
