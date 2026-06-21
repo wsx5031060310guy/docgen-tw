@@ -21,7 +21,7 @@ export function Footer() {
         </div>
         <div style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.6 }}>
           {COMPANY.name}｜統一編號 {COMPANY.taxId}｜{COMPANY.address}｜
-          <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>｜{COMPANY.phone}
+          <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
         </div>
         <div style={{ fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
           DocGen TW 為文件自動化與風險提示服務，<b>不取代執業律師意見</b>。涉及訴訟、重大金額或客製條款者，請洽

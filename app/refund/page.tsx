@@ -115,7 +115,7 @@ export default function RefundPage() {
           <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
             最後更新：2026 年 6 月。
             <br />
-            營運者：{COMPANY.name}｜客服 Email：{COMPANY.email}｜電話：{COMPANY.phone}
+            營運者：{COMPANY.name}｜客服 Email：{COMPANY.email}
           </div>
         </section>
 

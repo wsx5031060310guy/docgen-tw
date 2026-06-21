@@ -156,7 +156,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
       <p>
         營運者：{COMPANY.name}｜統一編號：{COMPANY.taxId}｜地址：{COMPANY.address}
         <br />
-        客服 Email：{COMPANY.email}｜電話：{COMPANY.phone}｜LINE：{COMPANY.lineId}
+        客服 Email：{COMPANY.email}｜LINE：{COMPANY.lineId}
       </p>
     ),
   },

@@ -149,7 +149,7 @@ export default function PrivacyPage() {
           <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
             最後更新：2026 年 6 月。
             <br />
-            聯絡方式：{COMPANY.name}｜{COMPANY.email}｜{COMPANY.phone}｜{COMPANY.address}
+            聯絡方式：{COMPANY.name}｜{COMPANY.email}｜{COMPANY.address}
           </div>
         </section>
 
