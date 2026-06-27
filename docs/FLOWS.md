@@ -3,13 +3,13 @@
 ## 1) 建立合約與寄出簽署連結
 ```mermaid
 flowchart TD
-  U[使用者] -->|編輯欄位、輸入簽名| PageNew[/contracts/new]
-  PageNew -->|POST /api/contracts| ApiContracts[app/api/contracts/route.ts]
-  ApiContracts -->|buildContractDocument| Tmpl[lib/templates.ts]
-  ApiContracts -->|createContract| Store[lib/contract-store.ts]
-  ApiContracts -->|persistSignaturePng| SignSvc[lib/services/signing_service.ts]
-  ApiContracts -->|parseMilestonesFromValues| MS[lib/milestone-parser.ts]
-  ApiContracts -->|incrementUsage / getBillingStatus| Billing[lib/billing.ts]
+  U[使用者] -->|編輯欄位、輸入簽名| PageNew["/contracts/new"]
+  PageNew -->|"POST /api/contracts"| ApiContracts["app/api/contracts/route.ts"]
+  ApiContracts -->|buildContractDocument| Tmpl["lib/templates.ts"]
+  ApiContracts -->|createContract| Store["lib/contract-store.ts"]
+  ApiContracts -->|persistSignaturePng| SignSvc["lib/services/signing_service.ts"]
+  ApiContracts -->|parseMilestonesFromValues| MS["lib/milestone-parser.ts"]
+  ApiContracts -->|"incrementUsage / getBillingStatus"| Billing["lib/billing.ts"]
   ApiContracts -->|回傳 signingToken + recipientSignUrl| PageNew
 ```
 
@@ -39,13 +39,13 @@ sequenceDiagram
 ## 3) 合約風險檢查流程
 ```mermaid
 flowchart TD
-  U[使用者] -->|貼上條文| CheckPage[/check]
-  CheckPage -->|POST /api/check-text| CheckText[app/api/check-text/route.ts]
-  CheckText -->|runTextOnlyRiskCheck| RuleCheck[lib/risk-rules-text.ts]
-  CheckText -->|runLlmRiskCheck| LlmCheck[lib/llm-risk.ts]
-  CheckText -->|summarizeRisk| Summarize[lib/risk-rules-text.ts]
-  CheckText -->|需要 shareId| DB[(PostgreSQL<br/>sharedCheck)]
-  CheckText-->>CheckPage: summary + findings + shareId
+  U[使用者] -->|貼上條文| CheckPage["/check"]
+  CheckPage -->|"POST /api/check-text"| CheckText["app/api/check-text/route.ts"]
+  CheckText -->|runTextOnlyRiskCheck| RuleCheck["lib/risk-rules-text.ts"]
+  CheckText -->|runLlmRiskCheck| LlmCheck["lib/llm-risk.ts"]
+  CheckText -->|summarizeRisk| Summarize["lib/risk-rules-text.ts"]
+  CheckText -->|需要 shareId| DB[("PostgreSQL<br/>sharedCheck")]
+  CheckText -->|summary + findings + shareId| CheckPage
 ```
 
 `/check` 會做規則式掃描並可選啟用 LLM 強化。`/api/check-text` 具備 IP Rate Limit，超過上限會回傳 429。
@@ -53,15 +53,15 @@ flowchart TD
 ## 4) 付款啟動到訂閱啟用
 ```mermaid
 flowchart TD
-  U[/checkout/] -->|POST /api/payment/newebpay/checkout| Checkout[/api/payment/newebpay/checkout]
-  Checkout -->|buildCheckoutPayload| NPay[lib/payment/newebpay.ts]
+  U["/checkout/"] -->|"POST /api/payment/newebpay/checkout"| Checkout["/api/payment/newebpay/checkout"]
+  Checkout -->|buildCheckoutPayload| NPay["lib/payment/newebpay.ts"]
   Checkout -->|寫入 Order| DB[(Order)]
   NPay -->|回傳 gateway params| Gateway[NewebPay]
-  Gateway -->|POST /api/payment/newebpay/return| Return[app/api/payment/newebpay/return]
-  Gateway -->|POST /api/payment/newebpay/notify| Notify[app/api/payment/newebpay/notify]
-  Notify -->|activatePro| Billing[lib/billing.ts]
+  Gateway -->|"POST /api/payment/newebpay/return"| Return["app/api/payment/newebpay/return"]
+  Gateway -->|"POST /api/payment/newebpay/notify"| Notify["app/api/payment/newebpay/notify"]
+  Notify -->|activatePro| Billing["lib/billing.ts"]
   Notify -->|回傳 0| Gateway
-  Return -->|導回| PaymentSuccess[/payment/success]
+  Return -->|導回| PaymentSuccess["/payment/success"]
 ```
 
 `/checkout` 建立 `Order` 後導向藍新付款。實際付款狀態以伺服器 `notify` 為準，成功時透過 `activatePro` 更新 `BillingProfile`。
