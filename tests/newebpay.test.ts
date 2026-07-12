@@ -1,5 +1,47 @@
-import { describe, expect, it } from "vitest";
-import { computeTradeSha, encodeTradeInfo, decodeTradeInfo } from "@/lib/payment/newebpay";
+import { createHash } from "node:crypto";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { computeTradeSha, decodeTradeInfo, encodeTradeInfo, getNewebpayConfig } from "@/lib/payment/newebpay";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe("NewebPay API base", () => {
+  it("falls back to ccore outside production", () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("NEWEBPAY_API_BASE", "");
+
+    expect(getNewebpayConfig().apiBase).toBe("https://ccore.newebpay.com");
+  });
+
+  it("rejects non-whitelisted gateways outside production", () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("NEWEBPAY_API_BASE", "https://example.com");
+
+    expect(() => getNewebpayConfig()).toThrow("只允許");
+  });
+
+  it.each([
+    ["missing API base", "", "development"],
+    ["ccore API base", "https://ccore.newebpay.com", "development"],
+  ])("rejects %s when VERCEL_ENV is production", (_name, apiBase, nodeEnv) => {
+    vi.stubEnv("NODE_ENV", nodeEnv);
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("NEWEBPAY_API_BASE", apiBase);
+
+    expect(() => getNewebpayConfig()).toThrow(
+      "Production 必須明確設定 NEWEBPAY_API_BASE=https://core.newebpay.com",
+    );
+  });
+
+  it("accepts explicit core gateway in production", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("NEWEBPAY_API_BASE", "https://core.newebpay.com");
+
+    expect(getNewebpayConfig().apiBase).toBe("https://core.newebpay.com");
+  });
+});
 
 // Locks the NewebPay MPG SHA256 formula:
 //   SHA256("HashKey={KEY}&{tradeInfoHex}&HashIV={IV}").toUpperCase()
@@ -15,7 +57,6 @@ describe("NewebPay TradeSha", () => {
     const got = computeTradeSha(hex, HASH_KEY, HASH_IV);
 
     // Independently compute expected with the canonical formula.
-    const { createHash } = require("node:crypto");
     const expected = createHash("sha256")
       .update(`HashKey=${HASH_KEY}&${hex}&HashIV=${HASH_IV}`)
       .digest("hex")
@@ -28,7 +69,6 @@ describe("NewebPay TradeSha", () => {
     const hex = "abcdef0123456789";
     const got = computeTradeSha(hex, HASH_KEY, HASH_IV);
 
-    const { createHash } = require("node:crypto");
     const wrong = createHash("sha256")
       .update(`HashKey=${HASH_KEY}&TradeInfo=${hex}&HashIV=${HASH_IV}`)
       .digest("hex")
