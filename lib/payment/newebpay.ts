@@ -7,6 +7,27 @@ export type NewebpayConfig = {
   apiBase: string;
 };
 
+const NEWEBPAY_PROD_API_BASE = "https://core.newebpay.com";
+const NEWEBPAY_TEST_API_BASE = "https://ccore.newebpay.com";
+
+function resolveApiBase(): string {
+  const explicit = process.env.NEWEBPAY_API_BASE?.trim();
+  const apiBase = explicit?.replace(/\/$/, "");
+  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+
+  if (isProduction && apiBase !== NEWEBPAY_PROD_API_BASE) {
+    throw new Error(
+      "Production 必須明確設定 NEWEBPAY_API_BASE=https://core.newebpay.com（藍新正式閘道）",
+    );
+  }
+
+  if (!apiBase) return NEWEBPAY_TEST_API_BASE;
+  if (apiBase !== NEWEBPAY_PROD_API_BASE && apiBase !== NEWEBPAY_TEST_API_BASE) {
+    throw new Error("NEWEBPAY_API_BASE 無效：只允許 https://core.newebpay.com 或 https://ccore.newebpay.com");
+  }
+  return apiBase;
+}
+
 export function getNewebpayConfig(): NewebpayConfig {
   // .trim() defensively — pasting from the NewebPay merchant console often
   // brings along an invisible trailing whitespace that makes AES + SHA fail.
@@ -14,7 +35,7 @@ export function getNewebpayConfig(): NewebpayConfig {
     merchantId: (process.env.NEWEBPAY_MERCHANT_ID || "").trim(),
     hashKey: (process.env.NEWEBPAY_HASH_KEY || "").trim(),
     hashIv: (process.env.NEWEBPAY_HASH_IV || "").trim(),
-    apiBase: (process.env.NEWEBPAY_API_BASE || "https://ccore.newebpay.com").trim(),
+    apiBase: resolveApiBase(),
   };
 }
 
