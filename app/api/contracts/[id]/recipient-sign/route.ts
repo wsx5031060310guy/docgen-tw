@@ -4,6 +4,7 @@ import { recordRecipientSignature } from "@/lib/contract-store";
 import { notifyFullySigned } from "@/lib/notify";
 import { fireUserWebhook } from "@/lib/webhooks";
 import { prisma } from "@/lib/prisma";
+import { isValidEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -12,6 +13,7 @@ interface SignPayload {
   token: string;
   signature: string; // base64 PNG data URL
   recipientName?: string;
+  recipientEmail?: string;
 }
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -28,6 +30,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "缺少 token 或簽名" }, { status: 400 });
   }
 
+  let recipientEmail: string | undefined;
+  if (body.recipientEmail !== undefined) {
+    if (typeof body.recipientEmail !== "string") {
+      return NextResponse.json({ error: "電子郵件格式不正確" }, { status: 400 });
+    }
+    recipientEmail = body.recipientEmail.trim();
+    if (!isValidEmail(recipientEmail)) {
+      return NextResponse.json({ error: "電子郵件格式不正確" }, { status: 400 });
+    }
+  }
+
   const sig = await persistSignaturePng(`${id}_recipient`, body.signature);
 
   const result = await recordRecipientSignature({
@@ -37,6 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     recipientSignatureHash: sig.sha256,
     recipientIp: req.headers.get("x-forwarded-for") ?? "unknown",
     recipientName: body.recipientName,
+    recipientEmail,
   });
 
   if ("error" in result) {

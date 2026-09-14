@@ -160,6 +160,7 @@ export async function recordRecipientSignature(input: {
   recipientSignatureHash: string;
   recipientIp: string;
   recipientName?: string | null;
+  recipientEmail?: string | null;
 }): Promise<StoredContract | { error: string }> {
   const c = await findContractByToken(input.id, input.token);
   if (!c) return { error: "簽署連結無效或已過期" };
@@ -174,6 +175,7 @@ export async function recordRecipientSignature(input: {
         recipientSignedAt: new Date(),
         recipientIp: input.recipientIp,
         recipientName: input.recipientName ?? c.recipientName,
+        recipientEmail: input.recipientEmail ?? c.recipientEmail,
         signingStatus: "FULLY_SIGNED",
       },
     });
@@ -185,6 +187,7 @@ export async function recordRecipientSignature(input: {
   c.recipientSignedAt = new Date();
   c.recipientIp = input.recipientIp;
   if (input.recipientName) c.recipientName = input.recipientName;
+  if (input.recipientEmail) c.recipientEmail = input.recipientEmail;
   c.signingStatus = "FULLY_SIGNED";
   c.updatedAt = new Date();
   return c;
