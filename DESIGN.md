@@ -12,6 +12,24 @@
 - 圓角：6／8／12／16px；卡片預設 `--radius-lg`。
 - 陰影：卡片使用 Level-1 `--shadow-sm`；浮層才提高層級。
 
+## 全站 UI 契約
+
+- UI 字級採 opt-in 命名 class：頁標 `--text-title` 28/1.3、區標 `--text-section` 20/1.4、小標 `--text-subsection` 16/1.5，皆 weight 600；正文 `--text-body` 16/1.6、次要 `--text-secondary` 14/1.6、helper/chip `--text-helper` 12/1.5。價格展示僅用 `.dg-price` 32px。
+- UI 文字（含 placeholder、helper、metadata、未啟用 stepper）使用 `--ink` 或 `--ink-soft`。`--ink-muted` 僅供裝飾、分隔線與真正 disabled 狀態，不作一般文字色。
+- 布局間距採 `--space-1/2/3/4/5/6/8`（8/16/24/32/40/48/64px）。4px 僅圖文微距及 chip 4×8；1px hairline、44px 觸控目標不屬間距階。已驗收簽署流程 20px gap 暫留，待該頁專批處理。
+- `.dg-page-shell` 為 1180px border-box 版心，桌機水平 padding 24px、手機 16px；`.dg-page-shell--reading` 880px、`.dg-page-shell--form` 760px。頁首、section、stack、toolbar 使用對應 `.dg-*` 命名 class，避免巢狀版心重複 padding。
+- `.card` 固定 1px `--line`、12px、Level-1；hover 不浮高、不位移。內容 padding 24px，compact 16px。selected/featured 使用 1px 語意邊框，不改盒模型。
+- `.btn` 最小 44px，`.btn-lg` 最小 48px；導頁使用 Link/a，操作使用 button。disabled 與 `aria-disabled=true` 不啟動，pending 同時提供文字與 `aria-busy`。
+- input/select/textarea 最小 44px、16px 字；visible label 對唯一 id，helper/error 由 `aria-describedby` 關聯，error 同時設 `aria-invalid`。一般 helper 使用 `--ink-soft`。
+- `.dg-state` 支援 loading/empty/error/success；一般更新用 polite status，需處理錯誤用 alert。`.dg-notice--*` 以文字與語意色雙重表達，不只靠顏色。
+- focus 使用 `:focus-visible` 清楚外框；互動目標至少 44px。`prefers-reduced-motion` 關閉非必要動畫。
+
+## 相容與例外
+
+- 舊 `.container`、heading、button、card、field class 保留；新頁逐批 opt-in，不全站硬改。
+- `ContractPreview` 是文件表面：使用 `.dg-document-*` 與契約字體，不套 UI 字級；紙紋、章節編號、長標題 24px/短標題 30px、scale、簽名圖尺寸與座標保留。
+- 簽署頁沿用 20px 已驗收 gap、59px `SignTopBar`、桌機 `top: 88px` / `max-height: calc(100vh - 104px)`、手機文件 60vh 與頁底 96px。不得以全域間距替換破壞基準。
+
 ## 乙方簽署頁
 
 - 內容最大寬 1180px、外距 24px、8px 間距階。

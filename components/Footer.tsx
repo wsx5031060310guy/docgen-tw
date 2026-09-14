@@ -1,31 +1,32 @@
 import { COMPANY } from "@/lib/company";
+import Link from "next/link";
 
 export function Footer() {
   return (
-    <footer style={{ borderTop: "1px solid var(--line)", padding: "32px 0", marginTop: 24 }}>
-      <div className="container" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div className="row" style={{ justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-          <div className="row gap-3" style={{ color: "var(--ink-muted)", fontSize: 13 }}>
-            <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--ink)" }}>DocGen TW</span>
+    <footer className="dg-footer">
+      <div className="dg-page-shell dg-footer-inner">
+        <div className="dg-footer-row">
+          <div className="dg-footer-brand">
+            <span className="dg-footer-wordmark">DocGen TW</span>
             <span>© 2026</span>
           </div>
-          <div className="row gap-4" style={{ fontSize: 13, color: "var(--ink-muted)", flexWrap: "wrap" }}>
-            <a href="/terms">服務條款</a>
-            <a href="/privacy">隱私權政策</a>
-            <a href="/refund">退款政策</a>
-            <a href="/disclaimer">法律免責 / 律師轉介</a>
-            <a href="/cases">案件資料夾</a>
-            <a href="/contracts/new">建立合約</a>
+          <nav className="dg-footer-links" aria-label="頁尾導覽">
+            <Link href="/terms">服務條款</Link>
+            <Link href="/privacy">隱私權政策</Link>
+            <Link href="/refund">退款政策</Link>
+            <Link href="/disclaimer">法律免責 / 律師轉介</Link>
+            <Link href="/cases">案件資料夾</Link>
+            <Link href="/contracts/new">建立合約</Link>
             <a href={`mailto:${COMPANY.email}`}>聯絡我們</a>
-          </div>
+          </nav>
         </div>
-        <div style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.6 }}>
+        <div className="dg-footer-meta">
           {COMPANY.name}｜統一編號 {COMPANY.taxId}｜{COMPANY.address}｜
           <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
         </div>
-        <div style={{ fontSize: 11.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
+        <div className="dg-footer-disclaimer">
           DocGen TW 為文件自動化與風險提示服務，<b>不取代執業律師意見</b>。涉及訴訟、重大金額或客製條款者，請洽
-          <a href="/disclaimer" style={{ textDecoration: "underline", marginLeft: 4 }}>合作律師</a>。
+          <Link href="/disclaimer" className="dg-footer-inline-link">合作律師</Link>。
         </div>
       </div>
     </footer>

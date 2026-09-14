@@ -1,6 +1,5 @@
 "use client";
 import { usePathname, useRouter } from "next/navigation";
-import { Icon } from "./Icon";
 import { LOCALES, type Locale } from "@/lib/i18n/dict";
 import { pathForLocale, LOCALE_COOKIE } from "@/lib/i18n/locale-shared";
 
@@ -13,25 +12,22 @@ export function LocaleSwitcher({ current }: { current: Locale }) {
   function switchTo(loc: Locale) {
     if (loc === current) return;
     // Persist preference, then navigate.
+    // eslint-disable-next-line react-hooks/immutability -- document.cookie is the supported compatibility path here.
     document.cookie = `${LOCALE_COOKIE}=${loc}; path=/; max-age=${60 * 60 * 24 * 365 * 2}; SameSite=Lax`;
     router.push(pathForLocale(loc, pathname));
   }
 
   return (
-    <div className="row gap-1" style={{ alignItems: "center", fontSize: 12 }}>
-      <Icon name="info" size={11} style={{ color: "var(--ink-muted)" }} />
+    <div className="dg-locale-switch" role="group" aria-label={current === "en" ? "Language" : "語言"}>
       {LOCALES.map((l, i) => (
-        <span key={l} style={{ display: "inline-flex", alignItems: "center" }}>
-          {i > 0 && <span style={{ color: "var(--ink-muted)", margin: "0 4px" }}>·</span>}
+        <span key={l} className="dg-locale-option">
+          {i > 0 && <span className="dg-locale-divider" aria-hidden="true">·</span>}
           <button
             type="button"
+            className="dg-locale-button"
             onClick={() => switchTo(l)}
-            style={{
-              background: "none", border: "none", padding: 0, cursor: "pointer",
-              color: l === current ? "var(--primary)" : "var(--ink-muted)",
-              fontWeight: l === current ? 600 : 400,
-              fontFamily: "inherit", fontSize: 12,
-            }}
+            aria-pressed={l === current}
+            aria-label={l === "zh-Hant" ? "繁體中文" : "English"}
           >
             {LABELS[l]}
           </button>

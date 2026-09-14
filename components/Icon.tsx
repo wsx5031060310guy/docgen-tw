@@ -62,19 +62,24 @@ export function Icon({
   stroke = 1.75,
   className = "",
   style,
+  label,
 }: {
   name: string;
   size?: number;
   stroke?: number;
   className?: string;
   style?: React.CSSProperties;
+  label?: string;
 }) {
   const d = ICONS[name];
-  if (!d) return <span className={`ic ${className}`} style={{ width: size, height: size, ...style }} />;
+  const accessibility = label
+    ? { role: "img", "aria-label": label }
+    : { "aria-hidden": true as const };
+  if (!d) return <span className={`ic ${className}`} style={{ width: size, height: size, ...style }} {...accessibility} />;
   const segs = d.split(/\s(?=[Mm])/);
   return (
-    <span className={`ic ${className}`} style={{ width: size, height: size, ...style }}>
-      <svg viewBox="0 0 24 24" strokeWidth={stroke}>
+    <span className={`ic ${className}`} style={{ width: size, height: size, ...style }} {...accessibility}>
+      <svg viewBox="0 0 24 24" strokeWidth={stroke} focusable="false" aria-hidden="true">
         {segs.map((s, i) => (
           <path key={i} d={s} />
         ))}
