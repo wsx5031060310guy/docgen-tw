@@ -18,6 +18,7 @@ interface ContractData {
   values: Record<string, string>;
   senderSignatureUrl?: string | null;
   recipientSignatureUrl?: string | null;
+  recipientSignedAt?: string | null;
   fullySigned?: boolean;
 }
 
@@ -33,6 +34,7 @@ function SignInner({ id }: { id: string }) {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [signedAt, setSignedAt] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,7 +46,10 @@ function SignInner({ id }: { id: string }) {
         setData(j as ContractData);
         if (j.recipientName) setName(j.recipientName);
         if (j.recipientEmail) setEmail(j.recipientEmail);
-        if (j.fullySigned) setSigned(true);
+        if (j.fullySigned) {
+          setSignedAt(j.recipientSignedAt ?? null);
+          setSigned(true);
+        }
       })
       .catch((e) => setLoadErr((e as Error).message));
   }, [id, token]);
@@ -102,6 +107,7 @@ function SignInner({ id }: { id: string }) {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "簽署失敗");
+      setSignedAt(json.recipientSignedAt ?? null);
       setSigned(true);
     } catch (e) {
       setErr((e as Error).message);
@@ -111,6 +117,17 @@ function SignInner({ id }: { id: string }) {
   }
 
   if (signed) {
+    const signedAtDisplay = signedAt
+      ? new Date(signedAt).toLocaleString("zh-TW", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }).replaceAll("/", "-")
+      : "—";
+
     return (
       <div className="page" style={{ minHeight: "calc(100vh - 60px)", display: "grid", placeItems: "center", padding: 40, background: "var(--green-50)" }}>
         <div className="card fade-in" style={{ padding: 48, textAlign: "center", maxWidth: 520 }}>
@@ -121,10 +138,16 @@ function SignInner({ id }: { id: string }) {
             <Icon name="check" size={32} stroke={3} />
           </div>
           <h2>合約已雙方簽署完成</h2>
-          <p style={{ color: "var(--ink-soft)", marginTop: 8 }}>系統已將正式版本寄送至雙方信箱。</p>
+          <p style={{ color: "var(--ink-soft)", marginTop: 8 }}>正式版 PDF 已附在完成通知信寄到雙方信箱；也可在此下載，或日後再開這個連結下載。</p>
           <div className="row gap-3" style={{ justifyContent: "center", marginTop: 24 }}>
-            <a className="btn btn-stamp btn-lg" href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`} target="_blank" rel="noopener noreferrer">
-              <Icon name="download" size={14} />下載 PDF
+            <div>
+              <a className="btn btn-stamp btn-lg" href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`} download={`docgen-${id}.pdf`}>
+                <Icon name="download" size={14} />下載 PDF
+              </a>
+              <div style={{ marginTop: 6, fontSize: 12, color: "var(--ink-muted)" }}>產生 PDF 約需數秒</div>
+            </div>
+            <a className="btn btn-ghost" href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`} target="_blank" rel="noopener noreferrer">
+              在瀏覽器開啟
             </a>
             <button className="btn btn-ghost" onClick={() => router.push("/")}>回首頁</button>
           </div>
@@ -133,7 +156,7 @@ function SignInner({ id }: { id: string }) {
             fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-muted)", textAlign: "left",
           }}>
             <div>合約編號 #{id}</div>
-            <div>簽署時間 {new Date().toISOString().slice(0, 19).replace("T", " ")}</div>
+            <div>簽署時間 {signedAtDisplay}</div>
           </div>
         </div>
       </div>
@@ -184,6 +207,12 @@ function SignInner({ id }: { id: string }) {
             <div className="row gap-2" style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>
               <Icon name="fileText" size={13} />合約預覽 · {clauseCount} 條 · {lawCount} 法令依據
             </div>
+            <a className="btn btn-ghost btn-sm" href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`} target="_blank" rel="noopener noreferrer">
+              <Icon name="download" size={13} />下載草稿 PDF
+            </a>
+          </div>
+          <div style={{ padding: "8px 16px", fontSize: 12, color: "var(--ink-muted)", background: "var(--bg-elev)" }}>
+            草稿版帶 DRAFT 浮水印；簽署後可下載正式版，並會寄到你填寫的信箱
           </div>
           <div style={{ maxHeight: 540, overflowY: "auto", background: "#f1eadb" }}>
             <ContractPreview template={tpl} values={data.values} sigA={sigA} sigB={sigB} stamp={false} scale={0.85} />
