@@ -97,6 +97,7 @@ export function SignaturePad({
         </button>
       </div>
       <div
+        className="signature-pad-surface"
         ref={wrapRef}
         style={{
           position: "relative",
@@ -108,6 +109,7 @@ export function SignaturePad({
       >
         {empty && (
           <div
+            className="signature-pad-placeholder"
             style={{
               position: "absolute", inset: 0, display: "grid", placeItems: "center",
               color: dark ? "#3f4660" : "#cbd5e1",
@@ -120,6 +122,8 @@ export function SignaturePad({
         )}
         <canvas
           ref={canvasRef}
+          tabIndex={0}
+          aria-label={`${label}區，請使用滑鼠或觸控簽名`}
           style={{ display: "block", touchAction: "none", cursor: "crosshair" }}
           onMouseDown={down}
           onMouseMove={move}

@@ -85,11 +85,21 @@ function LegalNotice() {
   );
 }
 
-function SignInner({ id }: { id: string }) {
+function SignInner({
+  id,
+  readProgress,
+  onReadProgress,
+}: {
+  id: string;
+  readProgress: number;
+  onReadProgress: (progress: number) => void;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") || "";
   const signatureRef = useRef<HTMLDivElement>(null);
+  const documentRef = useRef<HTMLElement>(null);
+  const documentBodyRef = useRef<HTMLDivElement>(null);
 
   const [data, setData] = useState<ContractData | null>(null);
   const [loadErr, setLoadErr] = useState<string | null>(null);
@@ -120,6 +130,55 @@ function SignInner({ id }: { id: string }) {
       })
       .catch((e) => setLoadErr((e as Error).message));
   }, [id, token]);
+
+  useEffect(() => {
+    if (signed) {
+      onReadProgress(1);
+      return;
+    }
+
+    const documentElement = documentRef.current;
+    const documentBody = documentBodyRef.current;
+    if (!data || !documentElement || !documentBody) return;
+
+    const mobileQuery = window.matchMedia("(max-width: 959px)");
+    let animationFrame = 0;
+    let lastProgress = -1;
+
+    const updateProgress = () => {
+      animationFrame = 0;
+      const useInternalScroll = mobileQuery.matches && !documentExpanded;
+      const documentBottom = documentElement.getBoundingClientRect().bottom + window.scrollY;
+      const scrollRange = useInternalScroll
+        ? documentBody.scrollHeight - documentBody.clientHeight
+        : documentBottom - window.innerHeight;
+      const scrollPosition = useInternalScroll ? documentBody.scrollTop : window.scrollY;
+      const nextProgress = scrollRange <= 0
+        ? 1
+        : Math.min(1, Math.max(0, scrollPosition / scrollRange));
+
+      if (Math.abs(nextProgress - lastProgress) >= 0.001) {
+        lastProgress = nextProgress;
+        onReadProgress(nextProgress);
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (!animationFrame) animationFrame = window.requestAnimationFrame(updateProgress);
+    };
+
+    updateProgress();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    documentBody.addEventListener("scroll", scheduleUpdate, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      documentBody.removeEventListener("scroll", scheduleUpdate);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    };
+  }, [data, documentExpanded, onReadProgress, signed]);
 
   if (!token) {
     return (
@@ -153,16 +212,19 @@ function SignInner({ id }: { id: string }) {
   const hasRecipientEmail = Boolean(data.recipientEmail);
   const nameInvalid = Boolean(err && (err.includes("姓名") || err.includes("公司")));
   const emailInvalid = Boolean(err?.includes("電子郵件"));
-  const currentStep = sigB
+  const formStep = sigB
     ? 2
     : name.trim() && (hasRecipientEmail || isValidEmail(email))
       ? 1
       : 0;
+  const readDone = readProgress >= 0.9;
+  const currentStep = readDone ? Math.max(formStep, 1) : formStep;
 
   async function submit() {
     if (!sigB) {
       setErr("請先在簽名板簽名");
-      signatureRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      signatureRef.current?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
       return;
     }
 
@@ -236,8 +298,8 @@ function SignInner({ id }: { id: string }) {
     return (
       <main className="dg-sign-success-page">
         <div className="card fade-in dg-sign-success-card">
-          <div className="pulse-ring dg-sign-success-icon">
-            <Icon name="check" size={32} stroke={3} />
+          <div className="dg-sign-success-icon" aria-hidden="true">
+            <span>簽署<br />完成</span>
           </div>
           <h2>合約已雙方簽署完成</h2>
           <p className="dg-sign-success-copy">
@@ -301,7 +363,7 @@ function SignInner({ id }: { id: string }) {
         </section>
 
         <div className="dg-sign-layout">
-          <section className="card dg-sign-document-card" aria-label="合約預覽">
+          <section ref={documentRef} className="card dg-sign-document-card" aria-label="合約預覽">
             <header className="dg-sign-document-header">
               <div className="dg-sign-document-label">
                 <Icon name="fileText" size={13} />
@@ -326,12 +388,13 @@ function SignInner({ id }: { id: string }) {
                 </button>
               </div>
             </header>
-            <div className={`dg-sign-document-body ${documentExpanded ? "dg-sign-document-body-expanded" : ""}`}>
+            <div ref={documentBodyRef} className={`dg-sign-document-body ${documentExpanded ? "dg-sign-document-body-expanded" : ""}`}>
               <ContractPreview
                 template={tpl}
                 values={data.values}
                 sigA={sigA}
                 sigB={sigB}
+                draft={!signed}
                 stamp={false}
                 scale={1}
               />
@@ -403,19 +466,21 @@ function SignInner({ id }: { id: string }) {
                 </div>
               )}
 
-              <button
-                type="button"
-                className="btn btn-stamp btn-lg dg-sign-submit dg-sign-desktop-submit"
-                disabled={!sigB || submitting}
-                aria-disabled={!sigB || submitting}
-                onClick={submit}
-              >
-                <Icon name="fileSig" size={15} />
-                {signatureButtonLabel}
-              </button>
-              <p className="dg-sign-after-note">
-                {signatureSubmitNote}
-              </p>
+              <div className="dg-sign-cta-section dg-sign-desktop-submit">
+                <button
+                  type="button"
+                  className="btn btn-stamp btn-lg dg-sign-submit"
+                  disabled={!sigB || submitting}
+                  aria-disabled={!sigB || submitting}
+                  onClick={submit}
+                >
+                  <Icon name="fileSig" size={15} />
+                  {signatureButtonLabel}
+                </button>
+                <p className="dg-sign-after-note">
+                  {signatureSubmitNote}
+                </p>
+              </div>
             </section>
           </aside>
         </div>
@@ -423,12 +488,14 @@ function SignInner({ id }: { id: string }) {
 
       <div className="dg-sign-mobile-submit-bar">
         <div className="dg-sign-mobile-submit-inner">
-          <p>{signatureSubmitNote}</p>
+          <p className={`dg-sign-mobile-status ${sigB ? "is-signed" : "is-pending"}`}>
+            {signatureSubmitNote}
+          </p>
           <button
             type="button"
             className="btn btn-stamp btn-lg dg-sign-submit"
-            disabled={submitting}
-            aria-disabled={submitting}
+            disabled={!sigB || submitting}
+            aria-disabled={!sigB || submitting}
             onClick={submit}
           >
             <Icon name="fileSig" size={15} />
@@ -442,11 +509,12 @@ function SignInner({ id }: { id: string }) {
 
 export default function SignPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const [readProgress, setReadProgress] = useState(0);
   return (
     <>
-      <SignTopBar />
+      <SignTopBar progress={readProgress} />
       <Suspense fallback={<SignSkeleton />}>
-        <SignInner id={id} />
+        <SignInner id={id} readProgress={readProgress} onReadProgress={setReadProgress} />
       </Suspense>
     </>
   );
