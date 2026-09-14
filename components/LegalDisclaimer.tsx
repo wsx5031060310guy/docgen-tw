@@ -1,20 +1,23 @@
 "use client";
 import { Icon } from "./Icon";
+import { DEFAULT_LOCALE, t, type Locale } from "@/lib/i18n/dict";
 
 type HeadingLevel = 2 | 3 | 4;
 
 export function LegalDisclaimer({
   compact,
   headingLevel,
+  locale = DEFAULT_LOCALE,
 }: {
   compact?: boolean;
   headingLevel?: HeadingLevel;
+  locale?: Locale;
 }) {
   if (compact)
     return (
       <div className="dg-legal-disclaimer dg-legal-disclaimer--compact">
         <Icon name="alert" size={12} />
-        <span>本平台產出之合約僅供一般用途參考，重大或複雜爭議請諮詢執業律師。</span>
+        <span>{t(locale, "legal.compact")}</span>
       </div>
     );
   const HeadingTag = headingLevel ? (`h${headingLevel}` as "h2" | "h3" | "h4") : null;
@@ -23,16 +26,17 @@ export function LegalDisclaimer({
       <Icon name="fileWarn" size={18} />
       <div className="dg-legal-disclaimer__content">
         {HeadingTag ? (
-          <HeadingTag className="dg-legal-disclaimer__title">法律免責聲明</HeadingTag>
+          <HeadingTag className="dg-legal-disclaimer__title">{t(locale, "legal.title")}</HeadingTag>
         ) : (
-          <strong className="dg-legal-disclaimer__title dg-legal-disclaimer__title--inline">法律免責聲明</strong>
+          <strong className="dg-legal-disclaimer__title dg-legal-disclaimer__title--inline">{t(locale, "legal.title")}</strong>
         )}
         <p className={HeadingTag ? "dg-legal-disclaimer__copy" : "dg-legal-disclaimer__copy dg-legal-disclaimer__copy--inline"}>
-          {!HeadingTag && "　"}DocGen TW 提供
-          <b>文件自動化與風險提示</b>，並非執業律師、不取代法律意見。本平台輸出之合約模板與風險檢查結果，
-          係依中華民國現行法律一般情形編製，僅供一般參考用途。重大金額、跨境、訴訟或客製條款，
-          建議委請<a href="/disclaimer" className="dg-legal-disclaimer__link">合作律師</a>審閱。
-          因使用本平台所生之爭議，本平台不負法律責任。
+          {!HeadingTag && "　"}{t(locale, "legal.body_prefix")}
+          <b>{t(locale, "legal.service")}</b>{t(locale, "legal.body_middle")}
+          <a href="/disclaimer#referral" className="dg-legal-disclaimer__link">
+            {t(locale, "legal.lawyer_link")}
+          </a>
+          {t(locale, "legal.body_end")}
         </p>
       </div>
     </div>

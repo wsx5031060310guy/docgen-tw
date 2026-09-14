@@ -1545,3 +1545,9 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-referral-grid { grid-template-columns: 1fr; }
   .dg-referral-submit { width: 100%; }
 }
+
+/* English marketing and explainer routes reuse the shared page contracts. */
+.dg-hero-grid--single { grid-template-columns: minmax(0, 760px); justify-content: start; }
+.dg-en-home-template-note { max-width: 760px; }
+.dg-en-template-language-note { color: var(--state-info-ink); font-size: var(--text-secondary); overflow-wrap: anywhere; }
+.dg-en-referral-meta { margin-bottom: var(--space-2); }
