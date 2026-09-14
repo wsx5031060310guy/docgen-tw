@@ -4,6 +4,7 @@ import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
+import { LegalBasisChip } from "@/components/LegalBasisChip";
 import { JsonLd } from "@/components/JsonLd";
 import { TEMPLATES, getTemplate } from "@/lib/templates";
 
@@ -299,16 +300,16 @@ export default async function TemplateLandingPage({ params }: { params: Promise<
       <JsonLd data={serviceLd} />
       <JsonLd data={breadcrumbLd} />
       {faqLd && <JsonLd data={faqLd} />}
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 900 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+      <main className="page paper-bg dg-template-page">
+        <section className="dg-page-shell dg-page-shell--reading dg-template-hero">
+          <div className="dg-eyebrow dg-template-category">
             <Icon name={tpl.icon} size={13} /> {tpl.category}
           </div>
-          <h1 style={{ fontSize: 44, lineHeight: 1.1 }}>{tpl.name}</h1>
-          <p style={{ fontSize: 17, lineHeight: 1.7, color: "var(--ink-soft)", marginTop: 12 }}>
+          <h1 className="dg-page-title">{tpl.name}</h1>
+          <p className="dg-body dg-template-intro">
             {copy?.intent ?? tpl.description}
           </p>
-          <div className="row gap-2" style={{ marginTop: 18, flexWrap: "wrap" }}>
+          <div className="dg-actions dg-template-actions">
             <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary btn-lg">
               <Icon name="sparkles" size={14} />使用本範本
             </Link>
@@ -319,88 +320,85 @@ export default async function TemplateLandingPage({ params }: { params: Promise<
         </section>
 
         {copy && (
-          <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 900 }}>
-            <h2 style={{ fontSize: 24, marginBottom: 12 }}>誰會用到</h2>
-            <ul style={{ fontSize: 15, lineHeight: 1.9, paddingLeft: 22 }}>
+          <section className="dg-page-shell dg-page-shell--reading dg-template-section">
+            <h2 className="dg-section-title">誰會用到</h2>
+            <ul className="dg-body dg-template-list">
               {copy.useCases.map((c) => <li key={c}>{c}</li>)}
             </ul>
           </section>
         )}
 
         {copy && (
-          <section id="legal" className="container" style={{ padding: "12px 32px 24px", maxWidth: 900 }}>
-            <h2 style={{ fontSize: 24, marginBottom: 14 }}>核心條款 · 為什麼這樣寫</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <section className="dg-page-shell dg-page-shell--reading dg-template-section">
+            <h2 className="dg-section-title">核心條款 · 為什麼這樣寫</h2>
+            <div className="dg-template-clause-list">
               {copy.keyClauses.map((c) => (
-                <div key={c.name} className="card" style={{
-                  padding: 16, background: "var(--bg-elev)",
-                  border: "1px solid var(--line)", borderRadius: "var(--radius)",
-                }}>
-                  <div className="row gap-2" style={{ alignItems: "center", marginBottom: 6 }}>
-                    <b style={{ fontSize: 15 }}>{c.name}</b>
+                <article key={c.name} className="card dg-card-compact dg-template-clause">
+                  <div className="dg-template-clause-header">
+                    <h3 className="dg-subsection-title">{c.name}</h3>
                     {c.ref && (
-                      <span className="chip chip-mono" style={{ fontSize: 11 }}>{c.ref}</span>
+                      <LegalBasisChip code={c.ref} size="sm" />
                     )}
                   </div>
-                  <p style={{ fontSize: 14, color: "var(--ink-soft)", lineHeight: 1.7, margin: 0 }}>{c.why}</p>
-                </div>
+                  <p className="dg-text-secondary">{c.why}</p>
+                </article>
               ))}
             </div>
           </section>
         )}
 
         {copy && (
-          <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 900 }}>
-            <h2 style={{ fontSize: 24, marginBottom: 14 }}>常見踩雷</h2>
-            <ul style={{ fontSize: 15, lineHeight: 1.9, paddingLeft: 22 }}>
+          <section className="dg-page-shell dg-page-shell--reading dg-template-section">
+            <h2 className="dg-section-title">常見踩雷</h2>
+            <ul className="dg-body dg-template-list">
               {copy.pitfalls.map((p) => <li key={p}>{p}</li>)}
             </ul>
           </section>
         )}
 
-        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 900 }}>
-          <h2 style={{ fontSize: 24, marginBottom: 12 }}>本範本引用之法令</h2>
-          <div className="row gap-2" style={{ flexWrap: "wrap" }}>
+        <section id="legal" className="dg-page-shell dg-page-shell--reading dg-template-section dg-template-anchor">
+          <h2 className="dg-section-title">本範本引用之法令</h2>
+          <div className="dg-template-legal-list">
             {tpl.legal.map((l) => (
-              <span key={l} className="chip chip-mono" style={{ fontSize: 12, padding: "4px 10px" }}>{l}</span>
+              <LegalBasisChip key={l} code={l} />
             ))}
           </div>
         </section>
 
         {copy && copy.faqs.length > 0 && (
-          <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 900 }}>
-            <h2 style={{ fontSize: 24, marginBottom: 14 }}>常見問題</h2>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <section className="dg-page-shell dg-page-shell--reading dg-template-section">
+            <h2 className="dg-section-title">常見問題</h2>
+            <div className="dg-faq">
               {copy.faqs.map((f) => (
-                <details key={f.q} className="card" style={{
-                  padding: 16, background: "var(--bg-elev)",
-                  border: "1px solid var(--line)", borderRadius: "var(--radius)",
-                }}>
-                  <summary style={{ cursor: "pointer", fontWeight: 600, listStyle: "none" }}>{f.q}</summary>
-                  <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.7, color: "var(--ink-soft)" }}>{f.a}</p>
+                <details key={f.q} className="card dg-faq-item">
+                  <summary className="dg-faq-summary">
+                    <span>{f.q}</span>
+                    <span className="dg-faq-toggle" aria-hidden="true">
+                      <span className="dg-faq-toggle-open">展開</span>
+                      <span className="dg-faq-toggle-close">收合</span>
+                    </span>
+                  </summary>
+                  <p className="dg-text-secondary dg-faq-answer">{f.a}</p>
                 </details>
               ))}
             </div>
           </section>
         )}
 
-        <section className="container" style={{ padding: "24px 32px 24px", maxWidth: 900 }}>
-          <div className="card" style={{
-            padding: 22, background: "var(--bg-elev)", border: "1px solid var(--line)",
-            borderRadius: "var(--radius)", display: "flex", flexDirection: "column", gap: 10,
-          }}>
-            <h3 style={{ fontSize: 20 }}>準備好了嗎？</h3>
-            <p style={{ fontSize: 14, color: "var(--ink-soft)" }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-template-section">
+          <div className="card dg-card-body dg-template-cta">
+            <h2 className="dg-section-title">準備好了嗎？</h2>
+            <p className="dg-text-secondary">
               3 分鐘填表，自動引用法條，雙方電子簽署，留存 IP 與簽名雜湊。
             </p>
-            <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary" style={{ alignSelf: "flex-start" }}>
+            <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary dg-template-cta-action">
               <Icon name="sparkles" size={13} />建立 {tpl.name}
             </Link>
           </div>
         </section>
 
-        <section className="container" style={{ padding: "12px 32px 64px", maxWidth: 900 }}>
-          <LegalDisclaimer />
+        <section className="dg-page-shell dg-page-shell--reading dg-template-disclaimer-section">
+          <LegalDisclaimer headingLevel={2} />
         </section>
 
         <Footer />

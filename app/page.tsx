@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
@@ -7,20 +8,80 @@ import { TrustBar } from "@/components/TrustBar";
 import { TemplateCard } from "@/components/TemplateCard";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { BillingBanner } from "@/components/BillingBanner";
+import { PlanCard, type Plan } from "@/components/PlanCard";
+import { UIState } from "@/components/UIState";
 import { TEMPLATES } from "@/lib/templates";
 
+const HOME_PLANS: { plan: Plan; href: string; featured: boolean }[] = [
+  {
+    plan: {
+      code: "free", name: "Free", price: "0", unit: "月",
+      tag: "", tagline: "適合偶爾接案", cta: "直接開始",
+      features: [
+        "每月 3 份合約",
+        "10 種台灣法律範本",
+        "雙方電子簽署 + PDF",
+        "規則式風險檢查（15 條）",
+        "案件資料夾 + milestone 追蹤",
+      ],
+    },
+    href: "/contracts/new",
+    featured: false,
+  },
+  {
+    plan: {
+      code: "pro", name: "Pro", price: "299", unit: "月",
+      tag: "", tagline: "頻繁使用 + Email 自動提醒", cta: "升級 Pro",
+      features: [
+        "✓ Free 所有功能",
+        "無限合約建立",
+        "AI 風險檢查（Gemini 2.5）",
+        "milestone Email 自動提醒",
+        "Pro Badge + 優先客服",
+      ],
+    },
+    href: "/checkout",
+    featured: true,
+  },
+  {
+    plan: {
+      code: "pack", name: "Pack", price: "499", unit: "3 個月",
+      tag: "", tagline: "三個月集中跑案", cta: "購買 90 日方案",
+      features: [
+        "✓ Pro 所有功能",
+        "90 天無限合約（一次性付款）",
+        "省下 NT$398 (比月繳)",
+        "適合短期專案爆量",
+      ],
+    },
+    href: "/checkout",
+    featured: false,
+  },
+];
+
 export default function Home() {
+  const [templateQuery, setTemplateQuery] = useState("");
+  const normalizedQuery = templateQuery.trim().toLocaleLowerCase("zh-Hant");
+  const filteredTemplates = normalizedQuery
+    ? TEMPLATES.filter((template) => (
+        [template.name, template.category, template.description, ...template.legal]
+          .join(" ")
+          .toLocaleLowerCase("zh-Hant")
+          .includes(normalizedQuery)
+      ))
+    : TEMPLATES;
+
   return (
     <>
       <TopNav />
       <main className="page paper-bg">
-        <section className="container dg-hero-grid">
-          <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-            <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              <span style={{ width: 24, height: 1, background: "var(--ink-muted)" }} />
+        <section className="dg-page-shell dg-hero-grid">
+          <div className="dg-home-hero-copy">
+            <div className="dg-eyebrow dg-home-eyebrow">
+              <span className="dg-home-eyebrow-line" aria-hidden="true" />
               台灣法律合約 · 自動產生 + 電子簽署
             </div>
-            <h1 style={{ fontSize: 60 }}>
+            <h1 className="dg-page-title dg-home-title">
               3 分鐘產出
               <br />
               <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
@@ -30,37 +91,34 @@ export default function Home() {
               <br />
               附完整法條依據。
             </h1>
-            <p style={{ fontSize: 17, lineHeight: 1.65, color: "var(--ink-soft)", maxWidth: 540 }}>
+            <p className="dg-body dg-home-lead">
               從 10 種常用範本開始（含催款通知書、存證信函草稿），逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
               <span style={{ color: "var(--ink)" }}> 比律師快、比範本可信。</span>
             </p>
-            <div style={{ marginTop: 6, marginBottom: -8 }}>
+            <div className="dg-home-billing">
               <BillingBanner compact />
             </div>
-            <div className="row gap-3 dg-hero-cta" style={{ marginTop: 6 }}>
+            <div className="dg-actions dg-hero-cta">
               <Link href="/contracts/new" className="btn btn-primary btn-lg">
                 <Icon name="sparkles" size={15} />
                 開始建立合約
               </Link>
-              <a
-                className="btn btn-ghost btn-lg"
-                onClick={() => document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" })}
-              >
+              <a href="#templates" className="btn btn-ghost btn-lg">
                 <Icon name="bookOpen" size={15} />
                 瀏覽 10 種範本
               </a>
             </div>
-            <div className="row gap-3" style={{ marginTop: 12, fontSize: 12.5, color: "var(--ink-muted)" }}>
+            <div className="dg-home-trust-notes">
               <span className="row gap-1">
                 <Icon name="checkCircle" size={13} style={{ color: "var(--primary)" }} />
                 電子簽章法 §4 合規
               </span>
-              <span style={{ width: 1, height: 12, background: "var(--line)" }} />
+              <span aria-hidden="true" style={{ width: 1, height: 12, background: "var(--line)" }} />
               <span className="row gap-1">
                 <Icon name="lock" size={13} style={{ color: "var(--primary)" }} />
                 SSL 加密傳輸
               </span>
-              <span style={{ width: 1, height: 12, background: "var(--line)" }} />
+              <span aria-hidden="true" style={{ width: 1, height: 12, background: "var(--line)" }} />
               <span className="row gap-1">
                 <Icon name="hash" size={13} style={{ color: "var(--primary)" }} />
                 簽名雜湊存證
@@ -75,7 +133,7 @@ export default function Home() {
                 position: "absolute", right: 0, top: 24,
                 width: 380, height: 460, padding: "32px 36px",
                 transform: "rotate(2.2deg)",
-                boxShadow: "0 24px 50px rgba(20,29,68,0.16), 0 6px 14px rgba(20,29,68,0.06)",
+                boxShadow: "var(--shadow-sm)",
                 fontFamily: "var(--font-serif)", color: "#1a1612", borderRadius: 4,
               }}
             >
@@ -106,7 +164,7 @@ export default function Home() {
               style={{
                 position: "absolute", right: 30, top: 60, width: 360, height: 440,
                 background: "#efe6cf", borderRadius: 4, transform: "rotate(-3deg)",
-                boxShadow: "0 12px 30px rgba(20,29,68,0.10)", zIndex: -1,
+                boxShadow: "var(--shadow-sm)", zIndex: -1,
               }}
             />
             <div
@@ -134,7 +192,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="container" style={{ padding: "0 32px 48px" }}>
+        <section className="dg-page-shell dg-home-trust-section" aria-label="服務成果與信任指標">
           <TrustBar
             items={[
               { icon: "fileText", value: "12,480", label: "已產出合約" },
@@ -146,150 +204,112 @@ export default function Home() {
           />
         </section>
 
-        <section id="templates" className="container" style={{ padding: "24px 32px 64px" }}>
-          <div className="row dg-templates-filter" style={{ justifyContent: "space-between", marginBottom: 24, alignItems: "flex-end" }}>
+        <section id="templates" className="dg-page-shell dg-section dg-home-section">
+          <div className="dg-templates-filter">
             <div>
-              <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+              <div className="dg-eyebrow">
                 合約範本
               </div>
-              <h2>挑一份開始</h2>
+              <h2 className="dg-section-title">挑一份開始</h2>
             </div>
-            <div className="row gap-2">
-              <input className="input" placeholder="搜尋範本..." style={{ width: 240 }} />
-              <button className="btn btn-soft btn-sm">
+            <div className="dg-template-search" role="search" aria-label="搜尋合約範本">
+              <label htmlFor="template-search" className="dg-visually-hidden">搜尋合約範本</label>
+              <input
+                id="template-search"
+                className="input dg-template-search-input"
+                type="search"
+                value={templateQuery}
+                onChange={(event) => setTemplateQuery(event.target.value)}
+                placeholder="搜尋範本..."
+              />
+              <button
+                type="button"
+                className="btn btn-soft btn-sm"
+                onClick={() => setTemplateQuery("")}
+                aria-pressed={!normalizedQuery}
+                aria-label="清除範本搜尋，顯示全部 10 種"
+              >
                 <Icon name="list" size={13} />全部 10 種
               </button>
             </div>
           </div>
+          {normalizedQuery && (
+            <p className="dg-helper dg-template-result-count" role="status">
+              顯示 {filteredTemplates.length} 種範本
+            </p>
+          )}
           <div className="dg-templates-grid">
-            {TEMPLATES.map((t) => (
+            {filteredTemplates.map((t) => (
               <TemplateCard key={t.id} tpl={t} />
             ))}
+            {filteredTemplates.length === 0 && (
+              <UIState
+                status="empty"
+                title="找不到符合的範本"
+                description={`沒有符合「${templateQuery.trim()}」的範本。`}
+                className="dg-template-empty"
+                actions={(
+                  <button type="button" className="btn btn-soft" onClick={() => setTemplateQuery("")}>
+                    清除搜尋
+                  </button>
+                )}
+              />
+            )}
           </div>
         </section>
 
-        <section className="container" style={{ padding: "24px 32px 80px" }}>
-          <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+        <section className="dg-page-shell dg-section dg-home-section">
+          <div className="dg-eyebrow">
             運作方式
           </div>
-          <h2 style={{ marginBottom: 32 }}>三步完成，無需法律背景</h2>
+          <h2 className="dg-section-title dg-home-section-title">三步完成，無需法律背景</h2>
           <div className="dg-howit-grid">
             {[
               { n: "01", icon: "fileText", t: "挑選範本", d: "從 10 種常用合約挑一個，或從空白模板自訂。每個範本均附法條依據。" },
               { n: "02", icon: "pen", t: "填寫表單", d: "左側填寫，右側即時預覽。系統自動將數字轉為國字大寫，逐條編號。" },
               { n: "03", icon: "fileSig", t: "雙方簽署", d: "寄送簽署連結給對方，IP 與時間戳自動留存，PDF 一鍵下載。" },
             ].map((s, i) => (
-              <div key={i} className="card" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 14 }}>
-                <div className="row" style={{ justifyContent: "space-between" }}>
-                  <div
-                    style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: "var(--primary)", color: "var(--primary-ink)",
-                      display: "grid", placeItems: "center",
-                    }}
-                  >
+              <div key={i} className="card dg-card-body dg-home-step">
+                <div className="dg-home-step-header">
+                  <div className="dg-home-step-icon">
                     <Icon name={s.icon} size={20} />
                   </div>
-                  <span style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 600, color: "var(--line)", lineHeight: 1 }}>
+                  <span className="dg-home-step-number" aria-hidden="true">
                     {s.n}
                   </span>
                 </div>
-                <h3 style={{ fontSize: 20 }}>{s.t}</h3>
-                <p style={{ color: "var(--ink-soft)", fontSize: 14, lineHeight: 1.6 }}>{s.d}</p>
+                <h3 className="dg-subsection-title">{s.t}</h3>
+                <p className="dg-text-secondary">{s.d}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <section id="pricing" className="container" style={{ padding: "24px 32px 60px" }}>
-          <div style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+        <section id="pricing" className="dg-page-shell dg-section dg-home-section">
+          <div className="dg-eyebrow">
             價格
           </div>
-          <h2 style={{ marginBottom: 12 }}>免費先用，需要再升級</h2>
-          <p style={{ color: "var(--ink-soft)", fontSize: 15, lineHeight: 1.7, maxWidth: 640, marginBottom: 24 }}>
+          <h2 className="dg-section-title dg-home-pricing-title">免費先用，需要再升級</h2>
+          <p className="dg-body dg-home-pricing-copy">
             所有方案均含 10 種範本、雙方電子簽署、PDF 存證、規則式風險檢查。差別只在<b>每月可建立的合約數</b>與<b>進階功能</b>。
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-            {[
-              {
-                code: "free", name: "Free", price: "0", unit: "/月",
-                tag: "適合偶爾接案",
-                cta: "直接開始",
-                href: "/contracts/new",
-                features: [
-                  "每月 3 份合約",
-                  "10 種台灣法律範本",
-                  "雙方電子簽署 + PDF",
-                  "規則式風險檢查（15 條）",
-                  "案件資料夾 + milestone 追蹤",
-                ],
-                featured: false,
-              },
-              {
-                code: "pro", name: "Pro", price: "299", unit: "/月",
-                tag: "頻繁使用 + Email 自動提醒",
-                cta: "升級 Pro",
-                href: "/checkout",
-                features: [
-                  "✓ Free 所有功能",
-                  "**無限合約建立**",
-                  "AI 風險檢查（Gemini 2.5）",
-                  "milestone Email 自動提醒",
-                  "Pro Badge + 優先客服",
-                ],
-                featured: true,
-              },
-              {
-                code: "pack", name: "Pack", price: "499", unit: "/3 個月",
-                tag: "三個月集中跑案",
-                cta: "購買 90 日方案",
-                href: "/checkout",
-                features: [
-                  "✓ Pro 所有功能",
-                  "90 天無限合約（一次性付款）",
-                  "省下 NT$398 (比月繳)",
-                  "適合短期專案爆量",
-                ],
-                featured: false,
-              },
-            ].map((p) => (
-              <div key={p.code} className="card" style={{
-                padding: 22,
-                background: p.featured ? "var(--primary-soft)" : "var(--bg-elev)",
-                border: `${p.featured ? 2 : 1}px solid ${p.featured ? "var(--primary)" : "var(--line)"}`,
-                borderRadius: "var(--radius)",
-                display: "flex", flexDirection: "column", gap: 12,
-              }}>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                  <h3 style={{ fontSize: 22 }}>{p.name}</h3>
-                  {p.featured && <span className="chip chip-zinc" style={{ background: "var(--primary)", color: "var(--primary-ink)", fontSize: 11 }}>推薦</span>}
-                </div>
-                <div style={{ fontSize: 12, color: "var(--ink-muted)" }}>{p.tag}</div>
-                <div>
-                  <span style={{ fontSize: 36, fontWeight: 600 }}>NT$ {p.price}</span>
-                  <span style={{ fontSize: 13, color: "var(--ink-muted)", marginLeft: 4 }}>{p.unit}</span>
-                </div>
-                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-                  {p.features.map((f) => (
-                    <li key={f} style={{ fontSize: 13.5, color: "var(--ink-soft)", display: "flex", gap: 6 }}>
-                      <Icon name="check" size={13} style={{ color: "var(--primary)", marginTop: 3 }} />
-                      <span dangerouslySetInnerHTML={{ __html: f.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>") }} />
-                    </li>
-                  ))}
-                </ul>
-                <Link href={p.href} className={`btn ${p.featured ? "btn-primary" : "btn-soft"}`} style={{ marginTop: "auto" }}>
-                  {p.cta}
-                  <Icon name="arrowRight" size={13} />
-                </Link>
-              </div>
+          <div className="dg-home-pricing-grid">
+            {HOME_PLANS.map(({ plan, href, featured }) => (
+              <PlanCard
+                key={plan.code}
+                plan={plan}
+                href={href}
+                featured={featured}
+                featuredLabel="推薦"
+              />
             ))}
           </div>
-          <div style={{ marginTop: 18, fontSize: 12.5, color: "var(--ink-muted)" }}>
+          <div className="dg-helper dg-home-pricing-note">
             * Pro / Pack 用藍新金流結帳，不自動續約；到期後降回 Free（不會繼續扣款）。
           </div>
         </section>
 
-        <section className="container" style={{ padding: "0 32px 60px" }}>
+        <section className="dg-page-shell dg-home-disclaimer-section">
           <LegalDisclaimer />
         </section>
 

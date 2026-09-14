@@ -516,10 +516,10 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 ::-webkit-scrollbar-thumb:hover { background: var(--zinc-300); border: 2px solid transparent; background-clip: content-box; }
 
 /* Responsive grid classes — desktop defaults, mobile overrides via @media below. */
-.dg-hero-grid       { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding: 60px 32px 56px; }
+.dg-hero-grid       { display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--space-6); align-items: center; padding-block: var(--space-6); }
 .dg-hero-visual     { position: relative; height: 480px; }
-.dg-templates-grid  { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
-.dg-howit-grid      { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.dg-templates-grid  { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.dg-howit-grid      { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
 .dg-checkout-grid   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
 .dg-faq-grid        { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .dg-payment-bar     { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
@@ -529,6 +529,58 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-trustbar-copy { display: flex; min-width: 0; flex-direction: column; }
 .dg-trustbar-num { font-family: var(--font-display); font-size: var(--text-section); font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .dg-trustbar-label { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Homepage and template SEO pages. */
+.dg-home-hero-copy { display: flex; min-width: 0; flex-direction: column; gap: var(--space-3); }
+.dg-home-eyebrow { display: flex; align-items: center; gap: var(--space-1); }
+.dg-home-eyebrow-line { width: var(--space-3); height: 1px; flex: 0 0 auto; background: var(--ink-muted); }
+.dg-home-title { max-width: 560px; }
+.dg-home-lead { max-width: 540px; color: var(--ink-soft); }
+.dg-home-billing { margin-block: -8px; }
+.dg-home-trust-notes { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-home-trust-section { padding-bottom: var(--space-6); }
+.dg-home-section { scroll-margin-top: 80px; }
+.dg-home-section > .dg-eyebrow { margin-bottom: var(--space-1); }
+.dg-templates-filter { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-2); }
+.dg-template-search { display: flex; align-items: center; gap: var(--space-1); }
+.dg-template-search-input { width: 240px; }
+.dg-template-result-count { margin-bottom: var(--space-1); }
+.dg-template-empty { grid-column: 1 / -1; }
+.dg-home-section-title { margin-bottom: var(--space-3); }
+.dg-home-step { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
+.dg-home-step-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.dg-home-step-icon { width: 44px; height: 44px; flex: 0 0 auto; border-radius: var(--radius-lg); background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; }
+.dg-home-step-number { color: var(--line); font-family: var(--font-display); font-size: var(--text-title); font-weight: 600; line-height: 1; }
+.dg-home-pricing-title { margin-bottom: var(--space-1); }
+.dg-home-pricing-copy { max-width: 640px; margin-bottom: var(--space-3); color: var(--ink-soft); }
+.dg-home-pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); align-items: stretch; }
+.dg-home-pricing-note { margin-top: var(--space-2); }
+.dg-home-disclaimer-section { padding-block: var(--space-3) var(--space-6); }
+
+.dg-template-hero { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-4) var(--space-3); }
+.dg-template-category { display: flex; align-items: center; gap: var(--space-1); }
+.dg-template-intro { color: var(--ink-soft); }
+.dg-template-actions { margin-top: var(--space-1); }
+.dg-template-section { padding-block: var(--space-3); }
+.dg-template-section > .dg-section-title { margin-bottom: var(--space-2); }
+.dg-template-list { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+.dg-template-clause-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.dg-template-clause { display: flex; flex-direction: column; gap: var(--space-1); }
+.dg-template-clause-header { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
+.dg-template-legal-list { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.dg-template-anchor { scroll-margin-top: 80px; }
+.dg-faq { display: flex; flex-direction: column; gap: var(--space-2); }
+.dg-faq-item { padding: var(--space-2); }
+.dg-faq-summary { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: var(--space-2); cursor: pointer; font-size: var(--text-subsection); font-weight: 600; line-height: 1.5; list-style: none; }
+.dg-faq-summary::-webkit-details-marker { display: none; }
+.dg-faq-toggle { flex: 0 0 auto; color: var(--ink-soft); font-size: var(--text-helper); font-weight: 500; line-height: 1.5; }
+.dg-faq-toggle-close { display: none; }
+.dg-faq-item[open] .dg-faq-toggle-open { display: none; }
+.dg-faq-item[open] .dg-faq-toggle-close { display: inline; }
+.dg-faq-answer { margin-top: var(--space-2); }
+.dg-template-cta { display: flex; flex-direction: column; gap: var(--space-2); }
+.dg-template-cta-action { align-self: flex-start; }
+.dg-template-disclaimer-section { padding-block: var(--space-3) var(--space-8); }
 
 /* Shared account, risk, legal, referral, and payment status surfaces. */
 .dg-billing-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
@@ -627,6 +679,12 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-sign-bottom-grid { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 18px; align-items: flex-end; }
 .dg-complete-grid    { display: grid; grid-template-columns: 320px 1fr; gap: 32px; }
 
+@media (max-width: 959px) {
+  .dg-hero-grid { grid-template-columns: 1fr; gap: var(--space-3); }
+  .dg-hero-visual { display: none; }
+  .dg-templates-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 /* Mobile breakpoint — collapse everything to single column, hide hero visual,
    shrink type, full-width sticky CTAs. Mirrors the iPhone-frame variants of
    the design where 390px-wide screens stack the desktop layout. */
@@ -654,7 +712,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-modal-inline-field { align-items: stretch; flex-direction: column; }
   .dg-modal-inline-field .btn { width: 100%; }
 
-  .dg-hero-grid       { grid-template-columns: 1fr; gap: 28px; padding: 24px 16px; }
+  .dg-hero-grid       { grid-template-columns: 1fr; gap: var(--space-3); padding-block: var(--space-3); }
   .dg-hero-visual     { display: none; }
   .dg-templates-grid  { grid-template-columns: 1fr; }
   .dg-howit-grid      { grid-template-columns: 1fr; }
@@ -674,6 +732,13 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-sign-bottom-grid { grid-template-columns: 1fr; gap: 12px; }
   .dg-complete-grid   { grid-template-columns: 1fr; gap: 18px; }
   .dg-complete-grid > aside { position: static !important; }
+
+  .dg-template-search { width: 100%; align-items: stretch; flex-direction: column; }
+  .dg-template-search .btn { width: 100%; }
+  .dg-home-pricing-grid { grid-template-columns: 1fr; }
+  .dg-home-trust-notes { align-items: flex-start; flex-direction: column; gap: var(--space-1); }
+  .dg-home-trust-notes > span[aria-hidden="true"] { display: none; }
+  .dg-template-actions, .dg-template-actions .btn, .dg-template-cta-action { width: 100%; }
 
   /* Hero CTA buttons + ghost links should stretch */
   .dg-hero-cta { display: flex; flex-direction: column; gap: 10px; }
