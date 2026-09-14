@@ -523,7 +523,96 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-checkout-grid   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
 .dg-faq-grid        { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .dg-payment-bar     { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
-.dg-trustbar-row    { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; padding: 20px 24px; border-radius: var(--radius-lg); background: var(--bg-elev); border: 1px solid var(--line); }
+.dg-trustbar-row    { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; margin: 0; padding: 20px 24px; border-radius: var(--radius-lg); background: var(--bg-elev); border: 1px solid var(--line); list-style: none; }
+.dg-trustbar-item { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.dg-trustbar-item > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-trustbar-copy { display: flex; min-width: 0; flex-direction: column; }
+.dg-trustbar-num { font-family: var(--font-display); font-size: var(--text-section); font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.dg-trustbar-label { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Shared account, risk, legal, referral, and payment status surfaces. */
+.dg-billing-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.dg-billing-banner--compact { padding: 8px 12px; }
+.dg-billing-banner__message, .dg-risk-status { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.dg-billing-banner__message > .ic, .dg-risk-status > .ic { flex: 0 0 auto; margin-top: 3px; }
+.dg-risk-panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.dg-risk-summary { display: flex; flex-direction: column; gap: 8px; padding: 18px; }
+.dg-risk-summary__header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dg-risk-summary__header > .ic { flex: 0 0 auto; }
+.dg-risk-summary__title { min-width: 0; margin: 0; font-family: var(--font-sans); font-size: 15px; font-weight: 700; line-height: 1.5; }
+.dg-risk-summary__counts { margin-left: auto; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; white-space: nowrap; }
+.dg-risk-summary__oneliner { font-size: 13px; line-height: 1.6; }
+.dg-risk-summary__helper { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-risk-findings { display: flex; flex-direction: column; gap: 10px; }
+.dg-risk-finding { padding: 14px; }
+.dg-risk-finding__header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dg-risk-finding__level { gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+.dg-risk-finding__title { min-width: 0; font-size: var(--text-secondary); overflow-wrap: anywhere; }
+.dg-risk-finding__detail { margin-bottom: 8px; color: var(--ink-soft); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.dg-risk-finding__suggestion { color: var(--ink); font-size: 12.5px; line-height: 1.65; overflow-wrap: anywhere; }
+.dg-risk-finding__legal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.dg-risk-finding__basis { padding: 2px 8px; font-size: 11px; }
+.dg-legal-disclaimer { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; }
+.dg-legal-disclaimer > .ic { flex: 0 0 auto; margin-top: 2px; color: var(--state-warning-ink); }
+.dg-legal-disclaimer--compact { gap: 8px; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-legal-disclaimer--compact > .ic { flex: 0 0 auto; margin-top: 2px; }
+.dg-legal-disclaimer__content { min-width: 0; }
+.dg-legal-disclaimer__title { color: var(--state-warning-ink); font-family: var(--font-sans); font-size: 13px; font-weight: 700; line-height: 1.6; }
+.dg-legal-disclaimer__title--inline, .dg-legal-disclaimer__copy--inline { display: inline; }
+.dg-legal-disclaimer__copy { color: var(--state-warning-ink); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.dg-legal-disclaimer__link { color: var(--state-warning-ink); text-decoration: underline; text-underline-offset: 2px; }
+.dg-referral-footer-link { color: var(--ink-soft); font-size: 13px; }
+.dg-referral-card { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
+.dg-referral-card__header { display: flex; align-items: center; gap: 8px; }
+.dg-referral-card__header > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-referral-card__title { margin: 0; font-family: var(--font-sans); font-size: var(--text-secondary); font-weight: 700; line-height: 1.5; }
+.dg-referral-card__copy { color: var(--ink-soft); font-size: 13px; line-height: 1.6; }
+.dg-referral-card__action { align-self: flex-start; }
+.dg-payment-status { padding: 4px 10px; font-size: var(--text-helper); }
+
+/* Shared modal shell. Business components provide body and action controls. */
+.dg-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  overflow-y: auto;
+  padding: 20px;
+  background: rgba(20,29,68,.45);
+}
+.dg-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 480px);
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-lg);
+}
+.dg-dialog-header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2); }
+.dg-dialog-heading { display: flex; align-items: center; gap: var(--space-1); min-width: 0; }
+.dg-dialog-heading > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-dialog-title { font-size: var(--text-subsection); line-height: 1.5; overflow-wrap: anywhere; }
+.dg-dialog-close { flex: 0 0 auto; margin: -10px -10px 0 0; font-size: 24px; font-weight: 400; line-height: 1; }
+.dg-dialog-body { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; gap: var(--space-2); overflow-y: auto; overscroll-behavior: contain; padding: 0 var(--space-3) var(--space-3); }
+.dg-dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); padding: var(--space-2) var(--space-3) var(--space-3); border-top: 1px solid var(--line); }
+.dg-dialog-actions__primary { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1); margin-left: auto; }
+.dg-modal-section { min-width: 0; margin: 0; padding: 0; border: 0; }
+.dg-modal-option-list { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-1); }
+.dg-modal-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); width: 100%; min-height: 44px; padding: 10px 14px; color: var(--ink); text-align: left; }
+.dg-modal-option[aria-pressed="true"] { background: var(--bg-soft); }
+.dg-modal-option__title { min-width: 0; overflow-wrap: anywhere; }
+.dg-modal-option__status { flex: 0 0 auto; font-size: 11px; }
+.dg-modal-list-state { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); margin-top: var(--space-1); font-size: var(--text-helper); }
+.dg-modal-list-state > .ic { flex: 0 0 auto; }
+.dg-modal-new-case { padding-top: var(--space-2); border-top: 1px solid var(--line); }
+.dg-modal-inline-field { display: flex; align-items: center; gap: var(--space-1); }
+.dg-modal-inline-field .input { min-width: 0; }
+.dg-modal-inline-field .btn { flex: 0 0 auto; }
+.dg-modal-kind-list { display: flex; flex-wrap: wrap; gap: var(--space-1); }
 .dg-newcontract-grid    { display: grid; grid-template-columns: minmax(420px, 42%) 1fr; min-height: 0; flex: 1; }
 .dg-newcontract-form    { padding: 28px 32px 120px; border-right: 1px solid var(--line); overflow-y: auto; max-height: calc(100vh - 60px - 56px); }
 .dg-newcontract-preview { overflow-y: auto; max-height: calc(100vh - 60px - 56px); background: var(--bg-soft); }
@@ -547,13 +636,23 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .nav-links { display: none; }
   .container, .container-narrow { padding-left: 16px !important; padding-right: 16px !important; }
   h1:not(.dg-page-title) { font-size: 32px !important; line-height: 1.1; }
-  h2:not(.dg-section-title) { font-size: 22px !important; }
-  h3:not(.dg-subsection-title) { font-size: 17px !important; }
+  h2:not(.dg-section-title):not(.dg-dialog-title):not(.dg-risk-summary__title):not(.dg-legal-disclaimer__title):not(.dg-referral-card__title) { font-size: 22px !important; }
+  h3:not(.dg-subsection-title):not(.dg-risk-summary__title):not(.dg-legal-disclaimer__title):not(.dg-referral-card__title) { font-size: 17px !important; }
   .dg-page-shell { padding-inline: var(--space-2); }
   .dg-page-header { flex-direction: column; }
   .dg-section { padding-block: var(--space-4); }
   .dg-toolbar, .dg-actions { width: 100%; }
   .dg-form-grid { grid-template-columns: 1fr; }
+
+  .dg-dialog-backdrop { padding: var(--space-1); }
+  .dg-dialog { max-height: calc(100dvh - 16px); }
+  .dg-dialog-header { padding: var(--space-2); }
+  .dg-dialog-body { padding: 0 var(--space-2) var(--space-2); }
+  .dg-dialog-actions { align-items: stretch; flex-wrap: wrap; padding: var(--space-2); }
+  .dg-dialog-actions__primary { flex: 1 1 100%; }
+  .dg-dialog-actions__primary > .btn { flex: 1 1 0; }
+  .dg-modal-inline-field { align-items: stretch; flex-direction: column; }
+  .dg-modal-inline-field .btn { width: 100%; }
 
   .dg-hero-grid       { grid-template-columns: 1fr; gap: 28px; padding: 24px 16px; }
   .dg-hero-visual     { display: none; }

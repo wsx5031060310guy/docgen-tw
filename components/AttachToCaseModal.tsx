@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Icon } from "./Icon";
+import { ModalShell } from "./ModalShell";
 
 type CaseRow = { id: string; title: string; status: string };
 
@@ -18,24 +19,46 @@ export function AttachToCaseModal({
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [selected, setSelected] = useState<string | null>(currentCaseId);
   const [newTitle, setNewTitle] = useState("");
+  const [loadingCases, setLoadingCases] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadKey, setLoadKey] = useState(0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [errorField, setErrorField] = useState<"newTitle" | null>(null);
+  const newTitleId = useId();
+  const actionErrorId = useId();
 
-  async function load() {
-    try {
-      const r = await fetch("/api/cases");
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json();
-      setCases(j.cases ?? []);
-    } catch (e) {
-      setErr((e as Error).message);
-    }
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/cases")
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((j) => {
+        if (!cancelled) setCases(j.cases ?? []);
+      })
+      .catch((e) => {
+        if (!cancelled) setLoadError((e as Error).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCases(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadKey]);
+
+  function retryLoad() {
+    setLoadingCases(true);
+    setLoadError(null);
+    setLoadKey((key) => key + 1);
   }
-  useEffect(() => { load(); }, []);
 
   async function attach(caseId: string | null) {
     setBusy(true);
     setErr(null);
+    setErrorField(null);
     try {
       const r = await fetch(`/api/contracts/${contractId}`, {
         method: "PATCH",
@@ -58,6 +81,7 @@ export function AttachToCaseModal({
     if (!newTitle.trim()) return;
     setBusy(true);
     setErr(null);
+    setErrorField(null);
     try {
       const r = await fetch("/api/cases", {
         method: "POST",
@@ -69,82 +93,99 @@ export function AttachToCaseModal({
       await attach(j.case.id);
     } catch (e) {
       setErr((e as Error).message);
+      setErrorField("newTitle");
       setBusy(false);
     }
   }
 
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20,
-    }}>
-      <div onClick={(e) => e.stopPropagation()} className="card" style={{
-        maxWidth: 480, width: "100%", padding: 22, background: "var(--bg)",
-        border: "1px solid var(--line)", borderRadius: "var(--radius)",
-        display: "flex", flexDirection: "column", gap: 14, maxHeight: "80vh", overflowY: "auto",
-      }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div className="row gap-2"><Icon name="folder" size={14} /><b style={{ fontSize: 16 }}>指派到案件</b></div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={13} /></button>
-        </div>
-
-        {cases.length > 0 && (
-          <div>
-            <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>選擇現有案件</label>
-            <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
-              {cases.map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelected(c.id)}
-                  className="card"
-                  style={{
-                    padding: "10px 14px", textAlign: "left", cursor: "pointer",
-                    border: `1px solid ${selected === c.id ? "var(--primary)" : "var(--line)"}`,
-                    background: selected === c.id ? "var(--bg-soft)" : "var(--bg-elev)",
-                    borderRadius: "var(--radius)",
-                  }}
-                >
-                  <div className="row gap-2" style={{ justifyContent: "space-between" }}>
-                    <span>{c.title}</span>
-                    <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.status}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{ borderTop: "1px solid var(--line)", paddingTop: 14 }}>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>或建立新案件</label>
-          <div className="row gap-2" style={{ marginTop: 6 }}>
-            <input className="input" placeholder="案件名稱" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-            <button className="btn btn-soft btn-sm" onClick={createAndAttach} disabled={busy || !newTitle.trim()}>
-              建立並指派
-            </button>
-          </div>
-        </div>
-
-        {err && <div className="field-error"><Icon name="alert" size={12} />{err}</div>}
-
-        <div className="row" style={{ justifyContent: "space-between", gap: 8, marginTop: 4 }}>
+    <ModalShell
+      title="指派到案件"
+      icon={<Icon name="folder" size={16} />}
+      onClose={onClose}
+      busy={busy}
+      closeLabel="關閉指派到案件對話框"
+      actions={
+        <>
           {currentCaseId && (
-            <button className="btn btn-ghost btn-sm" onClick={() => attach(null)} disabled={busy}>
+            <button className="btn btn-ghost btn-sm" type="button" onClick={() => attach(null)} disabled={busy}>
               <Icon name="x" size={11} />取消指派
             </button>
           )}
-          <div className="row gap-2" style={{ marginLeft: "auto" }}>
-            <button className="btn btn-soft" onClick={onClose} disabled={busy}>取消</button>
+          <div className="dg-dialog-actions__primary">
+            <button className="btn btn-soft" type="button" onClick={onClose} disabled={busy}>取消</button>
             <button
               className="btn btn-primary"
+              type="button"
               onClick={() => selected && attach(selected)}
               disabled={busy || !selected || selected === currentCaseId}
+              aria-busy={busy || undefined}
             >
               {busy ? "處理中…" : "確認指派"}
             </button>
           </div>
+        </>
+      }
+    >
+      <fieldset className="dg-modal-section">
+        <legend className="field-label">選擇現有案件</legend>
+        {loadingCases ? (
+          <div className="dg-notice dg-notice--info dg-modal-list-state" role="status" aria-live="polite" aria-busy="true">
+            <Icon name="loader" size={14} className="spin" />
+            <span>載入案件中…</span>
+          </div>
+        ) : loadError ? (
+          <div className="dg-notice dg-notice--error dg-modal-list-state" role="alert">
+            <span>無法載入案件：{loadError}</span>
+            <button className="btn btn-ghost btn-sm" type="button" onClick={retryLoad}>重新載入</button>
+          </div>
+        ) : cases.length === 0 ? (
+          <div className="dg-notice dg-notice--info dg-modal-list-state" role="status">
+            尚無案件，可在下方建立新案件。
+          </div>
+        ) : (
+          <div className="dg-modal-option-list">
+            {cases.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelected(c.id)}
+                className={`card dg-modal-option${selected === c.id ? " dg-card-selected" : ""}`}
+                aria-pressed={selected === c.id}
+                disabled={busy}
+              >
+                <span className="dg-modal-option__title">{c.title}</span>
+                <span className="chip chip-zinc dg-modal-option__status">{c.status}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </fieldset>
+
+      <div className="field dg-modal-new-case">
+        <label className="field-label" htmlFor={newTitleId}>或建立新案件</label>
+        <div className="dg-modal-inline-field">
+          <input
+            id={newTitleId}
+            className="input"
+            placeholder="案件名稱"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            aria-invalid={errorField === "newTitle" || undefined}
+            aria-describedby={errorField === "newTitle" ? actionErrorId : undefined}
+            disabled={busy}
+          />
+          <button className="btn btn-soft btn-sm" type="button" onClick={createAndAttach} disabled={busy || !newTitle.trim()}>
+            建立並指派
+          </button>
         </div>
       </div>
-    </div>
+
+      {err && (
+        <div id={actionErrorId} className="field-error" role="alert">
+          <Icon name="alert" size={12} />{err}
+        </div>
+      )}
+    </ModalShell>
   );
 }

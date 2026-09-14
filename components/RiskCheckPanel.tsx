@@ -4,6 +4,8 @@ import { Icon } from "./Icon";
 import { LawyerReferralCTA } from "./LawyerReferralCTA";
 import type { RiskFinding, RiskLevel } from "@/lib/risk-rules";
 
+type HeadingLevel = 2 | 3 | 4;
+
 type CheckResult = {
   summary: {
     level: RiskLevel;
@@ -15,10 +17,10 @@ type CheckResult = {
   findings: RiskFinding[];
 };
 
-const LEVEL_STYLE: Record<RiskLevel, { bg: string; border: string; ink: string; chip: string; icon: string }> = {
-  red: { bg: "#fde9e9", border: "#f1b5b5", ink: "#7a1f1f", chip: "#c4322a", icon: "alertOctagon" },
-  yellow: { bg: "var(--amber-50)", border: "#f0d9a4", ink: "#7a5a2a", chip: "var(--amber-600)", icon: "alert" },
-  "green-info": { bg: "#e8f5ed", border: "#bfe1c8", ink: "#1f5a35", chip: "#2e8b57", icon: "checkCircle" },
+const LEVEL_STYLE: Record<RiskLevel, { notice: string; chip: string; icon: string }> = {
+  red: { notice: "error", chip: "chip-bad", icon: "alertOctagon" },
+  yellow: { notice: "warning", chip: "chip-warn", icon: "alert" },
+  "green-info": { notice: "success", chip: "chip-good", icon: "checkCircle" },
 };
 
 const LEVEL_LABEL: Record<RiskLevel, string> = {
@@ -31,26 +33,30 @@ export function RiskCheckPanel({
   templateId,
   values,
   context,
+  headingLevel,
 }: {
   templateId: string;
   values: Record<string, string>;
   context?: string;
+  headingLevel?: HeadingLevel;
 }) {
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const requestBody = JSON.stringify({ templateId, values });
+
   useEffect(() => {
     let cancelled = false;
     const t = setTimeout(async () => {
-      if (!templateId || !values) return;
+      if (!templateId) return;
       setLoading(true);
       setError(null);
       try {
         const res = await fetch("/api/risk-check", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ templateId, values }),
+          body: requestBody,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as CheckResult;
@@ -65,99 +71,84 @@ export function RiskCheckPanel({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [templateId, JSON.stringify(values)]);
+  }, [templateId, requestBody]);
 
   if (loading && !result) {
     return (
-      <div className="card" style={{ padding: 16, fontSize: 13, color: "var(--ink-muted)" }}>
-        <Icon name="loader" size={14} style={{ marginRight: 6 }} />
-        分析合約風險中…
+      <div className="dg-notice dg-notice--info dg-risk-status" role="status" aria-live="polite" aria-busy="true">
+        <Icon name="loader" size={14} className="spin" />
+        <span>分析合約風險中…</span>
       </div>
     );
   }
-  if (error) {
+  if (error && !result) {
     return (
-      <div className="card" style={{ padding: 16, fontSize: 13, color: "var(--ink-muted)" }}>
-        風險檢查暫不可用：{error}
+      <div className="dg-notice dg-notice--error dg-risk-status" role="alert">
+        <Icon name="alertOctagon" size={14} />
+        <span>風險檢查暫不可用：{error}</span>
       </div>
     );
   }
   if (!result) return null;
 
   const s = LEVEL_STYLE[result.summary.level];
+  const HeadingTag = headingLevel ? (`h${headingLevel}` as "h2" | "h3" | "h4") : "p";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="dg-risk-panel" aria-busy={loading || undefined}>
+      {loading && (
+        <div className="dg-notice dg-notice--info dg-risk-status" role="status" aria-live="polite">
+          <Icon name="loader" size={14} className="spin" />
+          <span>重新分析中…目前先顯示上次結果。</span>
+        </div>
+      )}
+      {error && (
+        <div className="dg-notice dg-notice--error dg-risk-status" role="alert">
+          <Icon name="alertOctagon" size={14} />
+          <span>重新分析失敗：{error}。目前顯示上次結果。</span>
+        </div>
+      )}
       <div
-        className="card"
-        style={{
-          padding: 18, background: s.bg, border: `1px solid ${s.border}`,
-          color: s.ink, borderRadius: "var(--radius)",
-          display: "flex", flexDirection: "column", gap: 8,
-        }}
+        className={`dg-notice dg-notice--${s.notice} dg-risk-summary`}
       >
-        <div className="row gap-2" style={{ alignItems: "center" }}>
-          <Icon name={s.icon} size={16} style={{ color: s.chip }} />
-          <b style={{ fontSize: 15 }}>風險檢查 · {LEVEL_LABEL[result.summary.level]}</b>
-          <span style={{ marginLeft: "auto", fontSize: 12, opacity: 0.85 }}>
+        <div className="dg-risk-summary__header">
+          <Icon name={s.icon} size={16} />
+          <HeadingTag className="dg-risk-summary__title">
+            風險檢查 · {LEVEL_LABEL[result.summary.level]}
+          </HeadingTag>
+          <span className="dg-risk-summary__counts">
             紅 {result.summary.reds} · 黃 {result.summary.yellows}
           </span>
         </div>
-        <div style={{ fontSize: 13, lineHeight: 1.6 }}>{result.summary.oneliner}</div>
-        <div style={{ fontSize: 11.5, opacity: 0.75, marginTop: 2 }}>
+        <p className="dg-risk-summary__oneliner">{result.summary.oneliner}</p>
+        <p className="dg-risk-summary__helper">
           ※ 此檢查為規則式自動分析，僅作風險提示，不構成法律意見。
-        </div>
+        </p>
       </div>
 
-      {result.findings.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {result.findings.length > 0 ? (
+        <div className="dg-risk-findings">
           {result.findings.map((f) => {
             const fs = LEVEL_STYLE[f.level];
             return (
-              <div
-                key={f.id}
-                className="card"
-                style={{
-                  padding: 14,
-                  background: "var(--bg-elev)",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--radius)",
-                }}
-              >
-                <div className="row gap-2" style={{ alignItems: "center", marginBottom: 8 }}>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      gap: 4,
-                      alignItems: "center",
-                      padding: "2px 8px",
-                      borderRadius: 999,
-                      background: fs.bg,
-                      color: fs.ink,
-                      border: `1px solid ${fs.border}`,
-                      fontSize: 11,
-                      fontWeight: 600,
-                    }}
-                  >
+              <div key={f.id} className="card dg-risk-finding">
+                <div className="dg-risk-finding__header">
+                  <span className={`chip ${fs.chip} dg-risk-finding__level`}>
                     <Icon name={fs.icon} size={10} />
                     {LEVEL_LABEL[f.level]}
                   </span>
-                  <b style={{ fontSize: 14 }}>{f.title}</b>
+                  <strong className="dg-risk-finding__title">{f.title}</strong>
                 </div>
-                <div style={{ fontSize: 13, lineHeight: 1.65, color: "var(--ink-soft)", marginBottom: 8 }}>
+                <p className="dg-risk-finding__detail">
                   {f.detail}
-                </div>
-                <div style={{ fontSize: 12.5, lineHeight: 1.65, color: "var(--ink)" }}>
+                </p>
+                <p className="dg-risk-finding__suggestion">
                   <b>建議：</b>{f.suggestion}
-                </div>
+                </p>
                 {f.legalBasis.length > 0 && (
-                  <div className="row gap-2" style={{ marginTop: 8, flexWrap: "wrap" }}>
+                  <div className="dg-risk-finding__legal">
                     {f.legalBasis.map((b) => (
-                      <span
-                        key={b}
-                        className="chip chip-mono"
-                        style={{ fontSize: 11, padding: "2px 8px" }}
-                      >
+                      <span key={b} className="chip chip-mono dg-risk-finding__basis">
                         {b}
                       </span>
                     ))}
@@ -167,10 +158,15 @@ export function RiskCheckPanel({
             );
           })}
         </div>
+      ) : (
+        <div className="dg-notice dg-notice--success dg-risk-status" role="status">
+          <Icon name="checkCircle" size={14} />
+          <span>未發現符合規則的風險項目。</span>
+        </div>
       )}
 
       {result.summary.needsLawyer && (
-        <LawyerReferralCTA variant="card" context={context ?? templateId} />
+        <LawyerReferralCTA variant="card" context={context ?? templateId} headingLevel={headingLevel} />
       )}
     </div>
   );
