@@ -73,7 +73,7 @@ export function TopNav() {
     : { skip: "跳至主要內容", nav: "主要導覽", open: "開啟選單", close: "關閉選單", drawer: "主要選單" };
 
   function skipToMain(event: MouseEvent<HTMLAnchorElement>) {
-    const main = document.getElementById("main-content") ?? document.querySelector<HTMLElement>("main");
+    const main = document.querySelector<HTMLElement>("main") ?? document.getElementById("main-content");
     if (!main) return;
     event.preventDefault();
     const hadTabIndex = main.hasAttribute("tabindex");
@@ -108,6 +108,7 @@ export function TopNav() {
   }
 
   return (
+    <>
     <nav className="nav dg-topnav" aria-label={labels.nav}>
       <a className="dg-skip-link" href="#main-content" onClick={skipToMain}>{labels.skip}</a>
       <div className="row gap-6 dg-topnav-main">
@@ -187,5 +188,8 @@ export function TopNav() {
         </>
       )}
     </nav>
+    {/* Skip-link target: the page's <main> when present, else this marker right after the nav. */}
+    <span id="main-content" tabIndex={-1} />
+    </>
   );
 }

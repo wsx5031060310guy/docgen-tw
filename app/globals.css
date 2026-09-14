@@ -353,6 +353,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   border: 5px solid transparent; border-top-color: var(--ink);
 }
 .tt::before { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 8px; }
+.tt-host:not([data-open="true"]) .tt { display: none; }
 .tt-host[data-open="true"] .tt { visibility: visible; opacity: 1; }
 .tt-title { display: block; margin-bottom: 4px; font-size: 12px; }
 .tt-hint { display: block; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.25); font-size: 11px; }
@@ -550,7 +551,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-home-step { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
 .dg-home-step-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .dg-home-step-icon { width: 44px; height: 44px; flex: 0 0 auto; border-radius: var(--radius-lg); background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; }
-.dg-home-step-number { color: var(--line); font-family: var(--font-display); font-size: var(--text-title); font-weight: 600; line-height: 1; }
+.dg-home-step-number { color: var(--ink-soft); font-family: var(--font-display); font-size: var(--text-title); font-weight: 600; line-height: 1; }
 .dg-home-pricing-title { margin-bottom: var(--space-1); }
 .dg-home-pricing-copy { max-width: 640px; margin-bottom: var(--space-3); color: var(--ink-soft); }
 .dg-home-pricing-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); align-items: stretch; }
