@@ -71,6 +71,7 @@ export function ContractPreview({
   signedA,
   signedB,
   paper = true,
+  draft = false,
   stamp = true,
   scale = 1,
 }: {
@@ -81,6 +82,7 @@ export function ContractPreview({
   signedA?: string;
   signedB?: string;
   paper?: boolean;
+  draft?: boolean;
   stamp?: boolean;
   scale?: number;
 }) {
@@ -98,9 +100,9 @@ export function ContractPreview({
           width: 720,
           maxWidth: "100%",
           minHeight: 1020,
-          padding: "70px 80px 80px",
+          padding: paper ? 56 : "70px 80px 80px",
           boxShadow: paper
-            ? "0 1px 0 rgba(255,255,255,0.5) inset, 0 12px 36px rgba(20,29,68,0.10), 0 2px 6px rgba(20,29,68,0.05)"
+            ? "inset 0 1px 0 rgba(255,255,255,.7), 0 24px 48px -24px rgba(20,29,68,.28), 0 2px 6px rgba(20,29,68,.06)"
             : "var(--shadow-md)",
           background: paper ? undefined : "var(--bg-elev)",
           color: paper ? "#1a1612" : "var(--ink)",
@@ -111,6 +113,11 @@ export function ContractPreview({
           fontFamily: paper ? "var(--font-serif)" : "var(--font-sans)",
         }}
       >
+        {paper && draft && (
+          <div className="dg-contract-draft-watermark" aria-hidden="true">
+            DRAFT
+          </div>
+        )}
         <div style={{ textAlign: "center", marginBottom: 36, paddingBottom: 20, borderBottom: "1px solid rgba(0,0,0,0.12)" }}>
           <div style={{ fontSize: 11, letterSpacing: "0.3em", color: "#856b4a", marginBottom: 8 }}>
             DOCGEN TW · 電子契約
@@ -126,7 +133,7 @@ export function ContractPreview({
         <div style={{ display: "flex", flexDirection: "column", gap: 22, fontSize: 14.5, lineHeight: 1.85 }}>
           {clauses.map((c) => (
             <div key={c.n} style={{ position: "relative" }}>
-              <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 700, margin: "0 0 6px", letterSpacing: "0.06em" }}>
+              <h2 className="dg-contract-clause-title" style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 700, margin: "0 0 6px", letterSpacing: "0.06em" }}>
                 第 {numberToZh(c.n)} 條　{c.title}
               </h2>
               {template.id === "custom" && c.n === 2 ? (
