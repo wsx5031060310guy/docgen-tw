@@ -23,7 +23,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "蒐集之目的",
     body: (
-      <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul className="dg-prose-list">
         <li>提供合約文件產生、電子簽署、風險提示等服務（契約或類似契約關係之事務）。</li>
         <li>會員與帳號管理、客戶服務與爭議處理。</li>
         <li>收費、開立憑證與金流交易處理。</li>
@@ -35,7 +35,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "蒐集之個人資料類別",
     body: (
-      <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul className="dg-prose-list">
         <li><b>帳號資料</b>：Email、瀏覽器識別（cookie uid）。</li>
         <li><b>文件內容</b>：您於表單填入之合約內容，可能包含您與合約相對人之姓名、地址、電話、統一編號、銀行帳號等當事人資料。</li>
         <li><b>簽署存證資料</b>：簽名圖像、簽署時之 IP 位址、時間戳與文件雜湊。</li>
@@ -56,7 +56,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         <p>
           <b>對象與方式</b>：由本公司於上述目的範圍內以自動化系統處理及利用，並於必要範圍內提供予下列協力廠商：
         </p>
-        <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <ul className="dg-prose-list">
           <li>金流服務商（藍新金流 NewebPay）：處理付款與交易驗證。</li>
           <li>雲端基礎設施與資料庫服務商：網站運行、資料儲存與備援。</li>
           <li>Email 寄送服務商：寄送簽署連結、收據與服務通知。</li>
@@ -70,7 +70,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     title: "您依個資法第 3 條得行使之權利",
     body: (
       <>
-        <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <ul className="dg-prose-list">
           <li>查詢或請求閱覽您的個人資料。</li>
           <li>請求製給複製本。</li>
           <li>請求補充或更正。</li>
@@ -95,7 +95,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "個人資料之安全維護",
     body: (
-      <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul className="dg-prose-list">
         <li>全站 SSL/TLS 加密傳輸。</li>
         <li>簽署存證採 SHA-256 雜湊，防止文件遭竄改。</li>
         <li>資料庫存取權限控管，僅限提供服務必要之人員與系統存取。</li>
@@ -117,36 +117,36 @@ export default function PrivacyPage() {
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "48px 32px 16px", maxWidth: 860 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+      <main className="page paper-bg dg-legal-page">
+        <header className="dg-page-shell dg-page-shell--reading dg-reading-header">
+          <div className="dg-eyebrow dg-reading-eyebrow">
             <Icon name="lock" size={13} />
             法律文件
           </div>
-          <h1 style={{ fontSize: 44, marginBottom: 14 }}>
+          <h1 className="dg-page-title dg-reading-title">
             隱私權
-            <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
+            <span className="dg-reading-title-accent">
               政策
             </span>
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.75, color: "var(--ink-soft)" }}>
+          <p className="dg-body dg-reading-intro">
             您的合約內容含有當事人個人資料，我們依個人資料保護法處理並以最小必要原則利用。本頁為個資法第 8 條之告知事項；使用者權利義務另見
-            <Link href="/terms" style={{ textDecoration: "underline", margin: "0 2px" }}>服務條款</Link>。
+            <Link href="/terms" className="dg-link">服務條款</Link>。
           </p>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "16px 32px 64px", maxWidth: 860, display: "flex", flexDirection: "column", gap: 14 }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-reading-content" aria-label="隱私權政策全文">
           {SECTIONS.map((s, i) => (
-            <div key={i} className="card" style={{ padding: "20px 22px", background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-              <h2 style={{ fontSize: 17, marginBottom: 10 }}>
+            <article key={i} className="card dg-reading-card">
+              <h2 className="dg-section-title dg-reading-card-title">
                 {i + 1}. {s.title}
               </h2>
-              <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="dg-prose">
                 {s.body}
               </div>
-            </div>
+            </article>
           ))}
-          <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
+          <div className="dg-reading-meta">
             最後更新：2026 年 6 月。
             <br />
             聯絡方式：{COMPANY.name}｜{COMPANY.email}｜{COMPANY.address}

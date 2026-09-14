@@ -329,12 +329,6 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .fade-in { animation: fadeIn .25s ease-out; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 1s linear infinite; }
-@keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--green-500) 50%, transparent); }
-  70%  { box-shadow: 0 0 0 14px color-mix(in oklab, var(--green-500) 0%, transparent); }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-.pulse-ring { animation: pulse-ring 1.6s ease-out infinite; }
 
 .tt-host { position: relative; display: inline-flex; }
 .tt-trigger { min-height: 44px; }
@@ -598,13 +592,113 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-risk-summary__helper { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
 .dg-risk-findings { display: flex; flex-direction: column; gap: 10px; }
 .dg-risk-finding { padding: 14px; }
+.dg-risk-finding--ai { border-style: dashed; }
 .dg-risk-finding__header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .dg-risk-finding__level { gap: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
-.dg-risk-finding__title { min-width: 0; font-size: var(--text-secondary); overflow-wrap: anywhere; }
+.dg-risk-finding__title { min-width: 0; margin: 0; font-family: var(--font-sans); font-size: var(--text-secondary); font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
 .dg-risk-finding__detail { margin-bottom: 8px; color: var(--ink-soft); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
 .dg-risk-finding__suggestion { color: var(--ink); font-size: 12.5px; line-height: 1.65; overflow-wrap: anywhere; }
 .dg-risk-finding__legal { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .dg-risk-finding__basis { padding: 2px 8px; font-size: 11px; }
+
+/* Pasted-contract check and shared snapshots. */
+.dg-check-page, .dg-shared-check-page { min-height: calc(100vh - var(--nav-height, 64px)); }
+.dg-check-shell { max-width: 960px; }
+.dg-check-hero { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-4) var(--space-2); }
+.dg-check-eyebrow, .dg-check-ai-heading, .dg-check-card-heading { display: flex; align-items: center; gap: var(--space-1); }
+.dg-check-title { max-width: 720px; }
+.dg-check-title-accent { color: var(--primary); font-family: var(--font-italic); font-style: italic; font-weight: 400; }
+.dg-check-lead { max-width: 880px; color: var(--ink-soft); }
+.dg-check-workspace { padding-block: var(--space-1) var(--space-3); }
+.dg-check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--space-2); }
+.dg-check-form-card { min-width: 0; }
+.dg-check-field-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); margin-bottom: var(--space-1); }
+.dg-check-label { color: var(--ink); font-size: var(--text-secondary); font-weight: 600; }
+.dg-check-textarea { min-height: 360px; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; }
+.dg-check-text-meta { min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-check-options { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-2); margin: 0; padding: 0; border: 0; font-size: 13px; }
+.dg-check-options .dg-checkbox-row { flex: 1 1 180px; align-items: center; cursor: pointer; }
+.dg-check-options input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--primary); }
+.dg-check-error { margin-top: var(--space-1); align-items: flex-start; }
+.dg-check-submit { width: 100%; margin-top: var(--space-2); }
+.dg-check-results { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+.dg-check-results .dg-state { min-height: 180px; justify-content: center; }
+.dg-check-results .dg-risk-summary { box-shadow: var(--shadow-sm); }
+.dg-check-results .dg-risk-summary__header, .dg-shared-check-section .dg-risk-summary__header { flex-wrap: wrap; }
+.dg-check-results .dg-risk-summary__counts, .dg-shared-check-section .dg-risk-summary__counts { margin-left: auto; }
+.dg-check-ai-heading { margin-top: 4px; }
+.dg-check-share, .dg-check-suggestion, .dg-check-next, .dg-shared-check-cta { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.dg-check-share-url { width: 100%; padding: var(--space-1); border-radius: var(--radius-sm); background: var(--bg-soft); font-family: var(--font-mono); font-size: var(--text-helper); line-height: 1.6; overflow-wrap: anywhere; user-select: all; }
+.dg-check-copy-feedback { min-height: 18px; }
+.dg-check-copy-feedback--error { color: var(--state-error-ink); }
+.dg-check-suggestion > p, .dg-check-next { font-size: 13px; line-height: 1.65; }
+.dg-check-suggestion > .btn { margin-top: var(--space-1); }
+.dg-check-next ul { margin: 0; padding-left: var(--space-3); }
+.dg-check-next li + li { margin-top: 4px; }
+.dg-check-section-title { margin-bottom: var(--space-2); }
+.dg-check-rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dg-check-rule { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.dg-check-rule > * { overflow-wrap: anywhere; }
+.dg-check-disclaimer { padding-block: var(--space-2) var(--space-8); }
+
+.dg-shared-check-header { display: flex; flex-direction: column; gap: var(--space-1); padding-block: var(--space-4) var(--space-2); }
+.dg-shared-check-meta { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-shared-check-meta > div { display: flex; gap: 4px; min-width: 0; }
+.dg-shared-check-meta dt { font-weight: 600; }
+.dg-shared-check-meta dt::after { content: "："; }
+.dg-shared-check-meta dd { margin: 0; overflow-wrap: anywhere; }
+.dg-shared-check-section { display: flex; flex-direction: column; gap: 12px; padding-block: var(--space-1) var(--space-2); }
+.dg-shared-source-card { min-width: 0; }
+.dg-shared-source { max-height: 320px; margin-top: var(--space-1); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.dg-route-state-page { min-height: calc(100vh - var(--nav-height, 64px)); display: grid; place-items: center; padding: var(--space-4) var(--space-3); }
+.dg-route-state-card { width: min(100%, 600px); display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); padding: var(--space-4); }
+.dg-route-state-card--error { border-color: var(--state-error-line); }
+.dg-route-state-code { min-width: 40px; height: 32px; display: inline-grid; place-items: center; padding-inline: var(--space-1); border-radius: 999px; background: var(--bg-soft); color: var(--ink-soft); font-family: var(--font-mono); font-size: var(--text-secondary); font-weight: 600; }
+.dg-route-state-card--error .dg-route-state-code { background: var(--state-error-bg); color: var(--state-error-ink); }
+.dg-route-state-actions { margin-top: var(--space-1); }
+.dg-route-state-skeletons { width: 100%; display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-1); }
+.dg-route-state-skeletons .dg-skeleton { width: 100%; }
+.dg-route-state-skeletons .dg-route-state-skeleton-short { width: 64%; }
+
+/* Legal reading pages and lawyer referral form. */
+.dg-legal-page { min-height: calc(100vh - var(--nav-height, 64px)); }
+.dg-reading-header { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-5) var(--space-2); }
+.dg-reading-eyebrow { display: flex; align-items: center; gap: var(--space-1); }
+.dg-reading-title { max-width: 760px; }
+.dg-reading-title-accent { color: var(--primary); font-family: var(--font-italic); font-style: italic; font-weight: 400; }
+.dg-reading-intro { color: var(--ink-soft); }
+.dg-reading-intro .dg-link, .dg-prose .dg-link { margin-inline: 2px; }
+.dg-reading-lead-list { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding-left: var(--space-3); color: var(--ink); font-size: var(--text-body); line-height: 1.6; }
+.dg-reading-content { display: flex; flex-direction: column; gap: var(--space-2); padding-block: var(--space-2) var(--space-8); }
+.dg-reading-card { padding: var(--space-3); }
+.dg-reading-card-title { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-2); }
+.dg-reading-card-title > .ic { flex: 0 0 auto; }
+.dg-prose { display: flex; flex-direction: column; gap: var(--space-2); color: var(--ink-soft); font-size: var(--text-body); line-height: 1.6; overflow-wrap: anywhere; }
+.dg-prose-list { display: flex; flex-direction: column; gap: var(--space-1); margin: 0; padding-left: var(--space-3); }
+.dg-reading-meta { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.6; overflow-wrap: anywhere; }
+.dg-reading-section { padding-block: var(--space-3); }
+.dg-reading-section-title { margin-bottom: var(--space-2); }
+.dg-reading-boundary { padding: var(--space-3); font-size: var(--text-body); line-height: 1.6; }
+.dg-reading-boundary .dg-reading-card-title { color: var(--state-warning-ink); }
+.dg-reading-boundary .dg-prose-list { color: var(--state-warning-ink); }
+.dg-referral-section { scroll-margin-top: calc(var(--nav-height, 64px) + var(--space-2)); padding-block: var(--space-3) var(--space-8); }
+.dg-referral-fallback { display: flex; align-items: center; gap: var(--space-1); min-height: 88px; }
+
+.dg-referral-form { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); padding: var(--space-3); }
+.dg-referral-form-title { display: flex; align-items: center; gap: var(--space-1); }
+.dg-referral-form-title > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-referral-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.dg-referral-grid { gap: var(--space-2); }
+.dg-referral-description { min-height: 144px; }
+.dg-referral-consent { align-items: flex-start; color: var(--ink-soft); font-size: 13px; line-height: 1.6; cursor: pointer; }
+.dg-referral-consent input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; accent-color: var(--primary); }
+.dg-referral-error { display: flex; align-items: flex-start; gap: var(--space-1); }
+.dg-referral-error > .ic { flex: 0 0 auto; margin-top: 4px; }
+.dg-referral-submit { align-self: flex-start; min-width: 180px; }
+.dg-referral-success { border-color: var(--state-success-line); background: var(--state-success-bg); color: var(--state-success-ink); }
+.dg-referral-success .dg-referral-form-title > .ic { color: var(--state-success-ink); }
+.dg-referral-success .dg-body { color: var(--state-success-ink); }
 .dg-legal-disclaimer { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; }
 .dg-legal-disclaimer > .ic { flex: 0 0 auto; margin-top: 2px; color: var(--state-warning-ink); }
 .dg-legal-disclaimer--compact { gap: 8px; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
@@ -722,7 +816,6 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-newcontract-legal-note { display: flex; align-items: flex-start; gap: var(--space-1); color: var(--state-info-ink); font-size: var(--text-secondary); line-height: 1.6; }
 .dg-newcontract-legal-note > .ic, .dg-newcontract-submit-error > .ic { flex: 0 0 auto; margin-top: 3px; }
 .dg-newcontract-submit-error { display: flex; align-items: flex-start; gap: var(--space-1); }
-.dg-sign-bottom-grid { display: grid; grid-template-columns: 1fr 1.4fr auto; gap: 18px; align-items: flex-end; }
 .dg-complete-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); align-items: start; gap: var(--space-4); padding-block: var(--space-5) var(--space-8); }
 .dg-complete-summary { position: sticky; top: 88px; display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
 .dg-complete-icon { display: grid; width: 56px; height: 56px; place-items: center; border-radius: var(--radius-xl); background: var(--green-100); color: var(--green-700); }
@@ -888,9 +981,6 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-topnav { padding-block: 8px; }
   .nav-links { display: none; }
   .container, .container-narrow { padding-left: 16px !important; padding-right: 16px !important; }
-  h1:not(.dg-page-title) { font-size: 32px !important; line-height: 1.1; }
-  h2:not(.dg-section-title):not(.dg-dialog-title):not(.dg-risk-summary__title):not(.dg-legal-disclaimer__title):not(.dg-referral-card__title) { font-size: 22px !important; }
-  h3:not(.dg-subsection-title):not(.dg-risk-summary__title):not(.dg-legal-disclaimer__title):not(.dg-referral-card__title) { font-size: 17px !important; }
   .dg-page-shell { padding-inline: var(--space-2); }
   .dg-page-header { flex-direction: column; }
   .dg-section { padding-block: var(--space-4); }
@@ -930,7 +1020,6 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-field-span-2 { grid-column: auto; }
   .dg-templates-pick  { grid-template-columns: 1fr; }
   .dg-newcontract-preview__toolbar { align-items: flex-start; flex-direction: column; padding: var(--space-2); }
-  .dg-sign-bottom-grid { grid-template-columns: 1fr; gap: 12px; }
   .dg-complete-grid { grid-template-columns: 1fr; gap: var(--space-3); padding-block: var(--space-3) max(var(--space-3), env(safe-area-inset-bottom)); }
   .dg-complete-summary { position: static; }
   .dg-contracts-heading-row { align-items: stretch; }
@@ -992,12 +1081,8 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .tt { position: fixed; left: 16px; right: 16px; bottom: 16px; width: auto; max-width: none; transform: none; }
   .tt::after { display: none; }
 
-  /* "自動儲存於本機" indicator on NewContract — hide on mobile */
-  .dg-autosave-indicator { display: none !important; }
-
-  /* TopNav: show hamburger, hide SSL trust line + nav CTA (CTA lives in drawer) */
+  /* TopNav: show hamburger; primary CTA remains available in the drawer. */
   .nav-toggle { display: inline-flex; }
-  .nav-trust { display: none !important; }
   .nav-cta { display: none !important; }
   .nav-right { gap: 8px !important; }
   .dg-footer { padding-block: var(--space-3); }
@@ -1026,8 +1111,6 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   /* check page textarea — shorter so label+button visible without scrolling */
   .dg-check-textarea { min-height: 220px; }
 
-  /* Pricing grid on home (inline auto-fit minmax 260px) — drop minimum so 1-col fills width */
-  #pricing > div[style*="auto-fit"] { grid-template-columns: 1fr !important; }
 }
 
 /* ── Recipient sign page ── */
@@ -1306,7 +1389,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fade-in, .spin, .pulse-ring, .dg-skeleton, .nav-drawer,
+  .fade-in, .spin, .dg-skeleton, .nav-drawer,
   .dg-skip-link, .tt, .card, .btn, .input, .textarea, .select,
   .dg-sign-page,
   .dg-sign-page *,
@@ -1441,4 +1524,24 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-payment-result-card > .dg-payment-status { grid-column: 2; justify-self: start; }
   .dg-payment-result-actions { align-items: stretch; flex-direction: column; }
   .dg-payment-result-actions > .btn { width: 100%; }
+}
+
+@media (max-width: 760px) {
+  .dg-check-hero, .dg-shared-check-header { padding-block: var(--space-3) var(--space-2); }
+  .dg-check-grid, .dg-check-rules { grid-template-columns: 1fr; }
+  .dg-check-textarea { min-height: 260px; }
+  .dg-check-options { flex-direction: column; gap: 0; }
+  .dg-check-options .dg-checkbox-row { width: 100%; flex-basis: auto; }
+  .dg-check-disclaimer { padding-bottom: var(--space-6); }
+  .dg-shared-check-meta { flex-direction: column; gap: 4px; }
+  .dg-shared-check-cta .dg-actions, .dg-shared-check-cta .btn { width: 100%; }
+  .dg-route-state-page { padding: var(--space-3) var(--space-2); }
+  .dg-route-state-card { padding: var(--space-3); }
+  .dg-route-state-actions, .dg-route-state-actions .btn { width: 100%; }
+  .dg-reading-header { padding-block: var(--space-4) var(--space-2); }
+  .dg-reading-content { padding-bottom: var(--space-6); }
+  .dg-reading-card, .dg-reading-boundary, .dg-referral-form { padding: var(--space-2); }
+  .dg-referral-section { padding-bottom: var(--space-6); }
+  .dg-referral-grid { grid-template-columns: 1fr; }
+  .dg-referral-submit { width: 100%; }
 }
