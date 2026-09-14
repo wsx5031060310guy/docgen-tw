@@ -283,10 +283,11 @@ const CUSTOM: Template = {
   id: "custom", name: "自訂模板", category: "空白契約", icon: "document",
   description: "從零開始撰寫，AI 將協助你逐條檢核法律依據。適合特殊或非標準合作。",
   legal: ["民法 §153"],
-  defaults: { party_a_name: "", party_b_name: "", body: "", sign_date: todayMinguo() },
+  defaults: { party_a_name: "", party_b_name: "", title: "", body: "", sign_date: todayMinguo() },
   fields: [
     { id: "party_a_name", label: "甲方", required: true, group: "parties" },
     { id: "party_b_name", label: "乙方", required: true, group: "parties" },
+    { id: "title", label: "契約名稱", group: "work", placeholder: "例：社群廣告代操服務契約書（未填則顯示「自訂模板」）" },
     { id: "body", label: "契約內文", required: true, type: "textarea", span: 2, group: "work", placeholder: "逐條撰寫，例：\n第一條 ...\n第二條 ..." },
   ],
   groups: { parties: "雙方資訊", work: "契約內容" },
@@ -386,6 +387,14 @@ export function getTemplate(id: string): Template | undefined {
   return TEMPLATES.find((t) => t.id === id);
 }
 
+export function contractTitle(
+  templateId: string,
+  values: Record<string, string> | undefined,
+): string {
+  if (templateId === "custom" && values?.title?.trim()) return values.title.trim();
+  return getTemplate(templateId)?.name ?? "電子合約";
+}
+
 const PLACEHOLDER = "__________";
 
 export function fillTemplate(text: string, values: Values): string {
@@ -408,7 +417,7 @@ export function buildContractDocument(templateId: string, values: Values) {
     n: c.n, title: c.title, body: fillTemplate(c.body, values), ref: c.ref,
   }));
   return {
-    title: t.name,
+    title: contractTitle(templateId, values),
     category: t.category,
     legalBasis: t.legal,
     clauses,

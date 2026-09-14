@@ -42,3 +42,6 @@ next-env.d.ts
 
 /app/generated/prisma
 .env*.local
+
+# local-dev signature PNGs (Blob is used in production)
+public/signatures/

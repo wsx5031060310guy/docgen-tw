@@ -1,15 +1,15 @@
 // Signed-contract notification: email both parties that signing is complete.
 //
-// The contract PDF is intentionally NOT rendered or attached here. @react-pdf's
-// CJK render is CPU-bound and blocked the serverless function past its limit, so
-// the completion email never sent (the function timed out mid-render). The signed
-// PDF stays available on demand via GET /api/contracts/[id]/pdf. Keeping this path
-// render-free makes the completion email fast and reliable. Failures are swallowed
-// and logged — signing never blocks on email delivery.
+// Completion emails include the signed PDF. Previous CFF fonts made fontkit
+// subsetting take 60–94s locally and 136–206s in production; local TrueType
+// (glyf) fonts remove that bottleneck. A 40s guard and attachment-free fallback
+// keep email best-effort if rendering still fails or stalls.
 
 import { sendEmail, mailgunConfigured } from "@/lib/mailgun";
 import type { StoredContract } from "@/lib/contract-store";
-import { getTemplate } from "@/lib/templates";
+import { pdfInputFor } from "@/lib/pdf/input";
+import { renderContractPdf } from "@/lib/pdf/render";
+import { contractTitle } from "@/lib/templates";
 
 export async function notifyFullySigned(c: StoredContract): Promise<void> {
   // De-dupe: a contract where both parties share an address (or the recipient is
@@ -28,8 +28,24 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
     return;
   }
 
-  const tpl = getTemplate(c.templateId);
-  const tplName = tpl?.name || "電子合約";
+  const tplName = contractTitle(c.templateId, c.values);
+  let pdf: Buffer | undefined;
+  let pdfTimeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    pdf = await Promise.race([
+      renderContractPdf(pdfInputFor(c)),
+      new Promise<never>((_, reject) => {
+        pdfTimeout = setTimeout(
+          () => reject(new Error("PDF render timed out after 40 seconds")),
+          40_000,
+        );
+      }),
+    ]);
+  } catch (reason) {
+    console.error("[notify] pdf render failed, sending without attachment:", reason);
+  } finally {
+    if (pdfTimeout) clearTimeout(pdfTimeout);
+  }
 
   const text =
     `${tplName} 已由甲乙雙方完成電子簽署。\n\n` +
@@ -37,7 +53,9 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
     `甲方：${c.values?.party_a_name || "—"}\n` +
     `乙方：${c.values?.party_b_name || c.recipientName || "—"}\n` +
     `簽署狀態：FULLY_SIGNED\n\n` +
-    `完整契約 PDF 可至 DocGen TW 合約頁面下載，依電子簽章法 §5 與紙本具同等效力。\n` +
+    (pdf
+      ? `完整契約 PDF 如附件，依電子簽章法 §5 與紙本具同等效力。\n`
+      : `完整契約 PDF 可至 DocGen TW 合約頁面下載，依電子簽章法 §5 與紙本具同等效力。\n`) +
     `本郵件由 DocGen TW 系統自動發送。`;
 
   for (const to of recipients) {
@@ -46,6 +64,9 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
         to,
         subject: `[DocGen TW] ${tplName} 已雙方簽署完成`,
         text,
+        attachment: pdf
+          ? { filename: `docgen-${c.id}.pdf`, data: pdf, contentType: "application/pdf" }
+          : undefined,
       });
       if (!r.ok) console.error(`[notify] mailgun failed for ${to}: ${r.reason}`);
     } catch (e) {

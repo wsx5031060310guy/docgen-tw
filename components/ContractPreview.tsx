@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { LegalBasisChip } from "./LegalBasisChip";
-import { fillTemplate, type Template, type Values } from "@/lib/templates";
+import { contractTitle, fillTemplate, type Template, type Values } from "@/lib/templates";
 import { todayMinguo } from "@/lib/numberToChinese";
 
 const ZH_NUM = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二", "十三", "十四", "十五", "十六", "十七", "十八", "十九", "二十"];
@@ -71,7 +71,7 @@ export function ContractPreview({
             DOCGEN TW · 電子契約
           </div>
           <h1 style={{ fontSize: 30, fontFamily: "var(--font-serif)", letterSpacing: "0.18em", margin: 0 }}>
-            {template.name}
+            {contractTitle(template.id, values)}
           </h1>
           <div style={{ marginTop: 14, fontSize: 13, color: "#6b5c45" }}>
             立契約書人 　 {partyA}　（甲方） 　·　 {partyB}　（乙方）

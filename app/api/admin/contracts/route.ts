@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     orderBy: { createdAt: "desc" },
     take: 100,
     select: {
-      id: true, templateId: true, client: true, recipientName: true,
+      id: true, templateId: true, values: true, client: true, recipientName: true,
       recipientEmail: true, signingStatus: true, uid: true, caseId: true,
       createdAt: true,
       milestones: { select: { id: true, status: true } },

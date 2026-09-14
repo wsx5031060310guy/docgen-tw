@@ -4,25 +4,28 @@
 // signature block (with embedded signature PNG when available), audit trail.
 
 import { renderToBuffer, Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
+import path from "node:path";
 import React from "react";
-import { fillTemplate, getTemplate, type Values } from "@/lib/templates";
+import { contractTitle, fillTemplate, getTemplate, type Values } from "@/lib/templates";
 import { todayMinguo } from "@/lib/numberToChinese";
+import { wrapLines } from "@/lib/pdf/wrap";
 
 const ZH = ["零","一","二","三","四","五","六","七","八","九","十","十一","十二","十三","十四","十五","十六","十七","十八","十九","二十"];
 const num = (n: number) => ZH[n] || String(n);
 
-// Register CJK font from a public CDN. Without this @react-pdf falls back to
-// Helvetica and silently drops Chinese glyphs.
+// Use local TrueType (glyf) CJK fonts. The previous CDN woff files used CFF,
+// whose fontkit subsetting took 60–94s locally and 136–206s in production for
+// a 3,800-character custom contract; these TTF files render the same input in 0.1s.
 let fontsRegistered = false;
 function ensureFonts() {
   if (fontsRegistered) return;
   Font.register({
     family: "NotoSerifTC",
-    src: "https://cdn.jsdelivr.net/npm/@fontsource/noto-serif-tc/files/noto-serif-tc-chinese-traditional-500-normal.woff",
+    src: path.join(process.cwd(), "lib/pdf/fonts/NotoSerifTC.ttf"),
   });
   Font.register({
     family: "NotoSansTC",
-    src: "https://cdn.jsdelivr.net/npm/@fontsource/noto-sans-tc/files/noto-sans-tc-chinese-traditional-400-normal.woff",
+    src: path.join(process.cwd(), "lib/pdf/fonts/NotoSansTC.ttf"),
   });
   fontsRegistered = true;
 }
@@ -36,7 +39,7 @@ const s = StyleSheet.create({
 
   clauseBlock: { marginBottom: 12 },
   clauseTitle: { fontSize: 12, fontWeight: 700, marginBottom: 3, letterSpacing: 1 },
-  clauseBody:  { paddingLeft: 18, textAlign: "justify" },
+  clauseBody:  { paddingLeft: 18, textAlign: "left" },
   refRow:      { fontFamily: "NotoSansTC", fontSize: 8, color: "#9a8868", paddingLeft: 18, marginTop: 3 },
 
   sigRow:    { flexDirection: "row", marginTop: 24, gap: 30 },
@@ -102,21 +105,32 @@ function ContractDoc({ input }: { input: PdfInput }) {
   const fullySigned = Boolean(input.senderSignatureUrl && input.recipientSignatureUrl);
   const senderHashShort = (input.senderAudit?.match(/#([0-9a-f]+)/i)?.[1] ?? "").slice(0, 8);
   const recipientHashShort = (input.recipientAudit?.match(/#([0-9a-f]+)/i)?.[1] ?? "").slice(0, 8);
+  const title = contractTitle(input.templateId, input.values);
 
   return (
-    <Document title={`${tpl.name} - ${input.contractId}`}>
+    <Document title={`${title} - ${input.contractId}`}>
       <Page size="A4" style={s.page}>
         {/* Diagonal-ish text watermark for un-signed / draft renderings */}
         {!fullySigned && <Text style={s.watermark} fixed>D R A F T</Text>}
         <Text style={s.topMeta}>DOCGEN TW · 電子契約</Text>
-        <Text style={s.title}>{tpl.name}</Text>
+        {/* Title style is sized for 5-char template names; shrink long custom titles so
+            they stay on one line (a forced mid-word wrap inserts a hyphen). */}
+        <Text style={title.length > 20 ? [s.title, { fontSize: 14, letterSpacing: 1 }] : title.length > 12 ? [s.title, { fontSize: 18, letterSpacing: 2 }] : s.title}>{title}</Text>
         <Text style={s.parties}>立契約書人　{partyA}（甲方）　·　{partyB}（乙方）</Text>
         <View style={s.rule} />
 
         {clauses.map((c) => (
           <View key={c.n} style={s.clauseBlock}>
             <Text style={s.clauseTitle}>第 {num(c.n)} 條　{c.title}</Text>
-            <Text style={s.clauseBody}>{fillTemplate(c.body, v).replace(/__+/g, "　　　　")}</Text>
+            <View style={s.clauseBody}>
+              {wrapLines(fillTemplate(c.body, v).replace(/__+/g, "　　　　"), {
+                font: "serif",
+                fontSize: s.page.fontSize,
+                // A4 595.28 − page padding 120 − paddingLeft 18 = 457.28; keep a few points of
+                // slack so textkit's own measurement never re-breaks (and hyphenates) a line.
+                maxWidth: 450,
+              }).map((line, i) => <Text key={i}>{line || " "}</Text>)}
+            </View>
             {c.ref.length > 0 && (
               <Text style={s.refRow}>依據　{c.ref.join("　·　")}</Text>
             )}

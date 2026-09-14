@@ -5,7 +5,7 @@ import { TopNav } from "@/components/TopNav";
 import { Icon } from "@/components/Icon";
 import { SignaturePad } from "@/components/SignaturePad";
 import { ContractPreview } from "@/components/ContractPreview";
-import { getTemplate, TEMPLATES } from "@/lib/templates";
+import { contractTitle, getTemplate, TEMPLATES } from "@/lib/templates";
 import { isValidEmail } from "@/lib/email";
 
 interface ContractData {
@@ -154,7 +154,7 @@ function SignInner({ id }: { id: string }) {
             <div>
               <div style={{ fontSize: 13, color: "var(--ink-muted)" }}>由 {senderDisplayName} 寄送給你</div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 600 }}>
-                {tpl.name}
+                {contractTitle(data.templateId, data.values)}
               </div>
             </div>
           </div>

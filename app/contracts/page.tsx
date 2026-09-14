@@ -4,11 +4,12 @@ import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
-import { TEMPLATES, getTemplate } from "@/lib/templates";
+import { contractTitle, TEMPLATES, getTemplate } from "@/lib/templates";
 
 type Row = {
   id: string;
   templateId: string | null;
+  values: Record<string, string>;
   client: string;
   recipientName: string | null;
   recipientEmail: string | null;
@@ -142,7 +143,7 @@ export default function ContractsListPage() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                     <div className="row gap-2" style={{ flexWrap: "wrap" }}>
                       <Icon name={tpl?.icon || "fileText"} size={13} />
-                      <b style={{ fontSize: 15 }}>{tpl?.name || r.templateId || "—"}</b>
+                      <b style={{ fontSize: 15 }}>{contractTitle(r.templateId || "", r.values)}</b>
                       <span className="chip chip-zinc" style={{ fontSize: 11 }}>{r.signingStatus}</span>
                       {r.case && (
                         <span className="chip chip-zinc" style={{ fontSize: 11 }}>
