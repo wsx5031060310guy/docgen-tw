@@ -445,3 +445,182 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   /* Pricing grid on home (inline auto-fit minmax 260px) — drop minimum so 1-col fills width */
   #pricing > div[style*="auto-fit"] { grid-template-columns: 1fr !important; }
 }
+
+/* ── Recipient sign page ── */
+/* .field-help is zinc-400 on white (2.5:1); helper text on this page must pass AA. */
+.dg-sign-form-fields .field-help, .dg-sign-signature-target .field-help { color: var(--ink-soft); }
+.dg-sign-preview-title-long { font-size: 24px !important; }
+.dg-sign-preview-title-short { font-size: 30px !important; }
+.dg-sign-topbar { min-height: 59px; }
+.dg-sign-topbar-brand { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.dg-sign-logo-suffix { color: var(--ink-soft); font-weight: 400; margin-left: 6px; }
+.dg-sign-topbar-label {
+  padding-left: 16px;
+  border-left: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dg-sign-trust-chip { background: var(--bg-elev); color: var(--ink-soft); border-color: var(--line); }
+
+.dg-sign-page { min-height: calc(100vh - 59px); background: var(--bg-soft); }
+.dg-sign-main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+.dg-sign-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+.dg-sign-mobile-sender-card, .dg-sign-mobile-submit-bar { display: none; }
+
+.dg-sign-document-card { overflow: hidden; }
+.dg-sign-document-header {
+  min-height: 56px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-elev);
+}
+.dg-sign-document-label { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: 12.5px; }
+.dg-sign-document-actions { display: flex; align-items: center; gap: 8px; }
+.dg-sign-document-toggle { display: none; }
+.dg-sign-document-body { background: var(--cream-100); }
+
+/* The panel must never be taller than the viewport, or the sign button is only reachable
+   at the very end of a 6-page scroll; scroll inside the panel instead. */
+.dg-sign-action-column { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; }
+.dg-sign-action-card { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.dg-sign-sender { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.dg-sign-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.dg-sign-sender-copy { min-width: 0; }
+.dg-sign-eyebrow { color: var(--ink-soft); font-size: 12px; }
+.dg-sign-contract-title { margin-top: 2px; font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.45; }
+.dg-sign-status-chip { margin-top: 8px; }
+.dg-sign-desktop-stepper { padding-top: 24px; border-top: 1px solid var(--line-soft); }
+.dg-sign-desktop-stepper .stepper { align-items: flex-start; }
+.dg-sign-desktop-stepper .stepper-item, .dg-sign-mobile-stepper .stepper-item { color: var(--ink-soft); }
+.dg-sign-desktop-stepper .stepper-item { flex-direction: column; gap: 5px; text-align: center; white-space: nowrap; font-size: 11px; }
+.dg-sign-desktop-stepper .stepper-line { margin-top: 12px; min-width: 12px; }
+.dg-sign-form-fields { display: flex; flex-direction: column; gap: 16px; }
+.dg-sign-signature-target { scroll-margin: 96px; }
+.dg-sign-legal-note {
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.dg-sign-legal-note .ic { margin-top: 2px; color: var(--ink-soft); }
+.dg-sign-error { padding: 10px 12px; border-radius: var(--radius); background: var(--red-50); align-items: flex-start; line-height: 1.5; }
+.dg-sign-submit { width: 100%; min-height: 48px; }
+.dg-sign-after-note { color: var(--ink-soft); font-size: 12px; line-height: 1.5; text-align: center; }
+
+.dg-sign-state-page, .dg-sign-success-page {
+  min-height: calc(100vh - 59px);
+  padding: 40px 24px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-soft);
+}
+.dg-sign-message, .dg-sign-skeleton-card { width: min(100%, 520px); padding: 24px; }
+.dg-sign-message { display: flex; flex-direction: column; gap: 8px; }
+.dg-sign-message span { font-size: 12px; opacity: .85; }
+.dg-sign-message-error { background: var(--red-50); color: var(--red-600); border-color: #fecaca; }
+.dg-sign-skeleton-card { display: flex; flex-direction: column; gap: 16px; }
+.dg-sign-skeleton-line {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--zinc-100);
+  animation: dg-sign-skeleton-pulse 1.2s ease-in-out infinite alternate;
+}
+.dg-sign-skeleton-line-short { width: 38%; }
+.dg-sign-skeleton-line-medium { width: 68%; }
+@keyframes dg-sign-skeleton-pulse { to { opacity: .45; } }
+
+.dg-sign-success-page { background: var(--green-50); }
+.dg-sign-success-card { width: min(100%, 520px); padding: 48px; text-align: center; }
+.dg-sign-success-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: var(--green-500);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.dg-sign-success-copy { margin-top: 8px; color: var(--ink-soft); }
+.dg-sign-success-email { margin-top: 8px; color: var(--ink-soft); font-size: 13px; }
+.dg-sign-success-actions { margin-top: 24px; display: flex; justify-content: center; align-items: center; gap: 12px; }
+.dg-sign-success-hint { margin-top: 6px; color: var(--ink-soft); font-size: 12px; }
+.dg-sign-success-meta {
+  margin-top: 26px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: left;
+}
+
+@media (max-width: 959px) {
+  .dg-sign-topbar { padding: 8px 16px; }
+  .dg-sign-topbar .nav-logo { min-height: 44px; }
+  .dg-sign-topbar-label { padding-left: 12px; }
+  .dg-sign-trust-chip { font-size: 10.5px; padding: 3px 7px; }
+  .dg-sign-main { padding: 16px 16px 96px; }
+  .dg-sign-mobile-sender-card { display: block; padding: 20px; margin-bottom: 16px; }
+  .dg-sign-mobile-stepper { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+  .dg-sign-layout { grid-template-columns: 1fr; gap: 16px; }
+  .dg-sign-document-header { align-items: flex-start; flex-direction: column; padding: 12px; }
+  .dg-sign-document-actions { width: 100%; justify-content: space-between; }
+  .dg-sign-document-actions .btn { min-height: 44px; }
+  .dg-sign-document-toggle { display: inline-flex; }
+  .dg-sign-document-body { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
+  .dg-sign-document-body-expanded { max-height: none; overflow: visible; }
+  .dg-sign-action-column { position: static; }
+  .dg-sign-action-card { padding: 24px; gap: 20px; }
+  .dg-sign-desktop-summary, .dg-sign-desktop-stepper, .dg-sign-desktop-submit { display: none; }
+  .dg-sign-action-card .btn-sm { min-height: 44px; }
+  .dg-sign-mobile-submit-bar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 8px 16px 12px;
+    border-top: 1px solid var(--line);
+    background: color-mix(in oklab, var(--bg-elev) 94%, transparent);
+    box-shadow: 0 -1px 3px rgba(20,29,68,.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .dg-sign-mobile-submit-inner { max-width: 600px; margin: 0 auto; }
+  .dg-sign-mobile-submit-inner p { margin-bottom: 6px; color: var(--ink-soft); font-size: 12px; text-align: center; }
+  .dg-sign-state-page, .dg-sign-success-page { padding: 24px 16px; }
+  .dg-sign-success-card { padding: 32px 20px; }
+  .dg-sign-success-actions { flex-direction: column; }
+  .dg-sign-success-actions > *, .dg-sign-success-actions .btn { width: 100%; min-height: 44px; }
+}
+
+@media (max-width: 520px) {
+  .dg-sign-topbar-label { display: none; }
+  .dg-sign-action-card { padding: 20px; }
+}
