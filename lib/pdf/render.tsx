@@ -6,6 +6,7 @@
 import { renderToBuffer, Document, Page, Text, View, Image, StyleSheet, Font } from "@react-pdf/renderer";
 import path from "node:path";
 import React from "react";
+import { parseContractBody } from "@/lib/contract-body";
 import { contractTitle, fillTemplate, getTemplate, type Values } from "@/lib/templates";
 import { todayMinguo } from "@/lib/numberToChinese";
 import { wrapLines } from "@/lib/pdf/wrap";
@@ -40,6 +41,10 @@ const s = StyleSheet.create({
   clauseBlock: { marginBottom: 12 },
   clauseTitle: { fontSize: 12, fontWeight: 700, marginBottom: 3, letterSpacing: 1 },
   clauseBody:  { paddingLeft: 18, textAlign: "left" },
+  customHeading: { fontWeight: 700, marginTop: 8 },
+  customItemContinuation: { paddingLeft: 16 },
+  customIndent: { paddingLeft: 16 },
+  customBlank: { height: 6 },
   refRow:      { fontFamily: "NotoSansTC", fontSize: 8, color: "#9a8868", paddingLeft: 18, marginTop: 3 },
 
   sigRow:    { flexDirection: "row", marginTop: 24, gap: 30 },
@@ -95,6 +100,57 @@ export type PdfInput = {
   recipientAudit?: string | null;
 };
 
+const pdfWrap = (text: string, maxWidth = 450) => wrapLines(text.replace(/__+/g, "　　　　"), {
+  font: "serif",
+  fontSize: 11,
+  maxWidth,
+});
+
+function CustomContractBody({ body }: { body: string }) {
+  return (
+    <View>
+      {parseContractBody(body).map((block, blockIndex) => {
+        if (block.kind === "blank") return <View key={blockIndex} style={s.customBlank} />;
+
+        if (block.kind === "heading") {
+          return pdfWrap(block.text).map((line, lineIndex) => (
+            <Text key={`${blockIndex}-${lineIndex}`} style={lineIndex === 0 ? s.customHeading : undefined}>
+              {line || " "}
+            </Text>
+          ));
+        }
+
+        if (block.kind === "item") {
+          const printable = block.text.replace(/__+/g, "　　　　");
+          const [firstLine = "", ...initialContinuation] = pdfWrap(block.text);
+          const continuation = initialContinuation.length > 0
+            ? pdfWrap(printable.slice(firstLine.length), 434)
+            : [];
+
+          return (
+            <React.Fragment key={blockIndex}>
+              <Text>{firstLine || " "}</Text>
+              {continuation.map((line, lineIndex) => (
+                <Text key={lineIndex} style={s.customItemContinuation}>{line || " "}</Text>
+              ))}
+            </React.Fragment>
+          );
+        }
+
+        const lines = pdfWrap(block.text, block.kind === "indent" ? 434 : 450);
+        return lines.map((line, lineIndex) => (
+          <Text
+            key={`${blockIndex}-${lineIndex}`}
+            style={block.kind === "indent" ? s.customIndent : undefined}
+          >
+            {line || " "}
+          </Text>
+        ));
+      })}
+    </View>
+  );
+}
+
 function ContractDoc({ input }: { input: PdfInput }) {
   const tpl = getTemplate(input.templateId);
   if (!tpl) return null;
@@ -122,15 +178,19 @@ function ContractDoc({ input }: { input: PdfInput }) {
         {clauses.map((c) => (
           <View key={c.n} style={s.clauseBlock}>
             <Text style={s.clauseTitle}>第 {num(c.n)} 條　{c.title}</Text>
-            <View style={s.clauseBody}>
-              {wrapLines(fillTemplate(c.body, v).replace(/__+/g, "　　　　"), {
-                font: "serif",
-                fontSize: s.page.fontSize,
-                // A4 595.28 − page padding 120 − paddingLeft 18 = 457.28; keep a few points of
-                // slack so textkit's own measurement never re-breaks (and hyphenates) a line.
-                maxWidth: 450,
-              }).map((line, i) => <Text key={i}>{line || " "}</Text>)}
-            </View>
+            {input.templateId === "custom" && c.n === 2 ? (
+              <CustomContractBody body={fillTemplate(c.body, v)} />
+            ) : (
+              <View style={s.clauseBody}>
+                {wrapLines(fillTemplate(c.body, v).replace(/__+/g, "　　　　"), {
+                  font: "serif",
+                  fontSize: s.page.fontSize,
+                  // A4 595.28 − page padding 120 − paddingLeft 18 = 457.28; keep a few points of
+                  // slack so textkit's own measurement never re-breaks (and hyphenates) a line.
+                  maxWidth: 450,
+                }).map((line, i) => <Text key={i}>{line || " "}</Text>)}
+              </View>
+            )}
             {c.ref.length > 0 && (
               <Text style={s.refRow}>依據　{c.ref.join("　·　")}</Text>
             )}

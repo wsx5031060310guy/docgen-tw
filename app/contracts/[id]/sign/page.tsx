@@ -38,20 +38,37 @@ function SignSkeleton() {
   );
 }
 
+function SignPanelHeading({ mobile = false }: { mobile?: boolean }) {
+  const description = mobile
+    ? "閱讀下方合約，填寫資料並親筆簽名；完成後正式版 PDF 會寄給雙方。"
+    : "閱讀左側合約，填寫資料並親筆簽名；完成後正式版 PDF 會寄給雙方。";
+
+  return (
+    <div className="dg-sign-panel-heading">
+      {mobile ? (
+        <p className="dg-sign-panel-title">請簽署這份合約</p>
+      ) : (
+        <h1 className="dg-sign-panel-title">請簽署這份合約</h1>
+      )}
+      <p className="dg-sign-panel-description">{description}</p>
+    </div>
+  );
+}
+
 function SenderSummary({ sender, title }: { sender: string; title: string }) {
   return (
-    <div className="dg-sign-sender">
-      <div className="dg-sign-avatar" aria-hidden="true">
-        {sender.charAt(0)}
-      </div>
-      <div className="dg-sign-sender-copy">
-        <div className="dg-sign-eyebrow">由 {sender} 寄送給你</div>
-        <div className="dg-sign-contract-title">{title}</div>
+    <div className="dg-sign-summary">
+      <div className="dg-sign-sender">
+        <div className="dg-sign-avatar" aria-hidden="true">
+          {sender.charAt(0)}
+        </div>
+        <div className="dg-sign-eyebrow">由 {sender} 寄送</div>
         <span className="chip chip-warn dg-sign-status-chip">
           <Icon name="clock" size={12} />
           等候你簽署
         </span>
       </div>
+      <div className="dg-sign-contract-title">{title}</div>
     </div>
   );
 }
@@ -84,6 +101,8 @@ function SignInner({ id }: { id: string }) {
   const [signedAt, setSignedAt] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [documentExpanded, setDocumentExpanded] = useState(false);
+  const [pdfDownloading, setPdfDownloading] = useState(false);
+  const [pdfDownloadError, setPdfDownloadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -177,6 +196,28 @@ function SignInner({ id }: { id: string }) {
     }
   }
 
+  async function downloadPdf() {
+    setPdfDownloading(true);
+    setPdfDownloadError(null);
+    try {
+      const response = await fetch(`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const objectUrl = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `docgen-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+    } catch {
+      setPdfDownloadError("PDF 下載失敗，請改用「在瀏覽器開啟」。");
+    } finally {
+      setPdfDownloading(false);
+    }
+  }
+
   if (signed) {
     const signedAtDisplay = signedAt
       ? new Date(signedAt)
@@ -205,13 +246,15 @@ function SignInner({ id }: { id: string }) {
           {deliveryEmail && <p className="dg-sign-success-email">已寄至 {deliveryEmail}</p>}
           <div className="dg-sign-success-actions">
             <div>
-              <a
+              <button
+                type="button"
                 className="btn btn-stamp btn-lg"
-                href={`/api/contracts/${id}/pdf?token=${encodeURIComponent(token)}`}
-                download={`docgen-${id}.pdf`}
+                disabled={pdfDownloading}
+                onClick={downloadPdf}
               >
-                <Icon name="download" size={14} />下載 PDF
-              </a>
+                <Icon name="download" size={14} />
+                {pdfDownloading ? "產生 PDF 中…" : "下載 PDF"}
+              </button>
               <div className="dg-sign-success-hint">產生 PDF 約需數秒</div>
             </div>
             <a
@@ -224,6 +267,11 @@ function SignInner({ id }: { id: string }) {
             </a>
             <button className="btn btn-ghost" onClick={() => router.push("/")}>回首頁</button>
           </div>
+          {pdfDownloadError && (
+            <p className="field-error dg-sign-success-download-error" role="alert">
+              {pdfDownloadError}
+            </p>
+          )}
           <div className="dg-sign-success-meta">
             <div>合約編號 #{id}</div>
             <div>簽署時間 {signedAtDisplay}</div>
@@ -234,11 +282,18 @@ function SignInner({ id }: { id: string }) {
   }
 
   const signatureButtonLabel = submitting ? "簽署中…" : "正式簽署";
+  const signatureSubmitNote = sigB
+    ? "送出後即完成簽署，不可撤回"
+    : "完成親筆簽名後即可送出";
+  const documentLabel = tpl.id === "custom"
+    ? `合約全文 · 約 ${Math.max(1, Math.round((data.values.body?.length ?? 0) / 400))} 分鐘閱讀`
+    : `合約預覽 · ${clauseCount} 條 · ${lawCount} 法令依據`;
 
   return (
     <div className="page dg-sign-page">
       <main className="dg-sign-main">
         <section className="card dg-sign-mobile-sender-card">
+          <SignPanelHeading mobile />
           <SenderSummary sender={senderDisplayName} title={title} />
           <div className="dg-sign-mobile-stepper">
             <Stepper steps={SIGN_STEPS} current={currentStep} />
@@ -250,7 +305,7 @@ function SignInner({ id }: { id: string }) {
             <header className="dg-sign-document-header">
               <div className="dg-sign-document-label">
                 <Icon name="fileText" size={13} />
-                合約預覽 · {clauseCount} 條 · {lawCount} 法令依據
+                {documentLabel}
               </div>
               <div className="dg-sign-document-actions">
                 <a
@@ -286,6 +341,7 @@ function SignInner({ id }: { id: string }) {
           <aside className="dg-sign-action-column">
             <section className="card dg-sign-action-card" aria-label="簽署資料">
               <div className="dg-sign-desktop-summary">
+                <SignPanelHeading />
                 <SenderSummary sender={senderDisplayName} title={title} />
               </div>
               <div className="dg-sign-desktop-stepper">
@@ -358,7 +414,7 @@ function SignInner({ id }: { id: string }) {
                 {signatureButtonLabel}
               </button>
               <p className="dg-sign-after-note">
-                簽署後正式版 PDF 會寄到你的信箱，也可在此下載。
+                {signatureSubmitNote}
               </p>
             </section>
           </aside>
@@ -367,7 +423,7 @@ function SignInner({ id }: { id: string }) {
 
       <div className="dg-sign-mobile-submit-bar">
         <div className="dg-sign-mobile-submit-inner">
-          <p>{sigB ? "已簽名，可送出" : "請先在下方簽名"}</p>
+          <p>{signatureSubmitNote}</p>
           <button
             type="button"
             className="btn btn-stamp btn-lg dg-sign-submit"

@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { LegalBasisChip } from "./LegalBasisChip";
+import { parseContractBody } from "@/lib/contract-body";
 import { contractTitle, fillTemplate, type Template, type Values } from "@/lib/templates";
 import { todayMinguo } from "@/lib/numberToChinese";
 
@@ -18,6 +19,48 @@ function renderClause(text: string) {
       <React.Fragment key={i}>{p}</React.Fragment>
     )
   );
+}
+
+function renderCustomBody(body: string) {
+  const blocks = parseContractBody(body);
+  const firstHeadingIndex = blocks.findIndex((block) => block.kind === "heading");
+
+  return blocks.map((block, index) => {
+    if (block.kind === "blank") return <div key={index} style={{ height: 10 }} />;
+    if (block.kind === "heading") {
+      return (
+        <h3
+          key={index}
+          style={{
+            borderLeft: "3px solid #c8b892",
+            fontFamily: "var(--font-serif)",
+            fontSize: 15,
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            margin: index === firstHeadingIndex ? "0 0 6px" : "18px 0 6px",
+            paddingLeft: 10,
+          }}
+        >
+          {renderClause(block.text)}
+        </h3>
+      );
+    }
+    if (block.kind === "item") {
+      return (
+        <p key={index} style={{ margin: "0 0 4px", paddingLeft: "1.6em", textIndent: "-1.6em" }}>
+          {renderClause(block.text)}
+        </p>
+      );
+    }
+    if (block.kind === "indent") {
+      return (
+        <p key={index} style={{ margin: "0 0 2px", paddingLeft: "2.6em" }}>
+          {renderClause(block.text)}
+        </p>
+      );
+    }
+    return <p key={index} style={{ margin: "0 0 4px" }}>{renderClause(block.text)}</p>;
+  });
 }
 
 export function ContractPreview({
@@ -86,9 +129,13 @@ export function ContractPreview({
               <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 700, margin: "0 0 6px", letterSpacing: "0.06em" }}>
                 第 {numberToZh(c.n)} 條　{c.title}
               </h2>
-              <div style={{ whiteSpace: "pre-wrap", textIndent: "2em" }}>
-                {renderClause(fillTemplate(c.body, values))}
-              </div>
+              {template.id === "custom" && c.n === 2 ? (
+                <div>{renderCustomBody(fillTemplate(c.body, values))}</div>
+              ) : (
+                <div style={{ whiteSpace: "pre-wrap", textIndent: "2em" }}>
+                  {renderClause(fillTemplate(c.body, values))}
+                </div>
+              )}
               {c.ref.length > 0 && (
                 <div className="row" style={{ gap: 4, flexWrap: "wrap", marginTop: 6, marginLeft: "2em", fontFamily: "var(--font-sans)" }}>
                   <span style={{ fontSize: 11, color: "#9a8868", marginRight: 4 }}>依據</span>
