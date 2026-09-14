@@ -44,6 +44,8 @@ export function ContractPreview({
   const clauses = template.clauses(values);
   const partyA = values.party_a_name || "___________";
   const partyB = values.party_b_name || "___________";
+  const title = contractTitle(template.id, values);
+  const hasLongTitle = title.length > 12;
 
   return (
     <div className="dg-contract-wrap" style={{ display: "flex", justifyContent: "center", padding: 24 }}>
@@ -70,8 +72,8 @@ export function ContractPreview({
           <div style={{ fontSize: 11, letterSpacing: "0.3em", color: "#856b4a", marginBottom: 8 }}>
             DOCGEN TW · 電子契約
           </div>
-          <h1 style={{ fontSize: 30, fontFamily: "var(--font-serif)", letterSpacing: "0.18em", margin: 0 }}>
-            {contractTitle(template.id, values)}
+          <h1 className={hasLongTitle ? "dg-sign-preview-title-long" : "dg-sign-preview-title-short"} style={{ fontSize: hasLongTitle ? 24 : 30, fontFamily: "var(--font-serif)", letterSpacing: hasLongTitle ? "0.04em" : "0.18em", margin: 0 }}>
+            {title}
           </h1>
           <div style={{ marginTop: 14, fontSize: 13, color: "#6b5c45" }}>
             立契約書人 　 {partyA}　（甲方） 　·　 {partyB}　（乙方）
@@ -81,9 +83,9 @@ export function ContractPreview({
         <div style={{ display: "flex", flexDirection: "column", gap: 22, fontSize: 14.5, lineHeight: 1.85 }}>
           {clauses.map((c) => (
             <div key={c.n} style={{ position: "relative" }}>
-              <h4 style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 700, margin: "0 0 6px", letterSpacing: "0.06em" }}>
+              <h2 style={{ fontFamily: "var(--font-serif)", fontSize: 16, fontWeight: 700, margin: "0 0 6px", letterSpacing: "0.06em" }}>
                 第 {numberToZh(c.n)} 條　{c.title}
-              </h4>
+              </h2>
               <div style={{ whiteSpace: "pre-wrap", textIndent: "2em" }}>
                 {renderClause(fillTemplate(c.body, values))}
               </div>
