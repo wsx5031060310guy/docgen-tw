@@ -19,6 +19,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       id: c.id, templateId: c.templateId, signingStatus: c.signingStatus,
       values: c.values, senderSignatureUrl: c.senderSignatureUrl,
       recipientSignatureUrl: c.recipientSignatureUrl, fullySigned: true,
+      recipientSignedAt: c.recipientSignedAt,
+      recipientName: c.recipientName,
+      recipientEmail: c.recipientEmail,
     });
   }
 
