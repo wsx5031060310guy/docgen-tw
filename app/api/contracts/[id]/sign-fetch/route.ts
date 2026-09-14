@@ -28,6 +28,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     signingStatus: c.signingStatus,
     senderName: c.values.party_a_name || c.client,
     recipientName: c.recipientName,
+    recipientEmail: c.recipientEmail,
     values: c.values,
     senderSignatureUrl: c.senderSignatureUrl,
   });

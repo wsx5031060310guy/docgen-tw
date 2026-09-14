@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { SignaturePad } from "@/components/SignaturePad";
 import { ContractPreview } from "@/components/ContractPreview";
 import { getTemplate, TEMPLATES } from "@/lib/templates";
+import { isValidEmail } from "@/lib/email";
 
 interface ContractData {
   id: string;
@@ -13,6 +14,7 @@ interface ContractData {
   signingStatus: string;
   senderName?: string;
   recipientName?: string | null;
+  recipientEmail?: string | null;
   values: Record<string, string>;
   senderSignatureUrl?: string | null;
   recipientSignatureUrl?: string | null;
@@ -28,6 +30,7 @@ function SignInner({ id }: { id: string }) {
   const [loadErr, setLoadErr] = useState<string | null>(null);
   const [sigB, setSigB] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signed, setSigned] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -40,6 +43,7 @@ function SignInner({ id }: { id: string }) {
         if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
         setData(j as ContractData);
         if (j.recipientName) setName(j.recipientName);
+        if (j.recipientEmail) setEmail(j.recipientEmail);
         if (j.fullySigned) setSigned(true);
       })
       .catch((e) => setLoadErr((e as Error).message));
@@ -74,16 +78,27 @@ function SignInner({ id }: { id: string }) {
   const senderDisplayName = data.senderName || data.values?.party_a_name || "—";
   const clauseCount = tpl.clauses(data.values).length;
   const lawCount = new Set(tpl.clauses(data.values).flatMap((c) => c.ref)).size;
+  const hasRecipientEmail = Boolean(data.recipientEmail);
 
   async function submit() {
     if (!sigB) return;
+    const recipientEmail = email.trim();
+    if ((!hasRecipientEmail || recipientEmail) && !isValidEmail(recipientEmail)) {
+      setErr("請填寫有效的電子郵件，簽署完成通知將寄到此信箱");
+      return;
+    }
     setSubmitting(true);
     setErr(null);
     try {
       const res = await fetch(`/api/contracts/${id}/recipient-sign`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ token, signature: sigB, recipientName: name || undefined }),
+        body: JSON.stringify({
+          token,
+          signature: sigB,
+          recipientName: name || undefined,
+          recipientEmail: recipientEmail || undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "簽署失敗");
@@ -185,16 +200,32 @@ function SignInner({ id }: { id: string }) {
         padding: "16px 24px",
       }}>
         <div className="container-narrow dg-sign-bottom-grid">
-          <div className="field">
-            <label className="field-label">
-              姓名 / 公司 <span className="field-required">*</span>
-            </label>
-            <input
-              className="input"
-              placeholder={data.recipientName || "請輸入"}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+          <div className="dg-fields-2col">
+            <div className="field">
+              <label className="field-label">
+                姓名 / 公司 <span className="field-required">*</span>
+              </label>
+              <input
+                className="input"
+                placeholder={data.recipientName || "請輸入"}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label className="field-label">
+                電子郵件（簽署完成通知寄送）
+                {!data.recipientEmail && <span className="field-required">*</span>}
+              </label>
+              <input
+                type="email"
+                className="input"
+                autoComplete="email"
+                inputMode="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
           </div>
           <div style={{ minWidth: 0 }}>
             <SignaturePad label="在此簽名" value={sigB} onChange={setSigB} height={88} />
