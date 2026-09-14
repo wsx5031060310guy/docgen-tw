@@ -1,10 +1,13 @@
 "use client";
+
+import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { TopNav } from "@/components/TopNav";
+import { useSearchParams } from "next/navigation";
+import { BillingBanner } from "@/components/BillingBanner";
 import { Icon } from "@/components/Icon";
 import { PaymentStatusBadge } from "@/components/PaymentStatusBadge";
-import { BillingBanner } from "@/components/BillingBanner";
+import { TopNav } from "@/components/TopNav";
+import { COMPANY } from "@/lib/company";
 
 type Order = {
   merchantTradeNo: string;
@@ -15,152 +18,189 @@ type Order = {
   paymentDate?: string | null;
 };
 
+type QueryPhase = "checking" | "pending" | "paid" | "failed" | "timeout" | "http-error" | "network-error" | "unknown";
+type DisplayPhase = QueryPhase | "missing";
+
+const STATE_CONTENT: Record<DisplayPhase, { icon: string; title: string; description: string; tone: string; spin?: boolean }> = {
+  checking: { icon: "loader", title: "正在確認付款結果", description: "正在向 NewebPay 查詢伺服器端的訂單狀態。", tone: "info", spin: true },
+  pending: { icon: "loader", title: "付款尚待確認", description: "伺服器目前回傳 PENDING；頁面會每 2.5 秒自動重查。", tone: "warning", spin: true },
+  paid: { icon: "check", title: "付款成功", description: "感謝你！合約額度已加值至帳戶。", tone: "success" },
+  failed: { icon: "x", title: "付款失敗", description: "伺服器已確認交易失敗。請重新付款或聯繫客服。", tone: "error" },
+  timeout: { icon: "clock", title: "確認付款結果逾時", description: "已完成 12 次查詢，但伺服器仍回傳 PENDING。這不代表付款失敗，可稍後重新查詢。", tone: "warning" },
+  "http-error": { icon: "alertOctagon", title: "訂單查詢失敗", description: "付款查詢服務回傳錯誤，無法確認目前狀態。", tone: "error" },
+  "network-error": { icon: "alertOctagon", title: "無法連線查詢", description: "網路連線失敗，尚未確認付款結果。請檢查連線後重試。", tone: "error" },
+  unknown: { icon: "alert", title: "無法辨識付款狀態", description: "伺服器回傳未支援的狀態。請重新查詢或聯繫客服。", tone: "warning" },
+  missing: { icon: "alert", title: "缺少訂單編號", description: "網址沒有 order 參數，因此未發出付款狀態查詢。", tone: "warning" },
+};
+
+function OrderStatus({ order, phase }: { order: Order | null; phase: DisplayPhase }) {
+  const status = order?.status.toUpperCase();
+  if (status === "PAID" || status === "PENDING" || status === "FAILED") {
+    return <PaymentStatusBadge status={status} />;
+  }
+  if (status) return <span className="chip chip-zinc dg-payment-status">{status} · 未知狀態</span>;
+  if (phase === "checking") {
+    return <span className="chip chip-zinc dg-payment-status" role="status" aria-busy="true">查詢中</span>;
+  }
+  return null;
+}
+
 function SuccessInner() {
-  const router = useRouter();
   const params = useSearchParams();
   const orderNo = params.get("order");
-  const [data, setData] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [phase, setPhase] = useState<QueryPhase>("checking");
+  const [queryError, setQueryError] = useState<string | null>(null);
+  const [queryRun, setQueryRun] = useState(0);
 
   useEffect(() => {
-    if (!orderNo) {
-      setLoading(false);
-      return;
-    }
+    if (!orderNo) return;
+
+    const currentOrderNo = orderNo;
     let cancelled = false;
     let attempts = 0;
+    let timerId: number | undefined;
+    const controller = new AbortController();
+
     async function poll() {
       attempts += 1;
-      const res = await fetch(`/api/payment/status?order=${orderNo}`);
-      if (!res.ok) {
-        if (!cancelled) setLoading(false);
-        return;
+      try {
+        const response = await fetch(`/api/payment/status?order=${encodeURIComponent(currentOrderNo)}`, { signal: controller.signal });
+        if (cancelled) return;
+        if (!response.ok) {
+          setQueryError(`HTTP ${response.status}`);
+          setPhase("http-error");
+          return;
+        }
+
+        const nextOrder = (await response.json()) as Order;
+        if (cancelled) return;
+        setOrder(nextOrder);
+        setQueryError(null);
+        const status = nextOrder.status.toUpperCase();
+
+        if (status === "PAID") {
+          setPhase("paid");
+          return;
+        }
+        if (status === "FAILED") {
+          setPhase("failed");
+          return;
+        }
+        if (status !== "PENDING") {
+          setPhase("unknown");
+          return;
+        }
+        if (attempts >= 12) {
+          setPhase("timeout");
+          return;
+        }
+
+        setPhase("pending");
+        timerId = window.setTimeout(() => void poll(), 2500);
+      } catch (error) {
+        if (cancelled || (error as Error).name === "AbortError") return;
+        setQueryError((error as Error).message);
+        setPhase("network-error");
       }
-      const json: Order = await res.json();
-      if (cancelled) return;
-      setData(json);
-      if (json.status === "PENDING" && attempts < 12) setTimeout(poll, 2500);
-      else setLoading(false);
     }
-    poll();
+
+    timerId = window.setTimeout(() => void poll(), 0);
     return () => {
       cancelled = true;
+      if (timerId !== undefined) window.clearTimeout(timerId);
+      controller.abort();
     };
-  }, [orderNo]);
+  }, [orderNo, queryRun]);
 
-  const status = (data?.status || (loading ? "PENDING" : "PENDING")).toUpperCase();
-  const cfg: Record<string, { color: string; bg: string; icon: string; title: string; sub: string; spin?: boolean }> = {
-    PAID: { color: "var(--green-500)", bg: "var(--green-50)", icon: "check", title: "付款成功", sub: "感謝你！合約額度已加值至帳戶。" },
-    PENDING: {
-      color: "var(--amber-600)", bg: "#fffbeb", icon: "loader",
-      title: "處理中", sub: "正在向 NewebPay 確認交易，請稍候...", spin: true,
-    },
-    FAILED: { color: "var(--red-500)", bg: "var(--red-50)", icon: "x", title: "付款失敗", sub: "請確認卡片資訊或聯繫客服。" },
-  };
-  const c = cfg[status] || cfg.PENDING;
+  const displayPhase: DisplayPhase = orderNo ? phase : "missing";
+  const content = STATE_CONTENT[displayPhase];
+  const isPolling = displayPhase === "checking" || displayPhase === "pending";
+
+  function retryQuery() {
+    if (!orderNo) return;
+    setQueryError(null);
+    setPhase("checking");
+    setQueryRun((run) => run + 1);
+  }
 
   return (
-    <main
-      className="page"
-      style={{ background: "var(--bg-soft)", minHeight: "calc(100vh - 60px)", padding: "48px 32px" }}
-    >
-      <div className="container-narrow" style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-        <div
-          className="card"
-          style={{ padding: 36, textAlign: "center", background: c.bg, borderColor: "transparent" }}
+    <main className="page dg-payment-result-page">
+      <div className="dg-page-shell dg-page-shell--reading dg-payment-result-shell">
+        <section
+          className={`card dg-card-body dg-payment-result-card dg-payment-result-card--${content.tone}`}
+          aria-labelledby="payment-result-title"
+          aria-live="polite"
+          aria-busy={isPolling || undefined}
         >
-          <div
-            className={status === "PAID" ? "pulse-ring" : ""}
-            style={{
-              width: 76, height: 76, borderRadius: "50%",
-              background: c.color, color: "#fff",
-              display: "grid", placeItems: "center", margin: "0 auto 16px",
-            }}
-          >
-            <Icon name={c.icon} size={34} stroke={3} className={c.spin ? "spin" : ""} />
+          <div className={`dg-payment-result-icon dg-payment-result-icon--${content.tone}`} aria-hidden="true">
+            <Icon name={content.icon} size={24} stroke={2.5} className={content.spin ? "spin" : ""} />
           </div>
-          <h1 style={{ fontSize: 32 }}>{c.title}</h1>
-          <p style={{ color: "var(--ink-soft)", marginTop: 8 }}>{c.sub}</p>
-          <div className="row gap-2" style={{ justifyContent: "center", marginTop: 18 }}>
-            <PaymentStatusBadge status={status} />
+          <div className="dg-payment-result-copy">
+            <h1 id="payment-result-title" className="dg-page-title">{content.title}</h1>
+            <p className="dg-text-secondary">{content.description}</p>
+            {queryError && <p className="field-error" role="alert">查詢錯誤：{queryError}</p>}
           </div>
-        </div>
+          <OrderStatus order={order} phase={displayPhase} />
+        </section>
 
-        {data && (
-          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div
-              style={{
-                padding: "12px 18px", borderBottom: "1px solid var(--line)",
-                fontSize: 13, color: "var(--ink-muted)", letterSpacing: "0.06em", textTransform: "uppercase",
-              }}
-            >
-              訂單明細
+        {order && (
+          <div className="card dg-payment-details-card">
+            <div className="dg-table-wrap" role="region" aria-label="訂單明細，可水平捲動" tabIndex={0}>
+              <table className="dg-table dg-payment-details-table">
+                <caption>訂單明細</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">編號</th>
+                    <th scope="col">項目</th>
+                    <th scope="col">金額</th>
+                    <th scope="col">狀態</th>
+                    <th scope="col">付款方式</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>{order.merchantTradeNo}</code></td>
+                    <td>{order.itemName}</td>
+                    <td className="dg-payment-amount">NT$ {order.amount}</td>
+                    <td><OrderStatus order={order} phase={displayPhase} /></td>
+                    <td>{order.paymentMethod || "—"}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
-              <thead>
-                <tr
-                  style={{
-                    background: "var(--bg-soft)", color: "var(--ink-muted)",
-                    fontSize: 12, letterSpacing: "0.05em", textTransform: "uppercase",
-                  }}
-                >
-                  {["編號", "項目", "金額", "狀態", "付款方式"].map((h) => (
-                    <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontWeight: 500 }}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderTop: "1px solid var(--line)" }}>
-                  <td style={{ padding: "14px 16px", fontFamily: "var(--font-mono)" }}>{data.merchantTradeNo}</td>
-                  <td style={{ padding: "14px 16px" }}>{data.itemName}</td>
-                  <td
-                    style={{
-                      padding: "14px 16px",
-                      fontFamily: "var(--font-mono)",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    NT$ {data.amount}
-                  </td>
-                  <td style={{ padding: "14px 16px" }}>
-                    <PaymentStatusBadge status={status} />
-                  </td>
-                  <td style={{ padding: "14px 16px", color: "var(--ink-soft)" }}>
-                    {data.paymentMethod || "—"}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         )}
 
-        {status === "PAID" && (
+        {displayPhase === "paid" && order?.status.toUpperCase() === "PAID" && (
           <>
             <BillingBanner />
-            <div className="row gap-3" style={{ justifyContent: "center", flexWrap: "wrap" }}>
-              <button className="btn btn-stamp btn-lg" onClick={() => router.push("/contracts/new")}>
-                <Icon name="sparkles" size={14} />
-                開始建立合約
-              </button>
-              <button className="btn btn-soft" onClick={() => router.push("/settings")}>
-                <Icon name="zap" size={13} />
-                設定 webhook 通知
-              </button>
-              <button className="btn btn-ghost" onClick={() => router.push("/")}>
-                <Icon name="home" size={14} />
-                回首頁
-              </button>
+            <div className="dg-actions dg-payment-result-actions">
+              <Link className="btn btn-stamp btn-lg" href="/contracts/new"><Icon name="sparkles" size={14} />開始建立合約</Link>
+              <Link className="btn btn-soft" href="/settings"><Icon name="zap" size={13} />設定 webhook 通知</Link>
+              <Link className="btn btn-ghost" href="/"><Icon name="home" size={14} />回首頁</Link>
             </div>
           </>
         )}
-        {status === "FAILED" && (
-          <div className="row gap-3" style={{ justifyContent: "center" }}>
-            <button className="btn btn-primary" onClick={() => router.push("/checkout")}>
-              重新付款
-            </button>
-            <button className="btn btn-ghost">聯繫客服</button>
+
+        {displayPhase === "failed" && (
+          <div className="dg-actions dg-payment-result-actions">
+            <Link className="btn btn-primary" href="/checkout">重新付款</Link>
+            <a className="btn btn-ghost" href={`mailto:${COMPANY.email}`}>聯繫客服</a>
+          </div>
+        )}
+
+        {(["timeout", "http-error", "network-error", "unknown"] as DisplayPhase[]).includes(displayPhase) && (
+          <div className="dg-actions dg-payment-result-actions">
+            <button type="button" className="btn btn-primary" onClick={retryQuery}>重新查詢</button>
+            <a className="btn btn-ghost" href={`mailto:${COMPANY.email}`}>聯繫客服</a>
+          </div>
+        )}
+
+        {displayPhase === "missing" && (
+          <div className="dg-actions dg-payment-result-actions">
+            <Link className="btn btn-primary" href="/checkout">返回付款方案</Link>
+            <a className="btn btn-ghost" href={`mailto:${COMPANY.email}`}>聯繫客服</a>
           </div>
         )}
       </div>
@@ -172,7 +212,7 @@ export default function PaymentSuccessPage() {
   return (
     <>
       <TopNav />
-      <Suspense fallback={<div style={{ padding: 40 }}>載入中…</div>}>
+      <Suspense fallback={<main className="page dg-payment-result-page"><div className="dg-page-shell dg-page-shell--reading dg-payment-result-shell"><div className="dg-state dg-state--loading" role="status" aria-busy="true">付款結果載入中…</div></div></main>}>
         <SuccessInner />
       </Suspense>
     </>

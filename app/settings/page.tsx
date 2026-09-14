@@ -1,366 +1,32 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
+
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { TopNav } from "@/components/TopNav";
+import { BillingBanner } from "@/components/BillingBanner";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
-import { BillingBanner } from "@/components/BillingBanner";
+import {
+  SettingsApiKeys,
+  type SettingsApiKey,
+  type SettingsLoadState,
+} from "@/components/SettingsApiKeys";
+import {
+  SettingsProfileFields,
+  type SettingsProfile,
+} from "@/components/SettingsProfileFields";
+import { TopNav } from "@/components/TopNav";
+import { UIState } from "@/components/UIState";
 
-const MAGIC_MESSAGE: Record<string, { color: string; bg: string; text: string }> = {
-  ok: { color: "#1f5a35", bg: "#e8f5ed", text: "✓ Email 已綁定，跨裝置登入成功。本瀏覽器 cookie 已綁到該 Email 的同一帳號。" },
-  missing: { color: "#7a1f1f", bg: "#fde9e9", text: "✗ 連結缺少 token。" },
-  invalid: { color: "#7a1f1f", bg: "#fde9e9", text: "✗ 連結無效或已被使用。請重新申請。" },
-  used: { color: "#7a1f1f", bg: "#fde9e9", text: "✗ 此連結已被使用。每個連結僅可使用一次。" },
-  expired: { color: "#7a1f1f", bg: "#fde9e9", text: "✗ 連結已過期（15 分鐘有效）。請重新申請。" },
-  disabled: { color: "#7a5a2a", bg: "var(--amber-50)", text: "⚠ 此部署未啟用資料庫，無法綁定 Email。" },
+const MAGIC_MESSAGE: Record<string, { kind: "success" | "error" | "warning"; text: string }> = {
+  ok: { kind: "success", text: "✓ Email 已綁定，跨裝置登入成功。本瀏覽器 cookie 已綁到該 Email 的同一帳號。" },
+  missing: { kind: "error", text: "✗ 連結缺少 token。" },
+  invalid: { kind: "error", text: "✗ 連結無效或已被使用。請重新申請。" },
+  used: { kind: "error", text: "✗ 此連結已被使用。每個連結僅可使用一次。" },
+  expired: { kind: "error", text: "✗ 連結已過期（15 分鐘有效）。請重新申請。" },
+  disabled: { kind: "warning", text: "⚠ 此部署未啟用資料庫，無法綁定 Email。" },
 };
 
-type Profile = {
-  uid: string;
-  email: string | null;
-  plan: string;
-  periodEnd: string | null;
-  webhookUrl: string | null;
-  webhookSecret: string | null;
-};
-
-type ApiKeyRow = {
-  id: string;
-  prefix: string;
-  label: string | null;
-  lastUsedAt: string | null;
-  revokedAt: string | null;
-  createdAt: string;
-};
-
-function SettingsInner() {
-  const params = useSearchParams();
-  const magic = params.get("magic");
-  const magicMsg = magic ? MAGIC_MESSAGE[magic] : null;
-  const [p, setP] = useState<Profile | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; status?: number; reason?: string } | null>(null);
-
-  const [email, setEmail] = useState("");
-  const [webhookUrl, setWebhookUrl] = useState("");
-  const [webhookSecret, setWebhookSecret] = useState("");
-  const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([]);
-  const [newKeyLabel, setNewKeyLabel] = useState("");
-  const [issued, setIssued] = useState<{ rawKey: string; prefix: string } | null>(null);
-  const [keyBusy, setKeyBusy] = useState(false);
-  const [magicEmail, setMagicEmail] = useState("");
-  const [magicSent, setMagicSent] = useState<string | null>(null);
-  const [magicErr, setMagicErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/billing/profile")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j: Profile | null) => {
-        if (j) {
-          setP(j);
-          setEmail(j.email ?? "");
-          setWebhookUrl(j.webhookUrl ?? "");
-          setWebhookSecret(j.webhookSecret ?? "");
-        }
-      })
-      .catch((e) => setErr((e as Error).message));
-    loadKeys();
-  }, []);
-
-  async function loadKeys() {
-    try {
-      const r = await fetch("/api/billing/api-keys");
-      if (!r.ok) return;
-      const j = await r.json();
-      setApiKeys(j.keys ?? []);
-    } catch {}
-  }
-  async function issueKey() {
-    setKeyBusy(true);
-    try {
-      const r = await fetch("/api/billing/api-keys", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ label: newKeyLabel || undefined }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-      setIssued({ rawKey: j.key.rawKey, prefix: j.key.prefix });
-      setNewKeyLabel("");
-      await loadKeys();
-    } catch (e) {
-      alert((e as Error).message);
-    } finally {
-      setKeyBusy(false);
-    }
-  }
-  async function revoke(id: string) {
-    if (!confirm("確認撤銷此 API key？此操作不可復原。")) return;
-    setKeyBusy(true);
-    try {
-      await fetch(`/api/billing/api-keys?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-      await loadKeys();
-    } finally {
-      setKeyBusy(false);
-    }
-  }
-  async function sendMagic() {
-    setMagicSent(null);
-    setMagicErr(null);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(magicEmail)) {
-      setMagicErr("Email 格式不正確");
-      return;
-    }
-    try {
-      const r = await fetch("/api/auth/email/start", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: magicEmail.trim() }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-      setMagicSent(`已寄出登入連結至 ${magicEmail}，請查收信箱（15 分鐘內有效）。`);
-    } catch (e) {
-      setMagicErr((e as Error).message);
-    }
-  }
-
-  async function save(testWebhook = false) {
-    setErr(null);
-    setTestResult(null);
-    setBusy(true);
-    try {
-      const r = await fetch("/api/billing/profile", {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, webhookUrl, webhookSecret, testWebhook }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-      setP(j.profile);
-      if (j.testResult) setTestResult(j.testResult);
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  function randomiseSecret() {
-    const arr = new Uint8Array(24);
-    window.crypto.getRandomValues(arr);
-    setWebhookSecret(Array.from(arr).map((b) => b.toString(16).padStart(2, "0")).join(""));
-  }
-
-  return (
-    <>
-      <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 760 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-            <Icon name="users" size={13} /> 設定
-          </div>
-          <h1 style={{ fontSize: 36 }}>帳號 & 整合</h1>
-          <p style={{ fontSize: 14, color: "var(--ink-soft)", marginTop: 8, lineHeight: 1.7 }}>
-            本平台以瀏覽器 cookie 識別身分（無註冊登入）。可選擇綁定 Email 收取 Pro 啟用憑據，
-            或設定 webhook URL，將「合約簽完」「milestone 逾期」等事件即時推到 Slack / Discord / n8n / Make。
-          </p>
-        </section>
-
-        {magicMsg && (
-          <section className="container" style={{ padding: "0 32px 12px", maxWidth: 760 }}>
-            <div style={{
-              padding: "12px 14px", borderRadius: "var(--radius)",
-              background: magicMsg.bg, color: magicMsg.color, fontSize: 13.5,
-            }}>{magicMsg.text}</div>
-          </section>
-        )}
-
-        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 760 }}>
-          <BillingBanner />
-        </section>
-
-        {p && (
-          <section className="container" style={{ padding: "0 32px 16px", maxWidth: 760 }}>
-            <div className="card" style={{
-              padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
-              display: "flex", flexDirection: "column", gap: 12,
-            }}>
-              <div className="row gap-2"><Icon name="hash" size={13} /><b style={{ fontSize: 14 }}>身分</b></div>
-              <div style={{ fontSize: 12.5, color: "var(--ink-muted)", fontFamily: "var(--font-mono)", wordBreak: "break-all" }}>
-                uid: {p.uid}
-              </div>
-              <div style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
-                方案：{p.plan === "PRO" ? "PRO" : "FREE"}
-                {p.periodEnd && p.plan === "PRO" && <> · 至 {new Date(p.periodEnd).toLocaleDateString("zh-Hant")}</>}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.6 }}>
-                ※ uid 存在你的瀏覽器 cookie。換瀏覽器 / 清 cookie 會視為新使用者。
-                想跨裝置帶 Pro，請填下方 Email + 跟客服回報轉移。
-              </div>
-            </div>
-          </section>
-        )}
-
-        <section className="container" style={{ padding: "0 32px 16px", maxWidth: 760 }}>
-          <div className="card" style={{
-            padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
-            display: "flex", flexDirection: "column", gap: 12,
-          }}>
-            <div className="row gap-2"><Icon name="mail" size={13} /><b style={{ fontSize: 14 }}>Email</b></div>
-            <input className="input" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            <div style={{ fontSize: 12, color: "var(--ink-muted)" }}>
-              用於付款收據、Pro 啟用憑據、跨裝置轉移時的身分確認。
-            </div>
-          </div>
-        </section>
-
-        <section className="container" style={{ padding: "0 32px 24px", maxWidth: 760 }}>
-          <div className="card" style={{
-            padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
-            display: "flex", flexDirection: "column", gap: 12,
-          }}>
-            <div className="row gap-2"><Icon name="zap" size={13} /><b style={{ fontSize: 14 }}>Webhook 通知</b></div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
-              支援所有接受 POST JSON 的 endpoint：Slack incoming webhook、Discord、Make.com、Zapier、n8n、自家 server。
-              觸發事件：<code>contract.signed.full</code>、<code>milestone.overdue</code>、<code>milestone.due</code>。
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>Webhook URL</label>
-              <input
-                className="input"
-                style={{ marginTop: 4 }}
-                placeholder="https://hooks.slack.com/services/T0/B0/xxxx"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>Secret（選填，會加上 X-DocGen-Signature: sha256=… 標頭）</label>
-              <div className="row gap-2" style={{ marginTop: 4 }}>
-                <input className="input" placeholder="（可空白；填了會用 HMAC-SHA256 簽名 body）" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} />
-                <button type="button" className="btn btn-ghost btn-sm" onClick={randomiseSecret}>產一組</button>
-              </div>
-            </div>
-            <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-              <button className="btn btn-primary" disabled={busy} onClick={() => save(false)}>
-                {busy ? "儲存中…" : "儲存設定"}
-              </button>
-              <button className="btn btn-soft" disabled={busy || !webhookUrl} onClick={() => save(true)}>
-                <Icon name="send" size={12} />儲存並發測試
-              </button>
-            </div>
-            {testResult && (
-              <div style={{
-                fontSize: 12.5, padding: "8px 12px", borderRadius: 6,
-                background: testResult.ok ? "#e8f5ed" : "#fde9e9",
-                color: testResult.ok ? "#1f5a35" : "#7a1f1f",
-              }}>
-                {testResult.ok
-                  ? `✓ 測試 webhook 成功（HTTP ${testResult.status}）`
-                  : `✗ 測試失敗：${testResult.reason}${testResult.status ? ` (HTTP ${testResult.status})` : ""}`}
-              </div>
-            )}
-            {err && <div className="field-error"><Icon name="alert" size={12} />{err}</div>}
-          </div>
-        </section>
-
-        <section className="container" style={{ padding: "0 32px 16px", maxWidth: 760 }}>
-          <div className="card" style={{
-            padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
-            display: "flex", flexDirection: "column", gap: 12,
-          }}>
-            <div className="row gap-2"><Icon name="lock" size={13} /><b style={{ fontSize: 14 }}>跨裝置登入（Email Magic Link）</b></div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
-              用 Email 寄送一次性登入連結，點開後本瀏覽器 cookie 會綁定到該 Email 對應的同一 uid。
-              這樣換手機 / 換瀏覽器都能保留 Pro 狀態與合約資料。
-            </div>
-            <div className="row gap-2">
-              <input className="input" type="email" placeholder="you@example.com" value={magicEmail} onChange={(e) => setMagicEmail(e.target.value)} />
-              <button className="btn btn-soft" onClick={sendMagic} disabled={!magicEmail}>
-                <Icon name="send" size={12} />寄送登入連結
-              </button>
-            </div>
-            {magicSent && <div style={{ fontSize: 12.5, color: "#1f5a35" }}>✓ {magicSent}</div>}
-            {magicErr && <div className="field-error"><Icon name="alert" size={11} />{magicErr}</div>}
-          </div>
-        </section>
-
-        <section className="container" style={{ padding: "0 32px 16px", maxWidth: 760 }}>
-          <div className="card" style={{
-            padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)",
-            display: "flex", flexDirection: "column", gap: 12,
-          }}>
-            <div className="row gap-2"><Icon name="hash" size={13} /><b style={{ fontSize: 14 }}>API Keys</b></div>
-            <div style={{ fontSize: 12.5, color: "var(--ink-muted)", lineHeight: 1.6 }}>
-              用於從其他系統（n8n / Make / 你的後端）程式化建立合約。每把 key 都吃同樣的每月配額。
-              呼叫範例：
-              <pre style={{
-                marginTop: 6, padding: 10, background: "var(--bg)", border: "1px solid var(--line)",
-                borderRadius: 6, fontSize: 11.5, fontFamily: "var(--font-mono)", overflow: "auto",
-                whiteSpace: "pre",
-              }}>{`curl -X POST https://docgen-tw.vercel.app/api/v1/contracts \\
-  -H "Authorization: Bearer dk_xxxxxxxx..." \\
-  -H "Content-Type: application/json" \\
-  -d '{ "templateId": "freelance", "values": {...}, "partyASignature": "data:image/png;base64,..." }'`}</pre>
-            </div>
-            <div className="row gap-2">
-              <input className="input" placeholder="標籤（例：n8n production）" value={newKeyLabel} onChange={(e) => setNewKeyLabel(e.target.value)} />
-              <button className="btn btn-primary btn-sm" onClick={issueKey} disabled={keyBusy}>
-                <Icon name="plus" size={11} />產生 Key
-              </button>
-            </div>
-            {issued && (
-              <div className="card" style={{
-                padding: 12, background: "#fff7ed", border: "1px solid #fdba74", color: "#7c2d12",
-                display: "flex", flexDirection: "column", gap: 6,
-              }}>
-                <b style={{ fontSize: 13 }}>新 API key（只顯示這一次，請妥善保存）</b>
-                <code style={{ fontFamily: "var(--font-mono)", fontSize: 12, wordBreak: "break-all", background: "var(--bg)", padding: 8, borderRadius: 4 }}>
-                  {issued.rawKey}
-                </code>
-                <button className="btn btn-soft btn-sm" onClick={() => navigator.clipboard.writeText(issued.rawKey)} style={{ alignSelf: "flex-start" }}>
-                  <Icon name="copy" size={11} />複製
-                </button>
-              </div>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {apiKeys.length === 0 ? (
-                <div style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>尚未建立 API key。</div>
-              ) : apiKeys.map((k) => (
-                <div key={k.id} className="row" style={{
-                  padding: "8px 12px", background: "var(--bg-soft)", border: "1px solid var(--line)",
-                  borderRadius: "var(--radius)", justifyContent: "space-between", flexWrap: "wrap", gap: 6,
-                }}>
-                  <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-                    <code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>{k.prefix}…</code>
-                    {k.label && <span className="chip chip-zinc" style={{ fontSize: 11 }}>{k.label}</span>}
-                    {k.revokedAt && <span className="chip chip-zinc" style={{ fontSize: 11, background: "#fde9e9", color: "#7a1f1f" }}>已撤銷</span>}
-                  </div>
-                  <div className="row gap-2" style={{ fontSize: 11.5, color: "var(--ink-muted)" }}>
-                    <span>建立 {new Date(k.createdAt).toLocaleDateString("zh-Hant")}</span>
-                    {k.lastUsedAt && <span>· 最後使用 {new Date(k.lastUsedAt).toLocaleDateString("zh-Hant")}</span>}
-                    {!k.revokedAt && (
-                      <button className="btn btn-ghost btn-sm" onClick={() => revoke(k.id)} disabled={keyBusy}>
-                        撤銷
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="container" style={{ padding: "0 32px 64px", maxWidth: 760 }}>
-          <details className="card" style={{ padding: 16, background: "var(--bg-soft)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-            <summary style={{ cursor: "pointer", fontWeight: 600, fontSize: 14 }}>Webhook payload 範例</summary>
-            <pre style={{
-              marginTop: 10, fontSize: 12, fontFamily: "var(--font-mono)",
-              padding: 12, background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 6,
-              overflow: "auto", whiteSpace: "pre",
-            }}>{`POST <your-webhook-url>
+const WEBHOOK_PAYLOAD_EXAMPLE = `POST <your-webhook-url>
 Content-Type: application/json
 X-DocGen-Signature: sha256=<hex>   (only if secret set)
 
@@ -377,10 +43,331 @@ X-DocGen-Signature: sha256=<hex>   (only if secret set)
   },
   "timestamp": "2026-05-11T12:00:00.000Z",
   "source": "docgen-tw"
-}`}</pre>
-          </details>
-        </section>
+}`;
 
+type ProfileLoadState = "loading" | "ready" | "empty" | "error";
+
+function SettingsInner() {
+  const params = useSearchParams();
+  const magic = params.get("magic");
+  const magicMsg = magic ? MAGIC_MESSAGE[magic] : null;
+
+  const [profile, setProfile] = useState<SettingsProfile | null>(null);
+  const [profileLoadState, setProfileLoadState] = useState<ProfileLoadState>("loading");
+  const [profileLoadError, setProfileLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; status?: number; reason?: string } | null>(null);
+
+  const [email, setEmail] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+
+  const [apiKeys, setApiKeys] = useState<SettingsApiKey[]>([]);
+  const [keysLoadState, setKeysLoadState] = useState<SettingsLoadState>("loading");
+  const [keysLoadError, setKeysLoadError] = useState<string | null>(null);
+  const [newKeyLabel, setNewKeyLabel] = useState("");
+  const [issued, setIssued] = useState<{ rawKey: string; prefix: string } | null>(null);
+  const [keyBusy, setKeyBusy] = useState(false);
+  const [keyActionError, setKeyActionError] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<"success" | "error" | null>(null);
+
+  const [magicEmail, setMagicEmail] = useState("");
+  const [magicBusy, setMagicBusy] = useState(false);
+  const [magicSent, setMagicSent] = useState<string | null>(null);
+  const [magicError, setMagicError] = useState<string | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      const response = await fetch("/api/billing/profile");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const nextProfile = (await response.json()) as SettingsProfile | null;
+      if (!nextProfile) {
+        setProfile(null);
+        setProfileLoadState("empty");
+        return;
+      }
+      setProfile(nextProfile);
+      setEmail(nextProfile.email ?? "");
+      setWebhookUrl(nextProfile.webhookUrl ?? "");
+      setWebhookSecret(nextProfile.webhookSecret ?? "");
+      setProfileLoadState("ready");
+    } catch (error) {
+      setProfileLoadError((error as Error).message);
+      setProfileLoadState("error");
+    }
+  }, []);
+
+  const fetchKeys = useCallback(async () => {
+    try {
+      const response = await fetch("/api/billing/api-keys");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = (await response.json()) as { keys?: SettingsApiKey[] };
+      const nextKeys = data.keys ?? [];
+      setApiKeys(nextKeys);
+      setKeysLoadState(nextKeys.length === 0 ? "empty" : "ready");
+    } catch (error) {
+      setKeysLoadError((error as Error).message);
+      setKeysLoadState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/billing/profile")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<SettingsProfile | null>;
+      })
+      .then((nextProfile) => {
+        if (cancelled) return;
+        if (!nextProfile) {
+          setProfile(null);
+          setProfileLoadState("empty");
+          return;
+        }
+        setProfile(nextProfile);
+        setEmail(nextProfile.email ?? "");
+        setWebhookUrl(nextProfile.webhookUrl ?? "");
+        setWebhookSecret(nextProfile.webhookSecret ?? "");
+        setProfileLoadState("ready");
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setProfileLoadError((error as Error).message);
+          setProfileLoadState("error");
+        }
+      });
+
+    fetch("/api/billing/api-keys")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json() as Promise<{ keys?: SettingsApiKey[] }>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        const nextKeys = data.keys ?? [];
+        setApiKeys(nextKeys);
+        setKeysLoadState(nextKeys.length === 0 ? "empty" : "ready");
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setKeysLoadError((error as Error).message);
+          setKeysLoadState("error");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function retryProfile() {
+    setProfileLoadState("loading");
+    setProfileLoadError(null);
+    void fetchProfile();
+  }
+
+  function retryKeys() {
+    setKeysLoadState("loading");
+    setKeysLoadError(null);
+    void fetchKeys();
+  }
+
+  async function issueKey() {
+    setKeyBusy(true);
+    setKeyActionError(null);
+    setCopyStatus(null);
+    try {
+      const response = await fetch("/api/billing/api-keys", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label: newKeyLabel || undefined }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setIssued({ rawKey: data.key.rawKey, prefix: data.key.prefix });
+      setNewKeyLabel("");
+      setKeysLoadState("loading");
+      await fetchKeys();
+    } catch (error) {
+      setKeyActionError(`產生 API key 失敗：${(error as Error).message}`);
+    } finally {
+      setKeyBusy(false);
+    }
+  }
+
+  async function revoke(id: string) {
+    if (!window.confirm("確認撤銷此 API key？此操作不可復原。")) return;
+    setKeyBusy(true);
+    setKeyActionError(null);
+    try {
+      const response = await fetch(`/api/billing/api-keys?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error || `HTTP ${response.status}`);
+      }
+      setKeysLoadState("loading");
+      await fetchKeys();
+    } catch (error) {
+      setKeyActionError(`撤銷 API key 失敗：${(error as Error).message}`);
+    } finally {
+      setKeyBusy(false);
+    }
+  }
+
+  async function copyIssuedKey() {
+    if (!issued) return;
+    setCopyStatus(null);
+    try {
+      await navigator.clipboard.writeText(issued.rawKey);
+      setCopyStatus("success");
+    } catch {
+      setCopyStatus("error");
+    }
+  }
+
+  async function sendMagic() {
+    setMagicSent(null);
+    setMagicError(null);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(magicEmail)) {
+      setMagicError("Email 格式不正確");
+      return;
+    }
+    setMagicBusy(true);
+    try {
+      const response = await fetch("/api/auth/email/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: magicEmail.trim() }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setMagicSent(`已寄出登入連結至 ${magicEmail}，請查收信箱（15 分鐘內有效）。`);
+    } catch (error) {
+      setMagicError((error as Error).message);
+    } finally {
+      setMagicBusy(false);
+    }
+  }
+
+  async function save(testWebhook = false) {
+    setSaveError(null);
+    setSaveMessage(null);
+    setTestResult(null);
+    setBusy(true);
+    try {
+      const response = await fetch("/api/billing/profile", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, webhookUrl, webhookSecret, testWebhook }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setProfile(data.profile);
+      setSaveMessage("設定已儲存。");
+      if (data.testResult) setTestResult(data.testResult);
+    } catch (error) {
+      setSaveError((error as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function randomiseSecret() {
+    const arr = new Uint8Array(24);
+    window.crypto.getRandomValues(arr);
+    setWebhookSecret(Array.from(arr).map((byte) => byte.toString(16).padStart(2, "0")).join(""));
+  }
+
+  return (
+    <>
+      <TopNav />
+      <main className="page paper-bg">
+        <div className="dg-page-shell dg-page-shell--form dg-settings-page">
+          <header className="dg-page-header dg-settings-header">
+            <div>
+              <div className="dg-eyebrow dg-settings-eyebrow"><Icon name="users" size={13} />設定</div>
+              <h1 className="dg-page-title">帳號 &amp; 整合</h1>
+              <p className="dg-text-secondary dg-settings-intro">
+                本平台以瀏覽器 cookie 識別身分（無註冊登入）。可選擇綁定 Email 收取 Pro 啟用憑據，
+                或設定 webhook URL，將「合約簽完」「milestone 逾期」等事件即時推到 Slack、Discord、n8n 或 Make。
+              </p>
+            </div>
+          </header>
+
+          {magicMsg && (
+            <div className={`dg-notice dg-notice--${magicMsg.kind}`} role={magicMsg.kind === "error" ? "alert" : "status"}>
+              {magicMsg.text}
+            </div>
+          )}
+
+          <BillingBanner />
+
+          {profileLoadState === "loading" && (
+            <UIState status="loading" title="帳號資料載入中" description="正在取得身分、Email 與 webhook 設定。" />
+          )}
+          {profileLoadState === "error" && (
+            <UIState
+              status="error"
+              title="無法載入帳號資料"
+              description={`讀取失敗：${profileLoadError}`}
+              actions={<button type="button" className="btn btn-primary" onClick={retryProfile}>重新載入</button>}
+            />
+          )}
+          {profileLoadState === "empty" && (
+            <UIState status="empty" title="找不到帳號資料" description="伺服器未回傳可用的身分資料，請稍後重新載入。" actions={<button type="button" className="btn btn-primary" onClick={retryProfile}>重新載入</button>} />
+          )}
+          {profileLoadState === "ready" && profile && (
+            <SettingsProfileFields
+              profile={profile}
+              email={email}
+              webhookUrl={webhookUrl}
+              webhookSecret={webhookSecret}
+              busy={busy}
+              saveMessage={saveMessage}
+              saveError={saveError}
+              testResult={testResult}
+              magicEmail={magicEmail}
+              magicBusy={magicBusy}
+              magicSent={magicSent}
+              magicError={magicError}
+              onEmailChange={setEmail}
+              onWebhookUrlChange={setWebhookUrl}
+              onWebhookSecretChange={setWebhookSecret}
+              onRandomiseSecret={randomiseSecret}
+              onSave={save}
+              onMagicEmailChange={setMagicEmail}
+              onSendMagic={sendMagic}
+            />
+          )}
+
+          <SettingsApiKeys
+            keys={apiKeys}
+            loadState={keysLoadState}
+            loadError={keysLoadError}
+            newKeyLabel={newKeyLabel}
+            issued={issued}
+            busy={keyBusy}
+            actionError={keyActionError}
+            copyStatus={copyStatus}
+            onLabelChange={setNewKeyLabel}
+            onIssue={issueKey}
+            onRevoke={revoke}
+            onCopy={copyIssuedKey}
+            onRetry={retryKeys}
+          />
+
+          <section className="card dg-card-body dg-settings-card" aria-labelledby="settings-payload-title">
+            <h2 id="settings-payload-title" className="dg-section-title">Webhook payload 範例</h2>
+            <details className="dg-settings-details">
+              <summary>查看 JSON payload 與簽章標頭</summary>
+              <pre className="dg-code-block" tabIndex={0} aria-label="Webhook payload 範例"><code>{WEBHOOK_PAYLOAD_EXAMPLE}</code></pre>
+            </details>
+          </section>
+        </div>
         <Footer />
       </main>
     </>
@@ -389,7 +376,7 @@ X-DocGen-Signature: sha256=<hex>   (only if secret set)
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 40 }}>載入設定…</div>}>
+    <Suspense fallback={<div className="dg-page-shell dg-page-shell--form dg-settings-fallback"><UIState status="loading" title="設定載入中" description="正在準備帳號與整合設定。" /></div>}>
       <SettingsInner />
     </Suspense>
   );

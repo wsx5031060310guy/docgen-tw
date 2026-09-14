@@ -521,7 +521,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-hero-visual     { position: relative; height: 480px; }
 .dg-templates-grid  { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 .dg-howit-grid      { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
-.dg-checkout-grid   { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
+.dg-checkout-grid   { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
 .dg-faq-grid        { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .dg-payment-bar     { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
 .dg-trustbar-row    { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; margin: 0; padding: 20px 24px; border-radius: var(--radius-lg); background: var(--bg-elev); border: 1px solid var(--line); list-style: none; }
@@ -1318,4 +1318,127 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
     scroll-behavior: auto !important;
     transition: none !important;
   }
+}
+
+/* Settings and integrations */
+.dg-settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-block: var(--space-4) var(--space-8);
+}
+.dg-settings-header { margin-bottom: var(--space-1); }
+.dg-settings-header > div { min-width: 0; }
+.dg-settings-eyebrow { display: flex; align-items: center; gap: var(--space-1); margin-bottom: var(--space-1); }
+.dg-settings-intro { max-width: 680px; margin-top: var(--space-1); }
+.dg-settings-card { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
+.dg-settings-card-heading { display: flex; min-width: 0; align-items: center; gap: var(--space-1); }
+.dg-settings-card-heading > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-settings-card .dg-notice,
+.dg-settings-list-state { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
+.dg-settings-identity { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.dg-settings-identity > div { min-width: 0; padding: var(--space-2); border: 1px solid var(--line-soft); border-radius: var(--radius); background: var(--bg-soft); }
+.dg-settings-identity dt { color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-settings-identity dd { margin-top: 4px; color: var(--ink); font-size: var(--text-secondary); line-height: 1.6; overflow-wrap: anywhere; }
+.dg-settings-uid { font-family: var(--font-mono); }
+.dg-settings-field-action { display: flex; min-width: 0; align-items: flex-start; gap: var(--space-1); }
+.dg-settings-field-action > .input { min-width: 0; flex: 1 1 auto; }
+.dg-settings-field-action > .btn { flex: 0 0 auto; }
+.dg-code-block {
+  max-width: 100%;
+  margin-top: var(--space-1);
+  padding: var(--space-2);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-helper);
+  line-height: 1.6;
+  white-space: pre;
+  overscroll-behavior-inline: contain;
+}
+.dg-code-block:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.dg-settings-issued-key { align-items: flex-start !important; flex-direction: column; }
+.dg-settings-raw-key { width: 100%; padding: var(--space-1); overflow-wrap: anywhere; border-radius: var(--radius-sm); background: var(--bg-elev); color: var(--ink); font-family: var(--font-mono); font-size: var(--text-helper); }
+.dg-settings-key-list { display: flex; flex-direction: column; gap: var(--space-1); }
+.dg-settings-key-row { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-soft); }
+.dg-settings-key-main,
+.dg-settings-key-meta { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: var(--space-1); }
+.dg-settings-key-main { flex: 1 1 220px; }
+.dg-settings-key-main code { overflow-wrap: anywhere; font-family: var(--font-mono); font-size: var(--text-helper); }
+.dg-settings-key-meta { justify-content: flex-end; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-settings-list-state { justify-content: space-between; color: var(--ink-soft); font-size: var(--text-secondary); line-height: 1.6; }
+.dg-settings-details summary { width: fit-content; min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--primary); font-size: var(--text-secondary); font-weight: 600; }
+.dg-settings-fallback { padding-block: var(--space-4); }
+
+@media (max-width: 760px) {
+  .dg-settings-page { padding-block: var(--space-3) var(--space-6); }
+  .dg-settings-identity { grid-template-columns: 1fr; }
+  .dg-settings-field-action { align-items: stretch; flex-direction: column; }
+  .dg-settings-field-action > .btn { width: 100%; }
+  .dg-settings-card > .dg-actions > .btn { flex: 1 1 100%; }
+  .dg-settings-key-row { align-items: stretch; flex-direction: column; }
+  .dg-settings-key-meta { justify-content: flex-start; }
+}
+
+/* Checkout and payment result */
+.dg-checkout-page { padding-block: var(--space-6) var(--space-8); }
+.dg-checkout-header { display: flex; align-items: center; flex-direction: column; text-align: center; }
+.dg-checkout-header > .dg-eyebrow { margin-bottom: var(--space-1); }
+.dg-checkout-intro { max-width: 600px; margin-top: var(--space-2); }
+.dg-checkout-email-field { width: min(100%, 440px); margin-top: var(--space-3); text-align: left; }
+.dg-checkout-plans { padding-block: var(--space-4); }
+.dg-checkout-plans > .dg-section-title { margin-bottom: var(--space-2); text-align: center; }
+.dg-checkout-error { display: flex; align-items: flex-start; gap: var(--space-1); margin-bottom: var(--space-2); }
+.dg-checkout-error > .ic { flex: 0 0 auto; margin-top: 4px; }
+.dg-checkout-payment { margin-bottom: var(--space-5); }
+.dg-checkout-payment .dg-subsection-title { margin-bottom: var(--space-1); }
+.dg-checkout-payment-methods,
+.dg-checkout-trust { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+.dg-checkout-payment-methods li { padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-soft); color: var(--ink-soft); font-size: var(--text-helper); font-weight: 500; line-height: 1.5; }
+.dg-checkout-trust { justify-content: flex-end; gap: var(--space-2); color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.5; }
+.dg-checkout-trust li { display: flex; align-items: center; gap: var(--space-1); }
+.dg-checkout-trust .ic,
+.dg-checkout-faq-heading .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-checkout-faq { padding-block: 0; }
+.dg-checkout-faq > .dg-section-title { margin-bottom: var(--space-2); }
+.dg-checkout-faq-card { display: flex; flex-direction: column; gap: var(--space-1); }
+.dg-checkout-faq-heading { display: flex; align-items: flex-start; gap: var(--space-1); }
+.dg-checkout-faq-heading .ic { margin-top: 4px; }
+
+.dg-payment-result-page { min-height: calc(100vh - var(--nav-height)); background: var(--bg-soft); }
+.dg-payment-result-shell { display: flex; flex-direction: column; gap: var(--space-3); padding-block: var(--space-6); }
+.dg-payment-result-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); background: var(--bg-elev); }
+.dg-payment-result-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; }
+.dg-payment-result-icon--info { background: var(--state-info-bg); color: var(--state-info-ink); }
+.dg-payment-result-icon--warning { background: var(--state-warning-bg); color: var(--state-warning-ink); }
+.dg-payment-result-icon--success { background: var(--state-success-bg); color: var(--state-success-ink); }
+.dg-payment-result-icon--error { background: var(--state-error-bg); color: var(--state-error-ink); }
+.dg-payment-result-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.dg-payment-result-copy .field-error { margin-top: 4px; }
+.dg-payment-details-card { min-width: 0; overflow: hidden; }
+.dg-table-wrap { max-width: 100%; overflow: auto; overscroll-behavior-inline: contain; }
+.dg-table-wrap:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.dg-table { width: 100%; border-collapse: collapse; color: var(--ink); font-size: var(--text-secondary); line-height: 1.6; }
+.dg-table caption { padding: var(--space-2) var(--space-3); color: var(--ink); font-family: var(--font-display); font-size: var(--text-subsection); font-weight: 600; line-height: 1.5; text-align: left; }
+.dg-table th,
+.dg-table td { padding: 12px var(--space-2); border-top: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.dg-table th { background: var(--bg-soft); color: var(--ink-soft); font-size: var(--text-helper); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.dg-payment-details-table { min-width: 720px; }
+.dg-payment-details-table code,
+.dg-payment-amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dg-payment-result-actions { justify-content: center; }
+
+@media (max-width: 760px) {
+  .dg-checkout-page { padding-block: var(--space-4) var(--space-6); }
+  .dg-checkout-plans { padding-block: var(--space-3); }
+  .dg-checkout-payment { margin-bottom: var(--space-4); }
+  .dg-checkout-trust { justify-content: flex-start; }
+  .dg-payment-result-shell { padding-block: var(--space-3); }
+  .dg-payment-result-card { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+  .dg-payment-result-card > .dg-payment-status { grid-column: 2; justify-self: start; }
+  .dg-payment-result-actions { align-items: stretch; flex-direction: column; }
+  .dg-payment-result-actions > .btn { width: 100%; }
 }
