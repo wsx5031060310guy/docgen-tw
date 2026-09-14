@@ -9,7 +9,12 @@ export function PaymentStatusBadge({ status }: { status: string }) {
   };
   const m = map[status?.toUpperCase()] || map.PENDING;
   return (
-    <span className={`chip ${m.cls}`} style={{ fontSize: 12, padding: "4px 10px" }}>
+    <span
+      className={`chip ${m.cls} dg-payment-status`}
+      role="status"
+      aria-live={m.spin ? "polite" : undefined}
+      aria-busy={m.spin || undefined}
+    >
       <Icon name={m.icon} size={12} className={m.spin ? "spin" : ""} />
       {m.label}
     </span>

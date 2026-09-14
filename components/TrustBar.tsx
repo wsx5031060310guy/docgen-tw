@@ -7,29 +7,16 @@ export function TrustBar({
   items: { icon: string; value: string; label: string }[];
 }) {
   return (
-    <div className="dg-trustbar-row">
+    <ul className="dg-trustbar-row">
       {items.map((it, i) => (
-        <div key={i} className="row gap-3">
-          <Icon name={it.icon} size={18} style={{ color: "var(--primary)" }} />
-          <div>
-            <div
-              className="dg-trustbar-num"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 20,
-                fontWeight: 600,
-                lineHeight: 1.1,
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {it.value}
-            </div>
-            <div className="dg-trustbar-label" style={{ fontSize: 12, color: "var(--ink-muted)" }}>
-              {it.label}
-            </div>
+        <li key={`${it.value}-${it.label}-${i}`} className="dg-trustbar-item">
+          <Icon name={it.icon} size={18} />
+          <div className="dg-trustbar-copy">
+            <strong className="dg-trustbar-num">{it.value}</strong>
+            <span className="dg-trustbar-label">{it.label}</span>
           </div>
-        </div>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

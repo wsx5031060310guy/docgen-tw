@@ -1,43 +1,32 @@
-"use client";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Icon } from "./Icon";
 import { LegalBasisChip } from "./LegalBasisChip";
 import type { Template } from "@/lib/templates";
 
 export function TemplateCard({ tpl }: { tpl: Template }) {
-  const router = useRouter();
+  const href = `/templates/${tpl.id}`;
+
   return (
-    <div
-      className="card card-hover"
-      style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer" }}
-      onClick={() => router.push(`/templates/${tpl.id}`)}
-    >
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <div
-          style={{
-            width: 40, height: 40, borderRadius: 10,
-            background: "var(--primary-soft)", color: "var(--primary)",
-            display: "grid", placeItems: "center",
-          }}
-        >
+    <article className="card card-hover dg-template-card">
+      <div className="dg-template-card-header">
+        <div className="dg-template-card-icon" aria-hidden="true">
           <Icon name={tpl.icon} size={20} />
         </div>
-        <span className="chip chip-zinc" style={{ fontSize: 11 }}>{tpl.category}</span>
+        <span className="chip chip-zinc">{tpl.category}</span>
       </div>
-      <div>
-        <h3 style={{ fontSize: 19, marginBottom: 4 }}>{tpl.name}</h3>
-        <p style={{ color: "var(--ink-soft)", fontSize: 13.5, lineHeight: 1.5 }}>{tpl.description}</p>
+      <div className="dg-template-card-copy">
+        <h3 className="dg-subsection-title">
+          <Link href={href} className="dg-template-card-title-link">{tpl.name}</Link>
+        </h3>
+        <p className="dg-text-secondary">{tpl.description}</p>
       </div>
-      <div className="row" style={{ gap: 6, flexWrap: "wrap", marginTop: "auto" }}>
+      <div className="dg-template-card-legal" aria-label={`${tpl.name}法條依據`}>
         {tpl.legal.slice(0, 3).map((c) => <LegalBasisChip key={c} code={c} size="sm" />)}
       </div>
-      <div
-        className="row"
-        style={{ justifyContent: "space-between", marginTop: 4, fontSize: 13, color: "var(--primary)", fontWeight: 500 }}
-      >
+      <Link href={href} className="dg-template-card-link">
         <span>查看法條 + 使用</span>
         <Icon name="arrowRight" size={15} />
-      </div>
-    </div>
+      </Link>
+    </article>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Icon } from "./Icon";
 
 export type Plan = {
@@ -16,73 +17,69 @@ export function PlanCard({
   plan,
   featured,
   onSelect,
+  href,
+  disabled = false,
+  busy = false,
+  featuredLabel = "最受歡迎",
 }: {
   plan: Plan;
   featured?: boolean;
   onSelect?: () => void;
+  href?: string;
+  disabled?: boolean;
+  busy?: boolean;
+  featuredLabel?: string;
 }) {
+  const unavailable = disabled || busy;
+  const buttonClass = featured ? "btn btn-stamp btn-lg" : "btn btn-primary btn-lg";
+  const ctaContent = (
+    <>
+      {busy ? `${plan.cta}…` : plan.cta}
+      <Icon name={busy ? "loader" : "arrowRight"} size={15} className={busy ? "spin" : ""} />
+    </>
+  );
+
   return (
     <div
-      className="card"
-      style={{
-        padding: 28,
-        display: "flex",
-        flexDirection: "column",
-        gap: 18,
-        borderColor: featured ? "var(--primary)" : "var(--line)",
-        borderWidth: featured ? 2 : 1,
-        position: "relative",
-        transform: featured ? "translateY(-6px)" : undefined,
-        boxShadow: featured ? "var(--shadow-lg)" : "var(--shadow-sm)",
-      }}
+      className={`card dg-plan-card ${featured ? "dg-card-featured" : ""}`.trim()}
+      data-featured={featured || undefined}
+      aria-busy={busy || undefined}
     >
-      {featured && (
-        <div
-          style={{
-            position: "absolute", top: -12, left: 24, padding: "4px 12px",
-            background: "var(--accent)", color: "#fff", fontSize: 11, fontWeight: 600,
-            borderRadius: 999, letterSpacing: "0.06em",
-          }}
-        >
-          最受歡迎
-        </div>
+      {featured && featuredLabel && (
+        <div className="dg-plan-badge">{featuredLabel}</div>
       )}
       <div>
-        <div style={{ fontSize: 13, color: "var(--ink-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          {plan.tag}
-        </div>
-        <h3 style={{ fontSize: 22, marginTop: 4 }}>{plan.name}</h3>
-        <p style={{ color: "var(--ink-soft)", fontSize: 13.5, marginTop: 6 }}>{plan.tagline}</p>
+        <div className="dg-eyebrow">{plan.tag}</div>
+        <h3 className="dg-section-title dg-plan-title">{plan.name}</h3>
+        <p className="dg-text-secondary dg-plan-tagline">{plan.tagline}</p>
       </div>
-      <div className="row" style={{ alignItems: "baseline", gap: 4 }}>
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--ink-muted)" }}>NT$</span>
-        <span
-          className="dg-plan-price"
-          style={{
-            fontFamily: "var(--font-display)", fontWeight: 600,
-            lineHeight: 1, fontVariantNumeric: "tabular-nums",
-          }}
-        >
-          {plan.price}
-        </span>
-        <span style={{ color: "var(--ink-muted)", fontSize: 14 }}>/ {plan.unit}</span>
+      <div className="dg-plan-price-row">
+        <span className="dg-plan-currency">NT$</span>
+        <span className="dg-price dg-plan-price">{plan.price}</span>
+        <span className="dg-plan-unit">/ {plan.unit}</span>
       </div>
       <div className="divider" />
-      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10, fontSize: 14 }}>
+      <ul className="dg-plan-features">
         {plan.features.map((f, i) => (
-          <li key={i} className="row gap-2" style={{ alignItems: "flex-start" }}>
+          <li key={i}>
             <Icon name="check" size={16} style={{ color: "var(--primary)", marginTop: 2 }} />
             <span>{f}</span>
           </li>
         ))}
       </ul>
-      <button
-        className={featured ? "btn btn-stamp btn-lg" : "btn btn-primary btn-lg"}
-        style={{ marginTop: "auto" }}
-        onClick={onSelect}
-      >
-        {plan.cta} <Icon name="arrowRight" size={15} />
-      </button>
+      {href && !unavailable ? (
+        <Link className={`${buttonClass} dg-plan-cta`} href={href}>{ctaContent}</Link>
+      ) : (
+        <button
+          type="button"
+          className={`${buttonClass} dg-plan-cta`}
+          onClick={onSelect}
+          disabled={unavailable}
+          aria-busy={busy || undefined}
+        >
+          {ctaContent}
+        </button>
+      )}
     </div>
   );
 }

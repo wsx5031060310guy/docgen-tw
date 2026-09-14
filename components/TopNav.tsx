@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { Icon } from "./Icon";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { t, type Locale, DEFAULT_LOCALE, LOCALES } from "@/lib/i18n/dict";
@@ -24,15 +24,32 @@ function prefix(locale: Locale): string {
 
 export function TopNav() {
   const pathname = usePathname() || "/";
-  const router = useRouter();
   const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
   const [open, setOpen] = useState(false);
-  useEffect(() => { setLocale(detectLocale(pathname)); }, [pathname]);
-  useEffect(() => { setOpen(false); }, [pathname]);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setLocale(detectLocale(pathname));
+      setOpen(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const frame = window.requestAnimationFrame(() => {
+      drawerRef.current?.querySelector<HTMLElement>("a[href], button:not(:disabled)")?.focus();
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      previouslyFocused?.focus();
+    };
   }, [open]);
 
   const p = prefix(locale);
@@ -51,37 +68,79 @@ export function TopNav() {
     { href: href("/settings"), label: t(locale, "nav.settings"), match: (x) => x.startsWith("/settings") },
   ];
 
+  const labels = locale === "en"
+    ? { skip: "Skip to main content", nav: "Main navigation", open: "Open menu", close: "Close menu", drawer: "Main menu" }
+    : { skip: "跳至主要內容", nav: "主要導覽", open: "開啟選單", close: "關閉選單", drawer: "主要選單" };
+
+  function skipToMain(event: MouseEvent<HTMLAnchorElement>) {
+    const main = document.querySelector<HTMLElement>("main") ?? document.getElementById("main-content");
+    if (!main) return;
+    event.preventDefault();
+    const hadTabIndex = main.hasAttribute("tabindex");
+    if (!hadTabIndex) main.setAttribute("tabindex", "-1");
+    main.focus({ preventScroll: true });
+    main.scrollIntoView({ block: "start" });
+    if (!hadTabIndex) {
+      main.addEventListener("blur", () => main.removeAttribute("tabindex"), { once: true });
+    }
+  }
+
+  function handleDrawerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(
+      drawerRef.current?.querySelectorAll<HTMLElement>("a[href], button:not(:disabled), [tabindex]:not([tabindex='-1'])") ?? [],
+    );
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
-    <nav className="nav">
-      <div className="row gap-6">
-        <Link href={p || "/"} className="nav-logo">
+    <>
+    <nav className="nav dg-topnav" aria-label={labels.nav}>
+      <a className="dg-skip-link" href="#main-content" onClick={skipToMain}>{labels.skip}</a>
+      <div className="row gap-6 dg-topnav-main">
+        <Link href={p || "/"} className="nav-logo" aria-label="DocGen TW">
           <span className="nav-logo-mark">契</span>
           <span>
-            DocGen<span style={{ color: "var(--ink-muted)", fontWeight: 400, marginLeft: 6 }}>TW</span>
+            DocGen<span className="nav-logo-suffix">TW</span>
           </span>
         </Link>
         <div className="nav-links">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className={`nav-link ${l.match(pathname) ? "active" : ""}`}>
-              {l.label}
-            </Link>
-          ))}
+          {links.map((l) => {
+            const current = l.match(pathname);
+            return (
+              <Link key={l.href} href={l.href} className={`nav-link ${current ? "active" : ""}`} aria-current={current ? "page" : undefined}>
+                {l.label}
+              </Link>
+            );
+          })}
         </div>
       </div>
       <div className="row gap-3 nav-right">
         <LocaleSwitcher current={locale} />
-        <div className="row gap-2 nav-trust" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
-          <Icon name="lock" size={13} />
-          <span>SSL · {t(locale, "home.trust.signlaw")}</span>
-        </div>
-        <button className="btn btn-primary btn-sm nav-cta" onClick={() => router.push(startHref)}>
+        <Link className="btn btn-primary btn-sm nav-cta" href={startHref}>
           {t(locale, "nav.start")}
-        </button>
+        </Link>
         <button
+          ref={toggleRef}
           type="button"
           className="nav-toggle"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? labels.close : labels.open}
           aria-expanded={open}
+          aria-controls="dg-main-menu"
           onClick={() => setOpen((v) => !v)}
         >
           <Icon name={open ? "x" : "list"} size={22} />
@@ -90,33 +149,47 @@ export function TopNav() {
 
       {open && (
         <>
-          <div className="nav-drawer-backdrop" onClick={() => setOpen(false)} />
-          <div className="nav-drawer" role="dialog" aria-label="Main menu">
+          <div className="nav-drawer-backdrop" aria-hidden="true" onMouseDown={() => setOpen(false)} />
+          <div
+            ref={drawerRef}
+            id="dg-main-menu"
+            className="nav-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dg-main-menu-title"
+            onKeyDown={handleDrawerKeyDown}
+          >
+            <div className="nav-drawer-header">
+              <h2 id="dg-main-menu-title" className="dg-visually-hidden">{labels.drawer}</h2>
+              <button type="button" className="btn btn-ghost btn-icon" aria-label={labels.close} onClick={() => setOpen(false)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
             <div className="nav-drawer-list">
-              {links.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  className={`nav-drawer-link ${l.match(pathname) ? "active" : ""}`}
-                >
-                  {l.label}
-                </Link>
-              ))}
+              {links.map((l) => {
+                const current = l.match(pathname);
+                return (
+                  <Link
+                    key={l.href}
+                    href={l.href}
+                    className={`nav-drawer-link ${current ? "active" : ""}`}
+                    aria-current={current ? "page" : undefined}
+                    onClick={() => setOpen(false)}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })}
             </div>
-            <button
-              className="btn btn-primary btn-lg"
-              style={{ width: "100%", marginTop: 12 }}
-              onClick={() => { setOpen(false); router.push(startHref); }}
-            >
+            <Link className="btn btn-primary btn-lg nav-drawer-cta" href={startHref} onClick={() => setOpen(false)}>
               {t(locale, "nav.start")}
-            </button>
-            <div className="row gap-2" style={{ marginTop: 14, fontSize: 12.5, color: "var(--ink-muted)" }}>
-              <Icon name="lock" size={13} />
-              <span>SSL · {t(locale, "home.trust.signlaw")}</span>
-            </div>
+            </Link>
           </div>
         </>
       )}
     </nav>
+    {/* Skip-link target: the page's <main> when present, else this marker right after the nav. */}
+    <span id="main-content" tabIndex={-1} />
+    </>
   );
 }

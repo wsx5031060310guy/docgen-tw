@@ -1,17 +1,19 @@
 "use client";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./Icon";
 
 export function SignaturePad({
   value,
   onChange,
   label = "在此簽名",
+  description = "滑鼠或觸控均可簽署 · IP 與時間戳將自動留存",
   height = 140,
   dark = false,
 }: {
   value?: string;
   onChange?: (data: string) => void;
   label?: string;
+  description?: string;
   height?: number;
   dark?: boolean;
 }) {
@@ -21,6 +23,10 @@ export function SignaturePad({
   const last = useRef<{ x: number; y: number } | null>(null);
   const [empty, setEmpty] = useState(!value);
   const restored = useRef(false);
+  const id = useId();
+  const labelId = `${id}-label`;
+  const descriptionId = `${id}-description`;
+  const canvasId = `${id}-canvas`;
 
   useLayoutEffect(() => {
     const c = canvasRef.current;
@@ -87,43 +93,33 @@ export function SignaturePad({
   };
 
   return (
-    <div className="field">
-      <div className="row" style={{ justifyContent: "space-between" }}>
-        <span className="field-label">
-          {label} <span className="field-required">*</span>
+    <div className="field dg-signature-field" role="group" aria-labelledby={labelId} aria-describedby={descriptionId}>
+      <div className="dg-signature-header">
+        <span className="field-label" id={labelId}>
+          {label} <span className="field-required" aria-hidden="true">*</span>
+          <span className="dg-visually-hidden">必填</span>
         </span>
-        <button className="btn btn-soft btn-sm" onClick={clear} type="button">
+        <button className="btn btn-soft btn-sm" onClick={clear} type="button" aria-controls={canvasId} aria-label={`清除${label}`}>
           <Icon name="rotateCcw" size={12} />清除
         </button>
       </div>
       <div
-        className="signature-pad-surface"
+        className={`signature-pad-surface dg-signature-surface ${dark ? "dg-signature-surface--dark" : ""}`.trim()}
         ref={wrapRef}
-        style={{
-          position: "relative",
-          background: dark ? "rgba(255,255,255,0.02)" : "#fff",
-          border: "1.5px dashed " + (dark ? "#2a3050" : "#cbd5e1"),
-          borderRadius: "var(--radius)",
-          overflow: "hidden",
-        }}
       >
         {empty && (
           <div
-            className="signature-pad-placeholder"
-            style={{
-              position: "absolute", inset: 0, display: "grid", placeItems: "center",
-              color: dark ? "#3f4660" : "#cbd5e1",
-              fontFamily: "var(--font-italic)", fontSize: 32, fontStyle: "italic",
-              pointerEvents: "none", userSelect: "none",
-            }}
+            className={`signature-pad-placeholder ${dark ? "signature-pad-placeholder--dark" : ""}`.trim()}
+            aria-hidden="true"
           >
             {label}
           </div>
         )}
         <canvas
+          id={canvasId}
           ref={canvasRef}
-          tabIndex={0}
-          aria-label={`${label}區，請使用滑鼠或觸控簽名`}
+          aria-labelledby={labelId}
+          aria-describedby={descriptionId}
           style={{ display: "block", touchAction: "none", cursor: "crosshair" }}
           onMouseDown={down}
           onMouseMove={move}
@@ -134,7 +130,7 @@ export function SignaturePad({
           onTouchEnd={up}
         />
       </div>
-      <div className="field-help">滑鼠或觸控均可簽署 · IP 與時間戳將自動留存</div>
+      <div className="field-help dg-signature-hint" id={descriptionId}>{description}</div>
     </div>
   );
 }

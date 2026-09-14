@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import { ModalShell } from "./ModalShell";
 
 const KINDS = [
   { value: "PAYMENT", label: "付款", hint: "客戶應給付款項" },
@@ -27,11 +28,31 @@ export function MilestoneModal({
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [invalidField, setInvalidField] = useState<"title" | "dueDate" | null>(null);
+  const kindHintId = useId();
+  const titleId = useId();
+  const dueDateId = useId();
+  const amountId = useId();
+  const noteId = useId();
+  const errorId = useId();
+  const titleRef = useRef<HTMLInputElement>(null);
+  const dueDateRef = useRef<HTMLInputElement>(null);
 
   async function submit() {
     setErr(null);
-    if (!title.trim()) return setErr("請輸入項目名稱");
-    if (!dueDate) return setErr("請選擇到期日");
+    setInvalidField(null);
+    if (!title.trim()) {
+      setErr("請輸入項目名稱");
+      setInvalidField("title");
+      titleRef.current?.focus();
+      return;
+    }
+    if (!dueDate) {
+      setErr("請選擇到期日");
+      setInvalidField("dueDate");
+      dueDateRef.current?.focus();
+      return;
+    }
     setBusy(true);
     try {
       const r = await fetch("/api/milestones", {
@@ -59,73 +80,100 @@ export function MilestoneModal({
   }
 
   return (
-    <div onClick={onClose} style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20,
-    }}>
-      <div onClick={(e) => e.stopPropagation()} className="card" style={{
-        maxWidth: 480, width: "100%", padding: 22, background: "var(--bg)",
-        border: "1px solid var(--line)", borderRadius: "var(--radius)",
-        display: "flex", flexDirection: "column", gap: 14,
-      }}>
-        <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-          <div className="row gap-2"><Icon name="plus" size={14} /><b style={{ fontSize: 16 }}>新增追蹤項目</b></div>
-          <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={13} /></button>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>類型</label>
-          <div className="row gap-2" style={{ marginTop: 6, flexWrap: "wrap" }}>
-            {KINDS.map((k) => (
-              <button
-                key={k.value}
-                onClick={() => setKind(k.value)}
-                className={`btn btn-sm ${kind === k.value ? "btn-primary" : "btn-soft"}`}
-                type="button"
-              >{k.label}</button>
-            ))}
-          </div>
-          <div style={{ fontSize: 11.5, color: "var(--ink-muted)", marginTop: 4 }}>
-            {KINDS.find((k) => k.value === kind)?.hint}
-          </div>
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>項目名稱</label>
-          <input className="input" style={{ marginTop: 4 }} placeholder="例：頭期款 30%"
-            value={title} onChange={(e) => setTitle(e.target.value)} />
-        </div>
-
-        <div className="dg-fields-2col" style={{ gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>到期日</label>
-            <input className="input" style={{ marginTop: 4 }} type="date"
-              value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          </div>
-          {kind === "PAYMENT" && (
-            <div>
-              <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>金額（NT$，可空白）</label>
-              <input className="input" style={{ marginTop: 4 }} type="number" placeholder="36000"
-                value={amount} onChange={(e) => setAmount(e.target.value)} />
-            </div>
-          )}
-        </div>
-
-        <div>
-          <label style={{ fontSize: 12, color: "var(--ink-muted)" }}>備註（可空白）</label>
-          <textarea className="input" rows={2} style={{ marginTop: 4, resize: "vertical" }}
-            value={note} onChange={(e) => setNote(e.target.value)} />
-        </div>
-
-        {err && <div className="field-error"><Icon name="alert" size={12} />{err}</div>}
-
-        <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
-          <button className="btn btn-soft" onClick={onClose} disabled={busy}>取消</button>
-          <button className="btn btn-primary" onClick={submit} disabled={busy}>
+    <ModalShell
+      title="新增追蹤項目"
+      icon={<Icon name="plus" size={16} />}
+      onClose={onClose}
+      busy={busy}
+      closeLabel="關閉新增追蹤項目對話框"
+      actions={
+        <div className="dg-dialog-actions__primary">
+          <button className="btn btn-soft" type="button" onClick={onClose} disabled={busy}>取消</button>
+          <button className="btn btn-primary" type="button" onClick={submit} disabled={busy} aria-busy={busy || undefined}>
             {busy ? "建立中…" : "建立"}
           </button>
         </div>
+      }
+    >
+      <fieldset className="field dg-modal-section" disabled={busy} aria-describedby={kindHintId}>
+        <legend className="field-label">類型</legend>
+        <div className="dg-modal-kind-list">
+          {KINDS.map((k) => (
+            <button
+              key={k.value}
+              onClick={() => setKind(k.value)}
+              className={`btn btn-sm ${kind === k.value ? "btn-primary" : "btn-soft"}`}
+              type="button"
+              aria-pressed={kind === k.value}
+            >{k.label}</button>
+          ))}
+        </div>
+        <p id={kindHintId} className="field-help">{KINDS.find((k) => k.value === kind)?.hint}</p>
+      </fieldset>
+
+      <div className="field">
+        <label className="field-label" htmlFor={titleId}>項目名稱</label>
+        <input
+          ref={titleRef}
+          id={titleId}
+          className="input"
+          placeholder="例：頭期款 30%"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          aria-invalid={invalidField === "title" || undefined}
+          aria-describedby={invalidField === "title" ? errorId : undefined}
+          disabled={busy}
+        />
       </div>
-    </div>
+
+      <div className="dg-form-grid">
+        <div className="field">
+          <label className="field-label" htmlFor={dueDateId}>到期日</label>
+          <input
+            ref={dueDateRef}
+            id={dueDateId}
+            className="input"
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            aria-invalid={invalidField === "dueDate" || undefined}
+            aria-describedby={invalidField === "dueDate" ? errorId : undefined}
+            disabled={busy}
+          />
+        </div>
+        {kind === "PAYMENT" && (
+          <div className="field">
+            <label className="field-label" htmlFor={amountId}>金額（NT$，可空白）</label>
+            <input
+              id={amountId}
+              className="input"
+              type="number"
+              placeholder="36000"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              disabled={busy}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="field">
+        <label className="field-label" htmlFor={noteId}>備註（可空白）</label>
+        <textarea
+          id={noteId}
+          className="textarea"
+          rows={2}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          disabled={busy}
+        />
+      </div>
+
+      {err && (
+        <div id={errorId} className="field-error" role="alert">
+          <Icon name="alert" size={12} />{err}
+        </div>
+      )}
+    </ModalShell>
   );
 }
