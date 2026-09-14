@@ -468,30 +468,46 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 .dg-sign-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
 .dg-sign-mobile-sender-card, .dg-sign-mobile-submit-bar { display: none; }
 
-.dg-sign-document-card { overflow: hidden; }
+.dg-sign-document-card {
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .dg-sign-document-header {
-  min-height: 56px;
-  padding: 8px 16px;
+  min-height: 44px;
+  padding: 6px 0;
   border-bottom: 1px solid var(--line);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  background: var(--bg-elev);
+  background: transparent;
 }
 .dg-sign-document-label { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: 12.5px; }
 .dg-sign-document-actions { display: flex; align-items: center; gap: 8px; }
 .dg-sign-document-toggle { display: none; }
-.dg-sign-document-body { background: var(--cream-100); }
+.dg-sign-document-body { background: transparent; }
 
 /* The panel must never be taller than the viewport, or the sign button is only reachable
    at the very end of a 6-page scroll; scroll inside the panel instead. */
 .dg-sign-action-column { position: sticky; top: 88px; max-height: calc(100vh - 104px); overflow-y: auto; }
 .dg-sign-action-card { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
-.dg-sign-sender { display: flex; align-items: flex-start; gap: 12px; min-width: 0; }
+.dg-sign-panel-heading { margin-bottom: 14px; }
+.dg-sign-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px !important;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.dg-sign-panel-description { margin-top: 5px; color: var(--ink-soft); font-size: 13px; line-height: 1.55; }
+.dg-sign-summary { min-width: 0; }
+.dg-sign-sender { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .dg-sign-avatar {
-  width: 40px;
-  height: 40px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-lg);
   background: var(--primary-soft);
   color: var(--primary);
@@ -501,10 +517,9 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   font-family: var(--font-display);
   font-weight: 600;
 }
-.dg-sign-sender-copy { min-width: 0; }
-.dg-sign-eyebrow { color: var(--ink-soft); font-size: 12px; }
-.dg-sign-contract-title { margin-top: 2px; font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.45; }
-.dg-sign-status-chip { margin-top: 8px; }
+.dg-sign-eyebrow { min-width: 0; overflow: hidden; color: var(--ink-soft); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.dg-sign-contract-title { margin-top: 6px; font-family: var(--font-display); font-size: 15px; font-weight: 600; line-height: 1.45; }
+.dg-sign-status-chip { margin-left: auto; }
 .dg-sign-desktop-stepper { padding-top: 24px; border-top: 1px solid var(--line-soft); }
 .dg-sign-desktop-stepper .stepper { align-items: flex-start; }
 .dg-sign-desktop-stepper .stepper-item, .dg-sign-mobile-stepper .stepper-item { color: var(--ink-soft); }
@@ -568,6 +583,7 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 .dg-sign-success-email { margin-top: 8px; color: var(--ink-soft); font-size: 13px; }
 .dg-sign-success-actions { margin-top: 24px; display: flex; justify-content: center; align-items: center; gap: 12px; }
 .dg-sign-success-hint { margin-top: 6px; color: var(--ink-soft); font-size: 12px; }
+.dg-sign-success-download-error { margin-top: 14px; }
 .dg-sign-success-meta {
   margin-top: 26px;
   padding: 12px;
@@ -587,12 +603,19 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   .dg-sign-main { padding: 16px 16px 96px; }
   .dg-sign-mobile-sender-card { display: block; padding: 20px; margin-bottom: 16px; }
   .dg-sign-mobile-stepper { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+  .dg-sign-mobile-stepper .stepper-item span:last-child { display: inline; font-size: 10.5px; white-space: nowrap; }
   .dg-sign-layout { grid-template-columns: 1fr; gap: 16px; }
-  .dg-sign-document-header { align-items: flex-start; flex-direction: column; padding: 12px; }
+  .dg-sign-document-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+  }
+  .dg-sign-document-header { min-height: 56px; align-items: flex-start; flex-direction: column; padding: 12px; background: var(--bg-elev); }
   .dg-sign-document-actions { width: 100%; justify-content: space-between; }
   .dg-sign-document-actions .btn { min-height: 44px; }
   .dg-sign-document-toggle { display: inline-flex; }
-  .dg-sign-document-body { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
+  .dg-sign-document-body { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; background: var(--cream-100); }
   .dg-sign-document-body-expanded { max-height: none; overflow: visible; }
   .dg-sign-action-column { position: static; }
   .dg-sign-action-card { padding: 24px; gap: 20px; }
