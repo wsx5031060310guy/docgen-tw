@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
+import { UIState } from "@/components/UIState";
 
 type CaseRow = {
   id: string;
@@ -16,6 +17,12 @@ type CaseRow = {
   updatedAt: string;
 };
 
+const CASE_STATUS_LABEL: Record<string, string> = {
+  OPEN: "進行中",
+  CLOSED: "已結案",
+  ARCHIVED: "已封存",
+};
+
 export default function CasesPage() {
   const [cases, setCases] = useState<CaseRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,8 +31,9 @@ export default function CasesPage() {
   const [newClient, setNewClient] = useState("");
   const [newCounterparty, setNewCounterparty] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -38,14 +46,16 @@ export default function CasesPage() {
     } finally {
       setLoading(false);
     }
-  }
-  useEffect(() => {
-    load();
   }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   async function create() {
     if (!newTitle.trim()) return;
     setCreating(true);
+    setCreateError(null);
     try {
       const r = await fetch("/api/cases", {
         method: "POST",
@@ -65,7 +75,7 @@ export default function CasesPage() {
       setNewCounterparty("");
       await load();
     } catch (e) {
-      alert((e as Error).message);
+      setCreateError((e as Error).message);
     } finally {
       setCreating(false);
     }
@@ -74,80 +84,86 @@ export default function CasesPage() {
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 24px", maxWidth: 1100 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+      <main className="page paper-bg dg-cases-page">
+        <header className="dg-page-shell dg-cases-header">
+          <div className="dg-eyebrow dg-cases-eyebrow">
             <Icon name="folder" size={13} />
             案件資料夾
           </div>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
-            <h1 style={{ fontSize: 40 }}>所有案件</h1>
+          <div className="dg-page-header dg-cases-heading-row">
+            <div className="dg-stack dg-cases-heading-copy">
+              <h1 className="dg-page-title">所有案件</h1>
+              <p className="dg-text-secondary">依案件整理合約、追蹤項目與附件。</p>
+            </div>
             <Link href="/contracts/new" className="btn btn-soft">
               <Icon name="plus" size={13} />新增合約
             </Link>
           </div>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "0 32px 24px", maxWidth: 1100 }}>
-          <div
-            className="card"
-            style={{
-              padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)",
-              borderRadius: "var(--radius)", display: "flex", flexDirection: "column", gap: 12,
-            }}
-          >
-            <div className="row gap-2"><Icon name="plus" size={14} /><b style={{ fontSize: 14 }}>建立新案件</b></div>
-            <div className="dg-fields-2col" style={{ gap: 12 }}>
-              <input className="input" placeholder="案件名稱（例：王設計 / 品牌專案）" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-              <input className="input" placeholder="客戶（甲方）" value={newClient} onChange={(e) => setNewClient(e.target.value)} />
-              <input className="input" placeholder="相對人（乙方）" value={newCounterparty} onChange={(e) => setNewCounterparty(e.target.value)} />
+        <section className="dg-page-shell dg-cases-create-section" aria-labelledby="create-case-title">
+          <div className="card dg-card-body dg-cases-create-card">
+            <h2 id="create-case-title" className="dg-section-title dg-cases-create-title"><Icon name="plus" size={16} />建立新案件</h2>
+            <div className="dg-form-grid dg-cases-create-grid">
+              <div className="field dg-field-span-2">
+                <label className="field-label" htmlFor="new-case-title">案件名稱</label>
+                <input id="new-case-title" className="input" placeholder="例：王設計 / 品牌專案" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} aria-describedby={createError ? "create-case-error" : undefined} aria-invalid={Boolean(createError) || undefined} />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="new-case-client">客戶（甲方）</label>
+                <input id="new-case-client" className="input" placeholder="輸入客戶名稱" value={newClient} onChange={(e) => setNewClient(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="new-case-counterparty">相對人（乙方）</label>
+                <input id="new-case-counterparty" className="input" placeholder="輸入相對人名稱" value={newCounterparty} onChange={(e) => setNewCounterparty(e.target.value)} />
+              </div>
             </div>
-            <button className="btn btn-primary" onClick={create} disabled={creating || !newTitle.trim()} style={{ alignSelf: "flex-start" }}>
+            {createError && <div id="create-case-error" className="dg-notice dg-notice--error" role="alert">建立失敗：{createError}</div>}
+            <button className="btn btn-primary dg-cases-create-submit" onClick={create} disabled={creating || !newTitle.trim()} aria-busy={creating || undefined}>
               {creating ? "建立中…" : "建立案件"}
             </button>
           </div>
         </section>
 
-        <section className="container" style={{ padding: "12px 32px 64px", maxWidth: 1100 }}>
-          {loading && <div style={{ color: "var(--ink-muted)" }}>載入中…</div>}
-          {error && (
-            <div className="card" style={{ padding: 16, background: "#fde9e9", border: "1px solid #f1b5b5", color: "#7a1f1f" }}>
-              無法載入案件：{error}
-              <br />
-              <span style={{ fontSize: 12, opacity: 0.85 }}>（若為 Vercel 預覽環境，請確認 DATABASE_POSTGRES_PRISMA_URL 已設定，且 schema 已 push）</span>
+        <section className="dg-page-shell dg-cases-list-section" aria-busy={loading}>
+          {loading && cases.length === 0 && <UIState status="loading" title="案件載入中" description="正在取得案件資料。" />}
+          {error && cases.length === 0 && (
+            <UIState status="error" title="無法載入案件" description={`讀取失敗：${error}`} actions={<button className="btn btn-primary" onClick={load}>重新載入</button>} />
+          )}
+          {error && cases.length > 0 && (
+            <div className="dg-notice dg-notice--error dg-contract-detail-notice" role="alert">
+              <span>更新案件清單失敗：{error}。目前顯示上次取得的資料。</span>
+              <button className="btn btn-ghost btn-sm" onClick={load}>重新讀取</button>
             </div>
           )}
           {!loading && !error && cases.length === 0 && (
-            <div className="card" style={{ padding: 24, textAlign: "center", color: "var(--ink-muted)" }}>
-              <Icon name="folder" size={24} />
-              <div style={{ marginTop: 8 }}>目前還沒有案件。在上方建立第一個案件。</div>
-            </div>
+            <UIState status="empty" title="目前還沒有案件" description="在上方建立第一個案件，開始整理合約與附件。" />
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {cases.length > 0 && <div className="dg-cases-list-heading">
+            <h2 className="dg-section-title">案件清單</h2>
+            <span className="chip chip-zinc">{cases.length} 件</span>
+          </div>}
+          <div className="dg-cases-list">
             {cases.map((c) => (
               <Link
                 key={c.id}
                 href={`/cases/${c.id}`}
-                className="card"
-                style={{
-                  padding: 18, border: "1px solid var(--line)", borderRadius: "var(--radius)",
-                  background: "var(--bg-elev)", textDecoration: "none", color: "inherit",
-                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16,
-                }}
+                className="card card-hover dg-list-item dg-case-list-item"
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div className="row gap-2"><b style={{ fontSize: 16 }}>{c.title}</b>
-                    <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.status}</span>
+                <div className="dg-case-list-item__content">
+                  <div className="dg-case-list-item__heading">
+                    <h3 className="dg-subsection-title dg-case-list-item__title">{c.title}</h3>
+                    <span className="chip chip-zinc">{CASE_STATUS_LABEL[c.status] || c.status}</span>
                   </div>
-                  <div style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
-                    {c.clientName || "—"} ↔ {c.counterparty || "—"} ·
-                    更新 {new Date(c.updatedAt).toLocaleDateString("zh-Hant")}
+                  <div className="dg-case-list-item__metadata">
+                    <span>{c.clientName || "—"} ↔ {c.counterparty || "—"}</span>
+                    <span>更新 <time dateTime={c.updatedAt}>{new Date(c.updatedAt).toLocaleDateString("zh-Hant")}</time></span>
                   </div>
                 </div>
-                <div className="row gap-3" style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
+                <div className="dg-case-list-item__counts">
                   <span><Icon name="fileText" size={12} /> {c.contracts.length} 合約</span>
                   <span><Icon name="paperclip" size={12} /> {c.attachments.length} 附件</span>
-                  <Icon name="chevronRight" size={14} />
+                  <Icon name="chevronRight" size={14} className="dg-case-list-item__chevron" />
                 </div>
               </Link>
             ))}

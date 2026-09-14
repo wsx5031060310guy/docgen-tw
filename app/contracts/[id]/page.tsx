@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, use } from "react";
+import { useCallback, useEffect, useState, use } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { MilestoneModal } from "@/components/MilestoneModal";
 import { AttachToCaseModal } from "@/components/AttachToCaseModal";
 import { RiskCheckPanel } from "@/components/RiskCheckPanel";
+import { UIState } from "@/components/UIState";
 import { contractTitle, getTemplate } from "@/lib/templates";
 
 type Milestone = {
@@ -39,69 +40,83 @@ type Data = {
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "待辦", DONE: "已完成", OVERDUE: "逾期", CANCELLED: "已取消",
 };
-const STATUS_COLOR: Record<string, string> = {
-  PENDING: "#1f5a35", DONE: "#1f3a5a", OVERDUE: "#7a1f1f", CANCELLED: "#666",
+const STATUS_CHIP: Record<string, string> = {
+  PENDING: "chip-warn", DONE: "chip-good", OVERDUE: "chip-bad", CANCELLED: "chip-zinc",
 };
 const KIND_LABEL: Record<string, string> = {
   PAYMENT: "付款", DELIVERY: "交付", RENEWAL: "續約", CUSTOM: "其他",
+};
+const SIGNING_STATUS_LABEL: Record<string, string> = {
+  UNSIGNED: "未簽",
+  SENDER_SIGNED: "僅甲方簽",
+  AWAITING_RECIPIENT: "待乙方簽",
+  FULLY_SIGNED: "已雙簽",
 };
 
 export default function ContractViewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showMs, setShowMs] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
       const r = await fetch(`/api/contracts/${id}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setData(await r.json());
+      setActionError(null);
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setLoading(false);
     }
-  }
-  useEffect(() => {
-    load();
   }, [id]);
+  useEffect(() => {
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   async function setStatus(mid: string, status: string) {
     setBusy(true);
+    setActionError(null);
     try {
-      await fetch(`/api/milestones/${mid}`, {
+      const response = await fetch(`/api/milestones/${mid}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status }),
       });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
       await load();
+    } catch (e) {
+      setActionError(`無法更新追蹤項目：${(e as Error).message}`);
     } finally {
       setBusy(false);
     }
   }
 
-  if (error) return <div style={{ padding: 32 }}>讀取失敗：{error}</div>;
-  if (!data) return <div style={{ padding: 32 }}>載入中…</div>;
-
-  const tpl = data.contract.templateId ? getTemplate(data.contract.templateId) : null;
+  const tpl = data?.contract.templateId ? getTemplate(data.contract.templateId) : null;
+  const title = data ? contractTitle(data.contract.templateId || "", data.contract.values) : "合約詳情";
 
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 1100 }}>
-          <Link href="/cases" style={{ fontSize: 13, color: "var(--ink-muted)" }}>
+      <main className="page paper-bg dg-contract-detail-page">
+        <header className="dg-page-shell dg-contract-detail-header">
+          <Link href="/cases" className="dg-link dg-contract-detail-back">
             <Icon name="arrowLeft" size={12} /> 返回案件
           </Link>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginTop: 14 }}>
-            <h1 style={{ fontSize: 36 }}>
-              {contractTitle(data.contract.templateId || "", data.contract.values)}
-              <span className="chip chip-zinc" style={{ fontSize: 12, marginLeft: 12, verticalAlign: "middle" }}>
-                {data.contract.signingStatus}
-              </span>
-            </h1>
-            <div className="row gap-2">
+          <div className="dg-page-header dg-contract-detail-heading-row">
+            <div className="dg-contract-detail-title-wrap">
+              <h1 className="dg-page-title dg-contract-detail-title">{title}</h1>
+              {data && <span className="chip chip-zinc">{SIGNING_STATUS_LABEL[data.contract.signingStatus] || data.contract.signingStatus}</span>}
+            </div>
+            {data && <div className="dg-actions dg-contract-detail-actions">
               <button className="btn btn-soft" onClick={() => setShowMs(true)}>
                 <Icon name="plus" size={13} />新增追蹤項目
               </button>
@@ -112,88 +127,105 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
               <Link href={`/contracts/${data.contract.id}/versions`} className="btn btn-soft">
                 <Icon name="hash" size={13} />版本紀錄
               </Link>
-            </div>
+            </div>}
           </div>
-          <div className="row gap-3" style={{ fontSize: 13, color: "var(--ink-muted)", marginTop: 8, flexWrap: "wrap" }}>
+          {data && <div className="dg-contract-detail-metadata">
             <span>甲方：{data.contract.senderName}</span>
             <span>乙方：{data.contract.recipientName || "—"}</span>
-            <span>建立：{new Date(data.contract.createdAt).toLocaleDateString("zh-Hant")}</span>
+            <span>建立：<time dateTime={data.contract.createdAt}>{new Date(data.contract.createdAt).toLocaleDateString("zh-Hant")}</time></span>
             <span>ID：{data.contract.id}</span>
-          </div>
-        </section>
+          </div>}
+        </header>
 
-        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 1100 }}>
-          <div className="dg-fields-2col" style={{ gap: 16 }}>
-            <div className="card" style={{ padding: 16, background: "var(--bg-elev)", border: "1px solid var(--line)" }}>
-              <div className="row gap-2" style={{ marginBottom: 8 }}>
-                <Icon name="pen" size={14} /><b>甲方簽署</b>
-              </div>
+        <div className="dg-page-shell dg-contract-detail-content" aria-busy={loading}>
+          {loading && !data && <UIState status="loading" title="合約載入中" description="正在取得合約、簽署與追蹤資料。" />}
+          {error && !data && (
+            <UIState status="error" title="無法讀取合約" description={`讀取失敗：${error}`} actions={<button className="btn btn-primary" onClick={load}>重新載入</button>} />
+          )}
+          {error && data && (
+            <div className="dg-notice dg-notice--error dg-contract-detail-notice" role="alert">
+              <span>重新讀取失敗：{error}。目前顯示上次取得的資料。</span>
+              <button className="btn btn-ghost btn-sm" onClick={load}>重新讀取</button>
+            </div>
+          )}
+
+          {data && <>
+        <section className="dg-contract-detail-section" aria-labelledby="signature-summary-title">
+          <h2 id="signature-summary-title" className="dg-section-title">簽署摘要</h2>
+          <div className="dg-fields-2col dg-signature-summary-grid">
+            <article className="card dg-card-body dg-signature-summary-card">
+              <h3 className="dg-subsection-title dg-signature-summary-card__title">
+                <Icon name="pen" size={14} />甲方簽署
+              </h3>
               {data.contract.senderSignedAt ? (
-                <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                <div className="dg-signature-summary-card__meta">
                   {new Date(data.contract.senderSignedAt).toLocaleString("zh-Hant")}
-                  <br />
-                  簽名雜湊 #{data.contract.senderHashShort}
+                  <span>簽名雜湊 #{data.contract.senderHashShort}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 13, color: "var(--ink-muted)" }}>尚未簽署</div>
+                <p className="dg-text-secondary">尚未簽署</p>
               )}
-            </div>
-            <div className="card" style={{ padding: 16, background: "var(--bg-elev)", border: "1px solid var(--line)" }}>
-              <div className="row gap-2" style={{ marginBottom: 8 }}>
-                <Icon name="pen" size={14} /><b>乙方簽署</b>
-              </div>
+            </article>
+            <article className="card dg-card-body dg-signature-summary-card">
+              <h3 className="dg-subsection-title dg-signature-summary-card__title">
+                <Icon name="pen" size={14} />乙方簽署
+              </h3>
               {data.contract.recipientSignedAt ? (
-                <div style={{ fontSize: 13, color: "var(--ink-soft)" }}>
+                <div className="dg-signature-summary-card__meta">
                   {new Date(data.contract.recipientSignedAt).toLocaleString("zh-Hant")}
-                  <br />
-                  簽名雜湊 #{data.contract.recipientHashShort}
+                  <span>簽名雜湊 #{data.contract.recipientHashShort}</span>
                 </div>
               ) : (
-                <div style={{ fontSize: 13, color: "var(--ink-muted)" }}>
+                <p className="dg-text-secondary dg-contract-detail-wrap">
                   尚未簽署（簽署連結：寄送給 {data.contract.recipientEmail || "—"}）
-                </div>
+                </p>
               )}
-            </div>
+            </article>
           </div>
         </section>
 
-        <section className="container" style={{ padding: "0 32px 24px", maxWidth: 1100 }}>
-          <h2 style={{ fontSize: 22, marginBottom: 12 }}>追蹤項目 ({data.milestones.length})</h2>
+        <section className="dg-contract-detail-section" aria-labelledby="milestones-title">
+          <div className="dg-contract-detail-section__heading">
+            <h2 id="milestones-title" className="dg-section-title">追蹤項目</h2>
+            <span className="chip chip-zinc">{data.milestones.length} 項</span>
+          </div>
+          {actionError && (
+            <div className="dg-notice dg-notice--error dg-contract-detail-notice" role="alert">
+              <span>{actionError}。狀態未標示為完成。</span>
+              <button className="btn btn-ghost btn-sm" onClick={load}>重新讀取狀態</button>
+            </div>
+          )}
           {data.milestones.length === 0 ? (
-            <div className="card" style={{ padding: 16, color: "var(--ink-muted)", fontSize: 13 }}>
+            <div className="card dg-card-body dg-text-secondary">
               尚無付款 / 交付追蹤。
               {tpl?.id === "freelance" && " 提示：本合約可從付款條件自動產生 milestone。"}
             </div>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="dg-milestone-list">
               {data.milestones.map((m) => {
                 const due = new Date(m.dueDate);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const diff = Math.round((due.getTime() - today.getTime()) / 86400000);
                 return (
-                  <div key={m.id} className="row"
-                    style={{
-                      padding: "10px 14px", border: "1px solid var(--line)",
-                      borderRadius: "var(--radius)", justifyContent: "space-between",
-                      alignItems: "center", background: "var(--bg-elev)",
-                    }}
-                  >
-                    <div className="row gap-3">
-                      <span className="chip chip-zinc" style={{ fontSize: 11 }}>{KIND_LABEL[m.kind] || m.kind}</span>
-                      <span style={{ fontSize: 14 }}>{m.title}</span>
+                  <article key={m.id} className="card dg-card-compact dg-milestone-card">
+                    <div className="dg-milestone-card__content">
+                      <div className="dg-milestone-card__title-row">
+                        <span className="chip chip-zinc">{KIND_LABEL[m.kind] || m.kind}</span>
+                        <h3 className="dg-subsection-title dg-milestone-card__title">{m.title}</h3>
+                      </div>
                       {m.amount != null && (
-                        <span style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>NT$ {m.amount.toLocaleString()}</span>
+                        <span className="dg-text-secondary">NT$ {m.amount.toLocaleString()}</span>
                       )}
                     </div>
-                    <div className="row gap-3" style={{ fontSize: 12.5 }}>
-                      <span style={{ color: "var(--ink-muted)" }}>
-                        {due.toLocaleDateString("zh-Hant")}
-                        <span style={{ marginLeft: 6, color: diff < 0 && m.status !== "DONE" ? "#7a1f1f" : "var(--ink-muted)" }}>
+                    <div className="dg-milestone-card__actions">
+                      <span className="dg-milestone-card__date">
+                        <time dateTime={m.dueDate}>{due.toLocaleDateString("zh-Hant")}</time>
+                        <span className={diff < 0 && m.status !== "DONE" ? "dg-milestone-card__overdue" : ""}>
                           ({m.status === "DONE" ? "已完成" : diff < 0 ? `逾 ${-diff} 日` : `剩 ${diff} 日`})
                         </span>
                       </span>
-                      <span style={{ color: STATUS_COLOR[m.status] || "#444", fontWeight: 600 }}>
+                      <span className={`chip ${STATUS_CHIP[m.status] || "chip-zinc"}`}>
                         {STATUS_LABEL[m.status] || m.status}
                       </span>
                       {(m.status === "OVERDUE" || diff < 0) && m.status !== "DONE" && m.kind === "PAYMENT" && (
@@ -202,12 +234,12 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
                         </Link>
                       )}
                       {m.status !== "DONE" && (
-                        <button className="btn btn-soft btn-sm" onClick={() => setStatus(m.id, "DONE")} disabled={busy}>
-                          <Icon name="check" size={11} />完成
+                        <button className="btn btn-soft btn-sm" onClick={() => setStatus(m.id, "DONE")} disabled={busy} aria-busy={busy || undefined}>
+                          <Icon name="check" size={11} />{busy ? "更新中…" : "完成"}
                         </button>
                       )}
                     </div>
-                  </div>
+                  </article>
                 );
               })}
             </div>
@@ -215,19 +247,23 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
         </section>
 
         {tpl && (
-          <section className="container" style={{ padding: "0 32px 64px", maxWidth: 1100 }}>
-            <h2 style={{ fontSize: 22, marginBottom: 12 }}>風險檢查</h2>
+          <section className="dg-contract-detail-section" aria-labelledby="risk-check-title">
+            <h2 id="risk-check-title" className="dg-section-title">風險檢查</h2>
             <RiskCheckPanel
               templateId={tpl.id}
               values={data.contract.values}
               context={contractTitle(tpl.id, data.contract.values)}
+              headingLevel={3}
             />
           </section>
         )}
 
+          </>}
+        </div>
+
         <Footer />
 
-        {showMs && (
+        {showMs && data && (
           <MilestoneModal
             contractId={data.contract.id}
             onClose={() => setShowMs(false)}
@@ -237,7 +273,7 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
             }}
           />
         )}
-        {showAttach && (
+        {showAttach && data && (
           <AttachToCaseModal
             contractId={data.contract.id}
             currentCaseId={data.case?.id ?? null}
