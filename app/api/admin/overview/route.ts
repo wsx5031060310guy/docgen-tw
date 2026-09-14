@@ -36,6 +36,7 @@ export async function GET(req: Request) {
       select: {
         id: true,
         templateId: true,
+        values: true,
         signingStatus: true,
         recipientName: true,
         createdAt: true,

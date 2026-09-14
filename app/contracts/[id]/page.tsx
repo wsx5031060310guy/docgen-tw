@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icon";
 import { MilestoneModal } from "@/components/MilestoneModal";
 import { AttachToCaseModal } from "@/components/AttachToCaseModal";
 import { RiskCheckPanel } from "@/components/RiskCheckPanel";
-import { getTemplate } from "@/lib/templates";
+import { contractTitle, getTemplate } from "@/lib/templates";
 
 type Milestone = {
   id: string;
@@ -96,7 +96,7 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
           </Link>
           <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12, marginTop: 14 }}>
             <h1 style={{ fontSize: 36 }}>
-              {tpl?.name || data.contract.templateId || "合約"}
+              {contractTitle(data.contract.templateId || "", data.contract.values)}
               <span className="chip chip-zinc" style={{ fontSize: 12, marginLeft: 12, verticalAlign: "middle" }}>
                 {data.contract.signingStatus}
               </span>
@@ -217,7 +217,11 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
         {tpl && (
           <section className="container" style={{ padding: "0 32px 64px", maxWidth: 1100 }}>
             <h2 style={{ fontSize: 22, marginBottom: 12 }}>風險檢查</h2>
-            <RiskCheckPanel templateId={tpl.id} values={data.contract.values} context={tpl.name} />
+            <RiskCheckPanel
+              templateId={tpl.id}
+              values={data.contract.values}
+              context={contractTitle(tpl.id, data.contract.values)}
+            />
           </section>
         )}
 

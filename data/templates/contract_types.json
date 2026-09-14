@@ -133,7 +133,7 @@
         "電子簽章法第 5 條"
       ],
       "fields": [
-        { "key": "contract_title", "label": "合約名稱", "type": "text", "required": true },
+        { "key": "title", "label": "合約名稱", "type": "text", "required": false },
         { "key": "partyA_name", "label": "甲方名稱", "type": "text", "required": true },
         { "key": "partyA_id", "label": "甲方識別字號", "type": "text", "required": false },
         { "key": "partyB_name", "label": "乙方名稱", "type": "text", "required": true },
@@ -143,7 +143,7 @@
         { "key": "jurisdiction", "label": "管轄法院", "type": "select", "options": ["台灣台北地方法院", "台灣新北地方法院", "台灣桃園地方法院", "台灣台中地方法院", "台灣高雄地方法院"], "default": "台灣台北地方法院", "required": true }
       ],
       "clauses": [
-        "立合約書人甲方 {{partyA_name}} 與乙方 {{partyB_name}}（以下合稱雙方），就 {{contract_title}} 事宜，依民法第 153 條意思表示合致原則，達成以下合意：",
+        "立合約書人甲方 {{partyA_name}} 與乙方 {{partyB_name}}（以下合稱雙方），就 {{title}} 事宜，依民法第 153 條意思表示合致原則，達成以下合意：",
         "{{custom_requirements}}",
         "關鍵條款：{{key_terms}}",
         "雙方合意依電子簽章法第 5 條規定，以電子文件及電子簽章方式簽署本合約，其效力不因屬電子形式而受否認，法律效力等同書面簽章。",

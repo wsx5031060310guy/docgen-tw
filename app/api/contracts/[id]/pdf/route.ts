@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { findContractByToken } from "@/lib/contract-store";
+import { pdfInputFor } from "@/lib/pdf/input";
 import { renderContractPdf } from "@/lib/pdf/render";
 
 // Always run on Node (react-pdf needs node APIs, not edge).
@@ -23,19 +24,7 @@ export async function GET(
     return NextResponse.json({ error: "尚未簽署" }, { status: 409 });
   }
 
-  const buf = await renderContractPdf({
-    contractId: c.id,
-    templateId: c.templateId,
-    values: c.values,
-    senderSignatureUrl: c.senderSignatureUrl,
-    recipientSignatureUrl: c.recipientSignatureUrl,
-    senderAudit: c.senderSignedAt
-      ? `${c.senderSignedAt.toISOString().slice(0, 19).replace("T", " ")}　IP ${c.senderIp || "?"}　#${(c.senderSignatureHash || "").slice(0, 8)}`
-      : null,
-    recipientAudit: c.recipientSignedAt
-      ? `${c.recipientSignedAt.toISOString().slice(0, 19).replace("T", " ")}　IP ${c.recipientIp || "?"}　#${(c.recipientSignatureHash || "").slice(0, 8)}`
-      : null,
-  });
+  const buf = await renderContractPdf(pdfInputFor(c));
 
   return new NextResponse(buf as unknown as BodyInit, {
     status: 200,

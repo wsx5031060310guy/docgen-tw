@@ -6,6 +6,7 @@ import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { Suspense } from "react";
+import { contractTitle } from "@/lib/templates";
 
 type OverdueMs = {
   id: string;
@@ -25,6 +26,7 @@ type OverdueMs = {
 type AdminContract = {
   id: string;
   templateId: string | null;
+  values: Record<string, string>;
   client: string;
   recipientName: string | null;
   recipientEmail: string | null;
@@ -96,6 +98,7 @@ type Overview = {
   recentContracts: {
     id: string;
     templateId: string | null;
+    values: Record<string, string>;
     signingStatus: string;
     recipientName: string | null;
     createdAt: string;
@@ -333,7 +336,7 @@ function AdminInner() {
                   display: "flex", justifyContent: "space-between",
                 }}>
                   <div>
-                    <b>{c.templateId || "—"}</b>
+                    <b>{contractTitle(c.templateId || "", c.values)}</b>
                     <span style={{ fontSize: 12, color: "var(--ink-muted)", marginLeft: 6 }}>
                       → {c.recipientName || "—"}
                     </span>
@@ -511,7 +514,7 @@ function AdminInner() {
               }}>
                 <div className="row gap-2" style={{ flexWrap: "wrap" }}>
                   <code style={{ fontFamily: "var(--font-mono)", fontSize: 11.5 }}>{c.id.slice(0, 10)}…</code>
-                  <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.templateId || "—"}</span>
+                  <span className="chip chip-zinc" style={{ fontSize: 11 }}>{contractTitle(c.templateId || "", c.values)}</span>
                   <span className="chip chip-zinc" style={{ fontSize: 11 }}>{c.signingStatus}</span>
                   <span style={{ fontSize: 12.5 }}>{c.client || "—"} → {c.recipientName || "—"}</span>
                   {c.orders.some((o) => o.status === "PAID") && (

@@ -57,12 +57,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: result.error }, { status: 403 });
   }
 
-  // Completion notification (PDF render + Mailgun) and the user webhook are slow
-  // and must NOT block the signer's response: awaiting inline overran the function
-  // limit on the PDF font fetch and 504'd, while fire-and-forget got frozen at
-  // res.end() before Mailgun sent. `after` returns the response immediately and
-  // keeps the instance alive until the work finishes (bounded by maxDuration).
-  // notifyFullySigned swallows its own errors; the webhook is wrapped here.
+  // Completion notification (TTF-backed PDF render + Mailgun) and the user webhook
+  // must not block the signer's response. `after` returns the response immediately
+  // and keeps the instance alive until work finishes (bounded by maxDuration);
+  // notifyFullySigned also has a 40s PDF guard and attachment-free fallback.
   after(async () => {
     await notifyFullySigned(result);
 
