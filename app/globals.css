@@ -222,7 +222,7 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .chip-mono { font-family: var(--font-mono); font-weight: 500; }
 .chip-warn { background: var(--amber-50); color: var(--amber-700); border-color: #f0d9a4; }
 .chip-good { background: var(--green-50); color: var(--green-700); border-color: #bbf7d0; }
-.chip-bad  { background: var(--red-50);   color: var(--red-600);  border-color: #fecaca; }
+.chip-bad  { background: var(--red-50);   color: var(--red-700);  border-color: #fecaca; }
 .chip-zinc { background: var(--zinc-100); color: var(--zinc-700); border-color: var(--zinc-200); }
 
 .field { display: flex; flex-direction: column; gap: 8px; }
