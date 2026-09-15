@@ -882,6 +882,13 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .dg-signature-summary-card__title > .ic { flex: 0 0 auto; color: var(--primary); }
 .dg-signature-summary-card__meta { display: flex; min-width: 0; flex-direction: column; gap: 4px; color: var(--ink-soft); font-size: var(--text-secondary); line-height: 1.6; overflow-wrap: anywhere; }
 .dg-contract-detail-wrap { overflow-wrap: anywhere; }
+.dg-invite-card { display: flex; min-width: 0; flex-direction: column; gap: var(--space-2); }
+.dg-invite-card__header { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.dg-invite-card__title { display: flex; align-items: center; gap: var(--space-1); }
+.dg-invite-card__title > .ic { flex: 0 0 auto; color: var(--primary); }
+.dg-invite-field-row { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-1); }
+.dg-invite-url { font-family: var(--font-mono); font-size: var(--text-secondary); }
+.dg-invite-form { min-width: 0; }
 .dg-milestone-list { display: flex; min-width: 0; flex-direction: column; gap: var(--space-1); }
 .dg-milestone-card { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .dg-milestone-card__content { display: flex; min-width: 0; flex: 1 1 auto; flex-direction: column; gap: 4px; }
@@ -1034,6 +1041,8 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
   .dg-contract-detail-heading-row { align-items: stretch; }
   .dg-contract-detail-actions, .dg-contract-detail-actions .btn { width: 100%; }
   .dg-contract-detail-actions .btn { flex: 1 1 180px; }
+  .dg-invite-field-row { grid-template-columns: 1fr; }
+  .dg-invite-field-row .btn { width: 100%; }
   .dg-milestone-card { align-items: stretch; flex-direction: column; }
   .dg-milestone-card__actions { justify-content: flex-start; }
   .dg-versions-grid { grid-template-columns: 1fr; gap: var(--space-4); }
