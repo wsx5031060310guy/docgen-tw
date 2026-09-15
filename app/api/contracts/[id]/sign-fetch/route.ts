@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { findContractByToken } from "@/lib/contract-store";
+import { buildSignFetchPayload } from "@/lib/sign-fetch";
 
 export const runtime = "nodejs";
 
@@ -14,25 +15,5 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const c = await findContractByToken(id, token);
   if (!c) return NextResponse.json({ error: "invalid token or contract" }, { status: 404 });
 
-  if (c.signingStatus === "FULLY_SIGNED") {
-    return NextResponse.json({
-      id: c.id, templateId: c.templateId, signingStatus: c.signingStatus,
-      values: c.values, senderSignatureUrl: c.senderSignatureUrl,
-      recipientSignatureUrl: c.recipientSignatureUrl, fullySigned: true,
-      recipientSignedAt: c.recipientSignedAt,
-      recipientName: c.recipientName,
-      recipientEmail: c.recipientEmail,
-    });
-  }
-
-  return NextResponse.json({
-    id: c.id,
-    templateId: c.templateId,
-    signingStatus: c.signingStatus,
-    senderName: c.values.party_a_name || c.client,
-    recipientName: c.recipientName,
-    recipientEmail: c.recipientEmail,
-    values: c.values,
-    senderSignatureUrl: c.senderSignatureUrl,
-  });
+  return NextResponse.json(buildSignFetchPayload(c));
 }
