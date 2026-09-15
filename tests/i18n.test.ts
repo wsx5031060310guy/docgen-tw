@@ -6,6 +6,8 @@ import {
   t,
 } from "../lib/i18n/dict";
 import { pathForLocale } from "../lib/i18n/locale-shared";
+import { TEMPLATE_CATALOG_EN } from "../lib/i18n/template-catalog-en";
+import { TEMPLATES } from "../lib/templates";
 
 describe("shared component translations", () => {
   it.each(LOCALES)("has direct, non-empty values for every new key in %s", (locale) => {
@@ -51,5 +53,22 @@ describe("pathForLocale", () => {
     expect(pathForLocale("zh-Hant", "/en/templates/lease?from=home#legal")).toBe(
       "/templates/lease?from=home#legal",
     );
+  });
+});
+
+describe("English template catalog", () => {
+  it("has complete, concise copy for all 10 templates", () => {
+    expect(TEMPLATES).toHaveLength(10);
+
+    for (const template of TEMPLATES) {
+      const entry = TEMPLATE_CATALOG_EN[template.id];
+
+      expect(entry).toBeDefined();
+      if (!entry) continue;
+      expect(entry.name.trim()).not.toBe("");
+      expect(entry.description.trim()).not.toBe("");
+      expect(entry.category.trim()).not.toBe("");
+      expect(entry.description.length).toBeLessThanOrEqual(110);
+    }
   });
 });

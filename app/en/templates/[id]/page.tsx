@@ -6,6 +6,7 @@ import { Icon } from "@/components/Icon";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { JsonLd } from "@/components/JsonLd";
 import { TEMPLATES, getTemplate } from "@/lib/templates";
+import { TEMPLATE_CATALOG_EN } from "@/lib/i18n/template-catalog-en";
 import { TEMPLATE_COPY_EN } from "@/lib/i18n/template-copy-en";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://docgen-tw.vercel.app";
@@ -19,9 +20,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const tpl = getTemplate(id);
   if (!tpl) return { title: "Template not found" };
+  const catalog = TEMPLATE_CATALOG_EN[id];
+  const name = catalog?.name ?? tpl.name;
   return {
-    title: `${tpl.name} · Taiwan-law contract template · DocGen TW`,
-    description: `${tpl.name} — references ${tpl.legal.join(", ")}. Fill the form, sign with both parties, audit-trail kept. Contract body in Traditional Chinese (governing law).`,
+    title: `${name} · Taiwan-law contract template · DocGen TW`,
+    description: `${name} — references ${tpl.legal.join(", ")}. Fill the form, sign with both parties, audit-trail kept. Contract body in Traditional Chinese (governing law).`,
     alternates: {
       canonical: `/en/templates/${id}`,
       languages: {
@@ -30,8 +33,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       },
     },
     openGraph: {
-      title: `${tpl.name} · Taiwan-law contract generator`,
-      description: TEMPLATE_COPY_EN[id]?.intent ?? tpl.description,
+      title: `${name} · Taiwan-law contract generator`,
+      description: TEMPLATE_COPY_EN[id]?.intent ?? catalog?.description ?? tpl.description,
       locale: "en_US",
     },
   };
@@ -42,16 +45,20 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
   const tpl = getTemplate(id);
   if (!tpl) notFound();
   const copy = TEMPLATE_COPY_EN[id];
+  const catalog = TEMPLATE_CATALOG_EN[id];
+  const name = catalog?.name ?? tpl.name;
+  const description = catalog?.description ?? tpl.description;
+  const category = catalog?.category ?? tpl.category;
 
   const pageUrl = `${SITE_URL}/en/templates/${tpl.id}`;
   const serviceLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    name: tpl.name,
+    name,
     serviceType: "Contract document automation",
     provider: { "@type": "Organization", name: "DocGen TW", url: SITE_URL },
     areaServed: { "@type": "Country", name: "Taiwan" },
-    description: copy?.intent ?? tpl.description,
+    description: copy?.intent ?? description,
     url: pageUrl,
     inLanguage: "en",
     offers: { "@type": "Offer", price: "99", priceCurrency: "TWD", availability: "https://schema.org/InStock" },
@@ -61,8 +68,8 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/en` },
-      { "@type": "ListItem", position: 2, name: tpl.category, item: `${SITE_URL}/en#templates` },
-      { "@type": "ListItem", position: 3, name: tpl.name, item: pageUrl },
+      { "@type": "ListItem", position: 2, name: category, item: `${SITE_URL}/en#templates` },
+      { "@type": "ListItem", position: 3, name, item: pageUrl },
     ],
   };
   const faqLd =
@@ -87,10 +94,11 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
       {faqLd && <JsonLd data={faqLd} />}
       <main className="page paper-bg dg-template-page">
         <header className="dg-page-shell dg-page-shell--reading dg-template-hero">
-          <div className="dg-eyebrow dg-template-category" lang="zh-Hant">
-            <Icon name={tpl.icon} size={13} /> {tpl.category}
+          <div className="dg-eyebrow dg-template-category">
+            <Icon name={tpl.icon} size={13} /> {category}
           </div>
-          <h1 className="dg-page-title" lang="zh-Hant">{tpl.name}</h1>
+          <h1 className="dg-page-title">{name}</h1>
+          <span lang="zh-Hant" className="dg-text-secondary">{tpl.name}</span>
           <p className="dg-body dg-template-intro">
             {copy ? copy.intent : <span lang="zh-Hant">{tpl.description}</span>}
           </p>
@@ -180,7 +188,7 @@ export default async function TemplateLandingEn({ params }: { params: Promise<{ 
               Complete a three-minute form, cite Taiwan statutes automatically, then collect both e-signatures with an IP and signature-hash audit trail.
             </p>
             <Link href={`/contracts/new?tpl=${tpl.id}`} className="btn btn-primary dg-template-cta-action">
-              <Icon name="sparkles" size={13} />Create <span lang="zh-Hant">{tpl.name}</span>
+              <Icon name="sparkles" size={13} />Create {name}
             </Link>
           </div>
         </section>
