@@ -24,7 +24,7 @@ function prefix(locale: Locale): string {
 
 export function TopNav() {
   const pathname = usePathname() || "/";
-  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [locale, setLocale] = useState<Locale>(() => detectLocale(pathname));
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
