@@ -1,6 +1,28 @@
 import type { Metadata } from "next";
+import { JetBrains_Mono, Noto_Sans_TC, Noto_Serif_TC } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
+
+const sans = Noto_Sans_TC({
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto-sans",
+  display: "swap",
+  preload: false,
+});
+
+const serif = Noto_Serif_TC({
+  weight: ["400", "500", "700"],
+  variable: "--font-noto-serif",
+  display: "swap",
+  preload: false,
+});
+
+const mono = JetBrains_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://docgen-tw.vercel.app";
 
@@ -62,15 +84,9 @@ const WEBSITE_LD = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-Hant">
+    <html lang="zh-Hant" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
         <JsonLd data={ORG_LD} />
         <JsonLd data={SOFTWARE_LD} />
         <JsonLd data={WEBSITE_LD} />
