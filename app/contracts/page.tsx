@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
+import { UIState } from "@/components/UIState";
 import { contractTitle, TEMPLATES, getTemplate } from "@/lib/templates";
 
 type Row = {
@@ -36,7 +37,7 @@ export default function ContractsListPage() {
   const [template, setTemplate] = useState("");
   const [q, setQ] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -53,11 +54,11 @@ export default function ContractsListPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [q, status, template]);
   useEffect(() => {
     const t = setTimeout(load, 300);
     return () => clearTimeout(t);
-  }, [status, template, q]);
+  }, [load]);
 
   const stats = useMemo(() => {
     const overdue = rows.reduce(
@@ -67,47 +68,57 @@ export default function ContractsListPage() {
     const awaiting = rows.filter((r) => r.signingStatus === "AWAITING_RECIPIENT").length;
     return { total: rows.length, overdue, awaiting };
   }, [rows]);
+  const hasActiveFilters = Boolean(q.trim() || status || template);
+  const hasFilterInput = Boolean(q || status || template);
 
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 1200 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+      <main className="page paper-bg dg-contracts-page">
+        <header className="dg-page-shell dg-contracts-header">
+          <div className="dg-eyebrow dg-contracts-eyebrow">
             <Icon name="fileText" size={13} /> 合約列表
           </div>
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 12 }}>
-            <h1 style={{ fontSize: 40 }}>所有合約</h1>
+          <div className="dg-page-header dg-contracts-heading-row">
+            <div className="dg-stack dg-contracts-heading-copy">
+              <h1 className="dg-page-title">所有合約</h1>
+              <p className="dg-text-secondary">集中查看簽署進度、案件歸屬與待處理里程碑。</p>
+            </div>
             <Link href="/contracts/new" className="btn btn-primary">
               <Icon name="plus" size={13} />新增合約
             </Link>
           </div>
-          <div className="row gap-4" style={{ marginTop: 12, fontSize: 13, color: "var(--ink-muted)" }}>
-            <span>共 {stats.total} 筆</span>
-            <span style={{ color: stats.awaiting ? "#7a5a2a" : undefined }}>待簽 {stats.awaiting}</span>
-            <span style={{ color: stats.overdue ? "#7a1f1f" : undefined }}>包含逾期 {stats.overdue} 項</span>
+          <div className="dg-contracts-stats" aria-label="合約統計">
+            <div className="dg-contracts-stat">
+              <span className="dg-contracts-stat__value">{stats.total}</span>
+              <span className="dg-contracts-stat__label">目前筆數</span>
+            </div>
+            <div className="dg-contracts-stat">
+              <span className="dg-contracts-stat__value">{stats.awaiting}</span>
+              <span className="dg-contracts-stat__label">待乙方簽</span>
+            </div>
+            <div className="dg-contracts-stat">
+              <span className="dg-contracts-stat__value">{stats.overdue}</span>
+              <span className="dg-contracts-stat__label">逾期里程碑</span>
+            </div>
           </div>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "8px 32px 16px", maxWidth: 1200 }}>
-          <div className="card" style={{
-            padding: 14, background: "var(--bg-elev)", border: "1px solid var(--line)",
-            borderRadius: "var(--radius)", display: "flex", gap: 10, flexWrap: "wrap",
-            alignItems: "center",
-          }}>
-            <input className="input" aria-label="搜尋合約（甲方/乙方/Email）" placeholder="搜尋甲方/乙方/Email…" value={q} onChange={(e) => setQ(e.target.value)} style={{ minWidth: 220 }} />
-            <select className="input" aria-label="依狀態篩選" value={status} onChange={(e) => setStatus(e.target.value)}>
+        <section className="dg-page-shell dg-contracts-filter-section" aria-label="篩選合約">
+          <div className="card dg-card-compact dg-contracts-filter" aria-busy={loading}>
+            <input className="input dg-contracts-search" aria-label="搜尋合約（甲方/乙方/Email）" placeholder="搜尋甲方/乙方/Email…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <select className="select dg-contracts-select" aria-label="依狀態篩選" value={status} onChange={(e) => setStatus(e.target.value)}>
               {STATUSES.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
-            <select className="input" aria-label="依模板篩選" value={template} onChange={(e) => setTemplate(e.target.value)}>
+            <select className="select dg-contracts-select" aria-label="依模板篩選" value={template} onChange={(e) => setTemplate(e.target.value)}>
               <option value="">所有模板</option>
               {TEMPLATES.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
-            {(q || status || template) && (
+            {hasFilterInput && (
               <button className="btn btn-ghost btn-sm" onClick={() => { setQ(""); setStatus(""); setTemplate(""); }}>
                 <Icon name="x" size={11} />清除
               </button>
@@ -115,57 +126,66 @@ export default function ContractsListPage() {
           </div>
         </section>
 
-        <section className="container" style={{ padding: "8px 32px 64px", maxWidth: 1200 }}>
-          {loading && <div style={{ color: "var(--ink-muted)" }}>載入中…</div>}
+        <section className="dg-page-shell dg-contracts-list-section" aria-busy={loading}>
+          {loading && rows.length === 0 && (
+            <UIState status="loading" title="合約載入中" description="正在取得你的合約資料。" />
+          )}
           {error && (
-            <div className="card" style={{ padding: 16, background: "#fde9e9", border: "1px solid #f1b5b5", color: "#7a1f1f" }}>
-              讀取失敗：{error}
-            </div>
+            <UIState
+              status="error"
+              title="無法讀取合約"
+              description={`讀取失敗：${error}`}
+              actions={<button className="btn btn-primary" onClick={load}>重新載入</button>}
+            />
           )}
           {!loading && !error && rows.length === 0 && (
-            <div className="card" style={{ padding: 24, textAlign: "center", color: "var(--ink-muted)" }}>
-              無符合條件的合約。
+            <UIState
+              status="empty"
+              title={hasActiveFilters ? "找不到符合條件的合約" : "尚未建立合約"}
+              description={hasActiveFilters ? "調整搜尋字詞或篩選條件後再試一次。" : "建立第一份合約後，簽署與案件資訊會顯示在這裡。"}
+              actions={hasActiveFilters ? (
+                <button className="btn btn-ghost" onClick={() => { setQ(""); setStatus(""); setTemplate(""); }}>清除篩選</button>
+              ) : (
+                <Link href="/contracts/new" className="btn btn-primary">新增合約</Link>
+              )}
+            />
+          )}
+          {rows.length > 0 && (
+            <div className="dg-contracts-list-heading">
+              <h2 className="dg-section-title">合約清單</h2>
+              {loading && <span className="dg-helper" role="status">正在更新結果…</span>}
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="dg-contracts-list">
             {rows.map((r) => {
               const tpl = r.templateId ? getTemplate(r.templateId) : null;
               const overdue = r.milestones.filter((m) => m.status === "OVERDUE").length;
+              const signingStatus = STATUSES.find((item) => item.value === r.signingStatus)?.label ?? r.signingStatus;
               return (
-                <Link key={r.id} href={`/contracts/${r.id}`} className="card"
-                  style={{
-                    padding: "14px 16px", textDecoration: "none", color: "inherit",
-                    background: "var(--bg-elev)", border: "1px solid var(--line)",
-                    borderRadius: "var(--radius)", display: "flex",
-                    justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-                    <div className="row gap-2" style={{ flexWrap: "wrap" }}>
-                      <Icon name={tpl?.icon || "fileText"} size={13} />
-                      <b style={{ fontSize: 15 }}>{contractTitle(r.templateId || "", r.values)}</b>
-                      <span className="chip chip-zinc" style={{ fontSize: 11 }}>{r.signingStatus}</span>
+                <Link key={r.id} href={`/contracts/${r.id}`} className="card card-hover dg-list-item dg-contracts-list-item">
+                  <div className="dg-contracts-list-item__content">
+                    <div className="dg-contracts-list-item__heading">
+                      <Icon name={tpl?.icon || "fileText"} size={16} />
+                      <h3 className="dg-subsection-title dg-contracts-list-item__title">{contractTitle(r.templateId || "", r.values)}</h3>
+                      <span className="chip chip-zinc">{signingStatus}</span>
                       {r.case && (
-                        <span className="chip chip-zinc" style={{ fontSize: 11 }}>
+                        <span className="chip chip-zinc dg-contracts-case-chip">
                           <Icon name="folder" size={10} />{r.case.title}
                         </span>
                       )}
                       {overdue > 0 && (
-                        <span style={{
-                          fontSize: 11, padding: "2px 8px", borderRadius: 999,
-                          background: "#fde9e9", color: "#7a1f1f", border: "1px solid #f1b5b5",
-                        }}>
+                        <span className="chip chip-bad">
                           逾期 {overdue}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12.5, color: "var(--ink-muted)" }}>
-                      {r.client || "—"} → {r.recipientName || "—"}
-                      {r.recipientEmail && <span style={{ marginLeft: 4 }}>·{r.recipientEmail}</span>}
-                      <span style={{ marginLeft: 6 }}>· {new Date(r.createdAt).toLocaleDateString("zh-Hant")}</span>
+                    <div className="dg-contracts-metadata">
+                      <span>{r.client || "—"} → {r.recipientName || "—"}</span>
+                      {r.recipientEmail && <span>{r.recipientEmail}</span>}
+                      <time dateTime={r.createdAt}>{new Date(r.createdAt).toLocaleDateString("zh-Hant")}</time>
                     </div>
                   </div>
-                  <Icon name="chevronRight" size={14} style={{ color: "var(--ink-muted)" }} />
+                  <Icon name="chevronRight" size={16} className="dg-contracts-list-item__chevron" />
                 </Link>
               );
             })}

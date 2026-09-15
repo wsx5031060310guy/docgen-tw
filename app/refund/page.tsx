@@ -32,7 +32,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <>
         <p>符合下列任一情形者，您得申請退款：</p>
-        <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <ul className="dg-prose-list">
           <li>
             <b>付款後尚未使用</b>：付款完成後尚未使用任何付費權益（未解鎖下載任何合約、未使用任何付費功能），得於付款日起
             7 日內申請全額退款。
@@ -59,7 +59,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "處理時程與退款方式",
     body: (
-      <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul className="dg-prose-list">
         <li>本公司於收到申請後 <b>3 個工作天內</b>回覆受理結果。</li>
         <li>
           核准退款者，於核准日起 <b>14 個工作天內</b>依原付款方式退回：信用卡付款採<b>原卡退刷</b>；超商代碼等非信用卡付款，將與您確認退款帳戶後匯款退回。
@@ -73,7 +73,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         如您對退款結果有異議，可再次來信由本公司複核；亦得依消費者保護法向直轄市、縣（市）政府消費者服務中心或消費者保護官申訴，或向法院提起訴訟。相關爭議之準據法與管轄，依
-        <Link href="/terms" style={{ textDecoration: "underline", margin: "0 2px" }}>服務條款</Link>之約定。
+        <Link href="/terms" className="dg-link">服務條款</Link>之約定。
       </p>
     ),
   },
@@ -83,36 +83,36 @@ export default function RefundPage() {
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "48px 32px 16px", maxWidth: 860 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+      <main className="page paper-bg dg-legal-page">
+        <header className="dg-page-shell dg-page-shell--reading dg-reading-header">
+          <div className="dg-eyebrow dg-reading-eyebrow">
             <Icon name="shieldCheck" size={13} />
             法律文件
           </div>
-          <h1 style={{ fontSize: 44, marginBottom: 14 }}>
+          <h1 className="dg-page-title dg-reading-title">
             退款
-            <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
+            <span className="dg-reading-title-accent">
               政策
             </span>
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.75, color: "var(--ink-soft)" }}>
+          <p className="dg-body dg-reading-intro">
             本服務為數位內容／線上服務，付費方案均為一次性付款、不自動續約。本頁說明退款條件、申請管道與處理時程；其餘權利義務見
-            <Link href="/terms" style={{ textDecoration: "underline", margin: "0 2px" }}>服務條款</Link>。
+            <Link href="/terms" className="dg-link">服務條款</Link>。
           </p>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "16px 32px 64px", maxWidth: 860, display: "flex", flexDirection: "column", gap: 14 }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-reading-content" aria-label="退款政策全文">
           {SECTIONS.map((s, i) => (
-            <div key={i} className="card" style={{ padding: "20px 22px", background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-              <h2 style={{ fontSize: 17, marginBottom: 10 }}>
+            <article key={i} className="card dg-reading-card">
+              <h2 className="dg-section-title dg-reading-card-title">
                 {i + 1}. {s.title}
               </h2>
-              <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="dg-prose">
                 {s.body}
               </div>
-            </div>
+            </article>
           ))}
-          <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
+          <div className="dg-reading-meta">
             最後更新：2026 年 6 月。
             <br />
             營運者：{COMPANY.name}｜客服 Email：{COMPANY.email}

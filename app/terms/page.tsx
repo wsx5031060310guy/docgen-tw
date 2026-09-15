@@ -65,7 +65,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         退款條件、申請管道與處理時程，詳見
-        <Link href="/refund" style={{ textDecoration: "underline", margin: "0 2px" }}>退款政策</Link>
+        <Link href="/refund" className="dg-link">退款政策</Link>
         ，該政策為本條款之一部分。
       </p>
     ),
@@ -86,7 +86,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
   {
     title: "禁止行為",
     body: (
-      <ul style={{ paddingLeft: 20, margin: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+      <ul className="dg-prose-list">
         <li>以本服務產出違反強行法規、公序良俗或詐害第三人之文件。</li>
         <li>冒用他人名義註冊、簽署或偽造簽名。</li>
         <li>對本服務進行未經授權之爬取、逆向工程、攻擊或干擾。</li>
@@ -100,7 +100,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
     body: (
       <p>
         本公司如何蒐集、處理及利用您的個人資料，詳見
-        <Link href="/privacy" style={{ textDecoration: "underline", margin: "0 2px" }}>隱私權政策</Link>
+        <Link href="/privacy" className="dg-link">隱私權政策</Link>
         ，該政策為本條款之一部分。
       </p>
     ),
@@ -112,7 +112,7 @@ const SECTIONS: { title: string; body: React.ReactNode }[] = [
         <p>
           本服務產出之合約文件與風險提示，係依一般情形編製之<b>自動化文件工具</b>，僅供參考，
           <b>不構成法律意見</b>，本公司亦非律師事務所、不執行法律業務。涉及訴訟、重大金額或客製條款，請委請律師審閱，詳見
-          <Link href="/disclaimer" style={{ textDecoration: "underline", margin: "0 2px" }}>法律免責聲明</Link>。
+          <Link href="/disclaimer" className="dg-link">法律免責聲明</Link>。
         </p>
         <p>
           透過本服務完成之電子簽署，依電子簽章法相關規定，於依法得使用電子文件與電子簽章之事項，經雙方同意以電子方式為之者，與書面及親自簽名具有同等效力；簽署過程留存
@@ -166,37 +166,37 @@ export default function TermsPage() {
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "48px 32px 16px", maxWidth: 860 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+      <main className="page paper-bg dg-legal-page">
+        <header className="dg-page-shell dg-page-shell--reading dg-reading-header">
+          <div className="dg-eyebrow dg-reading-eyebrow">
             <Icon name="scale" size={13} />
             法律文件
           </div>
-          <h1 style={{ fontSize: 44, marginBottom: 14 }}>
+          <h1 className="dg-page-title dg-reading-title">
             服務
-            <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
+            <span className="dg-reading-title-accent">
               條款
             </span>
           </h1>
-          <p style={{ fontSize: 15, lineHeight: 1.75, color: "var(--ink-soft)" }}>
+          <p className="dg-body dg-reading-intro">
             本頁說明您使用 DocGen TW 的權利與義務。請於使用本服務前詳細閱讀；另請參閱
-            <Link href="/privacy" style={{ textDecoration: "underline", margin: "0 2px" }}>隱私權政策</Link>與
-            <Link href="/refund" style={{ textDecoration: "underline", margin: "0 2px" }}>退款政策</Link>。
+            <Link href="/privacy" className="dg-link">隱私權政策</Link>與
+            <Link href="/refund" className="dg-link">退款政策</Link>。
           </p>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "16px 32px 64px", maxWidth: 860, display: "flex", flexDirection: "column", gap: 14 }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-reading-content" aria-label="服務條款全文">
           {SECTIONS.map((s, i) => (
-            <div key={i} className="card" style={{ padding: "20px 22px", background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-              <h2 style={{ fontSize: 17, marginBottom: 10 }}>
+            <article key={i} className="card dg-reading-card">
+              <h2 className="dg-section-title dg-reading-card-title">
                 第 {i + 1} 條　{s.title}
               </h2>
-              <div style={{ fontSize: 14, lineHeight: 1.8, color: "var(--ink-soft)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="dg-prose">
                 {s.body}
               </div>
-            </div>
+            </article>
           ))}
-          <div style={{ marginTop: 8, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
+          <div className="dg-reading-meta">
             最後更新：2026 年 6 月。本公司得隨時修訂本條款，修訂後於本頁公告即生效力；重大變更將另行於網站顯著處公告。
           </div>
         </section>

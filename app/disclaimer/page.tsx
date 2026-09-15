@@ -42,39 +42,35 @@ export default function DisclaimerPage() {
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "48px 32px 24px", maxWidth: 860 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 12 }}>
+      <main className="page paper-bg dg-legal-page">
+        <header className="dg-page-shell dg-page-shell--reading dg-reading-header">
+          <div className="dg-eyebrow dg-reading-eyebrow">
             <Icon name="scale" size={13} />
             法律定位
           </div>
-          <h1 style={{ fontSize: 44, marginBottom: 18 }}>
+          <h1 className="dg-page-title dg-reading-title">
             文件自動化 · 風險提示 ·
             <br />
-            <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
+            <span className="dg-reading-title-accent">
               律師轉介
             </span>
           </h1>
-          <p style={{ fontSize: 16, lineHeight: 1.75, color: "var(--ink-soft)" }}>
+          <p className="dg-body dg-reading-intro">
             DocGen TW 是<b>合約 SaaS 工具</b>，不是律師事務所。我們做三件事：
           </p>
-          <ol style={{ fontSize: 15, lineHeight: 1.85, color: "var(--ink)", paddingLeft: 22, marginTop: 12 }}>
+          <ol className="dg-reading-lead-list">
             <li><b>文件自動化</b>：8 種範本 + 動態表單 + 即時 PDF + 雙方簽署。</li>
             <li><b>風險提示</b>：規則式紅黃綠燈標示常見高風險條款，告訴你「為什麼」與「對應法條」。</li>
             <li><b>律師轉介</b>：偵測到複雜情境（紅燈、跨境、訴訟）時，推薦合作律師。律師費由您與律師議定，平台不抽成。</li>
           </ol>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 860 }}>
-          <div className="card" style={{
-            padding: 22, background: "var(--amber-50)", border: "1px solid #f0d9a4",
-            borderRadius: "var(--radius)", display: "flex", flexDirection: "column", gap: 8,
-          }}>
-            <div className="row gap-2" style={{ alignItems: "center" }}>
-              <Icon name="fileWarn" size={16} style={{ color: "var(--amber-600)" }} />
-              <b style={{ color: "#5b3f10" }}>我們不做這些事</b>
-            </div>
-            <ul style={{ fontSize: 14, lineHeight: 1.8, color: "#7a5a2a", paddingLeft: 20, margin: 0 }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-reading-section" aria-labelledby="legal-boundary-title">
+          <div className="dg-notice dg-notice--warning dg-reading-boundary">
+            <h2 id="legal-boundary-title" className="dg-section-title dg-reading-card-title">
+              <Icon name="fileWarn" size={16} />我們不做這些事
+            </h2>
+            <ul className="dg-prose-list">
               <li>不提供針對個案的法律意見或訴訟策略。</li>
               <li>不代理出庭、不代撰書狀、不代寄存證信函至郵局。</li>
               <li>不擔保合約於特定案件之法律效力或勝訴可能。</li>
@@ -83,26 +79,30 @@ export default function DisclaimerPage() {
           </div>
         </section>
 
-        <section className="container" style={{ padding: "24px 32px 24px", maxWidth: 860 }}>
-          <h2 style={{ fontSize: 28, marginBottom: 20 }}>常見問題</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <section className="dg-page-shell dg-page-shell--reading dg-reading-section" aria-labelledby="legal-faq-title">
+          <h2 id="legal-faq-title" className="dg-section-title dg-reading-section-title">常見問題</h2>
+          <div className="dg-faq">
             {FAQ.map((f, i) => (
-              <details key={i} className="card" style={{ padding: 18, background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--radius)" }}>
-                <summary style={{ fontWeight: 600, fontSize: 15, cursor: "pointer", listStyle: "none" }}>{f.q}</summary>
-                <p style={{ marginTop: 10, fontSize: 14, lineHeight: 1.75, color: "var(--ink-soft)" }}>{f.a}</p>
+              <details key={i} className="card dg-faq-item">
+                <summary className="dg-faq-summary">
+                  <span>{f.q}</span>
+                  <span className="dg-faq-toggle" aria-hidden="true"><span className="dg-faq-toggle-open">展開</span><span className="dg-faq-toggle-close">收合</span></span>
+                </summary>
+                <p className="dg-text-secondary dg-faq-answer">{f.a}</p>
               </details>
             ))}
           </div>
         </section>
 
-        <section id="referral" className="container" style={{ padding: "24px 32px 64px", maxWidth: 860 }}>
-          <Suspense fallback={<div style={{ color: "var(--ink-muted)" }}>載入表單…</div>}>
+        <section id="referral" className="dg-page-shell dg-page-shell--reading dg-referral-section" aria-labelledby="referral-title">
+          <h2 id="referral-title" className="dg-section-title dg-reading-section-title">申請律師轉介</h2>
+          <Suspense fallback={<div className="dg-notice dg-notice--info dg-referral-fallback" role="status" aria-live="polite" aria-busy="true"><Icon name="loader" size={14} className="spin" />載入表單…</div>}>
             <ReferralFormSection />
           </Suspense>
-          <div style={{ marginTop: 20, fontSize: 12, color: "var(--ink-muted)", lineHeight: 1.7 }}>
+          <div className="dg-reading-meta">
             最後更新：2026 年。如本頁與您簽署的服務條款衝突，以服務條款為準。
             <br />
-            DocGen TW 為 <Link href="/" style={{ textDecoration: "underline" }}>合約自動化平台</Link>，非執業律師、非法律事務所。
+            DocGen TW 為 <Link href="/" className="dg-link">合約自動化平台</Link>，非執業律師、非法律事務所。
           </div>
         </section>
 

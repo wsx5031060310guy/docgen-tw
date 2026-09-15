@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "./Icon";
+import { DEFAULT_LOCALE, t, type Locale } from "@/lib/i18n/dict";
 
 interface Status {
   plan: "FREE" | "PRO";
@@ -12,7 +13,13 @@ interface Status {
   month: string;
 }
 
-export function BillingBanner({ compact }: { compact?: boolean }) {
+export function BillingBanner({
+  compact,
+  locale = DEFAULT_LOCALE,
+}: {
+  compact?: boolean;
+  locale?: Locale;
+}) {
   const [s, setS] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
@@ -54,7 +61,7 @@ export function BillingBanner({ compact }: { compact?: boolean }) {
     return (
       <div className={`${className} dg-notice--info`} role="status" aria-live="polite" aria-busy="true">
         <Icon name="loader" size={14} className="spin" />
-        <span>正在載入方案狀態…</span>
+        <span>{t(locale, "billing.loading")}</span>
       </div>
     );
   }
@@ -64,21 +71,21 @@ export function BillingBanner({ compact }: { compact?: boolean }) {
       <div className={`${className} dg-notice--error`} role="alert">
         <div className="dg-billing-banner__message">
           <Icon name="alertOctagon" size={14} />
-          <span>暫時無法載入方案狀態，請稍後再試。</span>
+          <span>{t(locale, "billing.unavailable")}</span>
         </div>
         <button className="btn btn-ghost btn-sm" type="button" onClick={retry}>
-          重新載入
+          {t(locale, "billing.retry")}
         </button>
       </div>
     );
   }
 
   if (s.plan === "PRO") {
-    const ends = s.periodEnd ? new Date(s.periodEnd).toLocaleDateString("zh-Hant") : "—";
+    const ends = s.periodEnd ? new Date(s.periodEnd).toLocaleDateString(locale) : "—";
     return (
       <div className={`${className} dg-notice--success`} role="status">
         <Icon name="shieldCheck" size={14} />
-        <span><b>Pro 方案啟用中</b>　無限合約，本期至 {ends}</span>
+        <span><b>{t(locale, "billing.pro_active")}</b> {t(locale, "billing.unlimited")}{t(locale, "billing.period_until")} {ends}</span>
       </div>
     );
   }
@@ -94,11 +101,12 @@ export function BillingBanner({ compact }: { compact?: boolean }) {
       <div className="dg-billing-banner__message">
         <Icon name={exceeded ? "alertOctagon" : "info"} size={14} />
         <span>
-          <b>免費方案</b>　本月已用 <b>{used}</b> / 3 份{rem !== "∞" && <>，剩 <b>{rem}</b> 份</>}
+          <b>{t(locale, "billing.free_plan")}</b> {t(locale, "billing.used_prefix")} <b>{used}</b> / 3 {t(locale, "billing.documents")}
+          {rem !== "∞" && <>{t(locale, "billing.remaining_prefix")} <b>{rem}</b> {t(locale, "billing.documents")}</>}
         </span>
       </div>
       <Link href="/checkout" className="btn btn-soft btn-sm">
-        <Icon name="sparkles" size={11} />升級 Pro
+        <Icon name="sparkles" size={11} />{t(locale, "billing.upgrade")}
       </Link>
     </div>
   );

@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
@@ -6,6 +7,8 @@ import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
 import { LawyerReferralCTA } from "@/components/LawyerReferralCTA";
+import { RiskFindingCard, RISK_LEVEL_CLASS } from "@/components/RiskFindingCard";
+import { UIState } from "@/components/UIState";
 import { t } from "@/lib/i18n/dict";
 import type { RiskFinding, RiskLevel } from "@/lib/risk-rules";
 
@@ -18,12 +21,11 @@ type Result = {
   templateSuggestion?: { templateId: string; name: string } | null;
 };
 
-const LEVEL_STYLE: Record<RiskLevel, { bg: string; border: string; ink: string; chip: string }> = {
-  red: { bg: "#fde9e9", border: "#f1b5b5", ink: "#7a1f1f", chip: "#c4322a" },
-  yellow: { bg: "var(--amber-50)", border: "#f0d9a4", ink: "#7a5a2a", chip: "var(--amber-600)" },
-  "green-info": { bg: "#e8f5ed", border: "#bfe1c8", ink: "#1f5a35", chip: "#2e8b57" },
+const LEVEL_LABEL: Record<RiskLevel, string> = {
+  red: "Red flag",
+  yellow: "Review recommended",
+  "green-info": "No rule-based red flags",
 };
-const LEVEL_LABEL: Record<RiskLevel, string> = { red: "Red", yellow: "Yellow", "green-info": "Green" };
 
 export default function CheckEn() {
   const [text, setText] = useState("");
@@ -36,152 +38,146 @@ export default function CheckEn() {
     if (!text.trim()) return setErr("Please paste contract text");
     setBusy(true);
     try {
-      const r = await fetch("/api/check-text", {
+      const response = await fetch("/api/check-text", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || `HTTP ${r.status}`);
-      setResult(j);
-    } catch (e) {
-      setErr((e as Error).message);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setResult(data);
+    } catch (error) {
+      setErr((error as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
+  const summaryStyle = result ? RISK_LEVEL_CLASS[result.summary.level] : null;
+
   return (
     <>
       <TopNav />
-      <main className="page paper-bg">
-        <section className="container" style={{ padding: "32px 32px 16px", maxWidth: 960 }}>
-          <div className="row gap-2" style={{ fontSize: 12, color: "var(--ink-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+      <main className="page paper-bg dg-check-page">
+        <header className="dg-page-shell dg-check-shell dg-check-hero">
+          <div className="dg-eyebrow dg-check-eyebrow">
             <Icon name="shieldCheck" size={13} /> {t(L, "check.tag")}
           </div>
-          <h1 style={{ fontSize: 44, lineHeight: 1.1 }}>
+          <h1 className="dg-page-title dg-check-title">
             {t(L, "check.headline_pre")}
-            <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
-              {t(L, "check.headline_italic")}
-            </span>
+            <span className="dg-check-title-accent">{t(L, "check.headline_italic")}</span>
             {t(L, "check.headline_post")}
           </h1>
-          <p style={{ fontSize: 16, lineHeight: 1.7, color: "var(--ink-soft)", marginTop: 14 }}>
-            DocGen TW runs <b>15 keyword + heuristic rules</b> targeted at Taiwan law:
-            interest cap (Civil Code §205), excessive penalty (§250/§252), unlimited NDA,
-            unilateral termination, foreign jurisdiction, missing venue clause, etc.
-            <b> Free, no signup, contents are not stored</b> unless you opt-in to a shareable link.
+          <p className="dg-body dg-check-lead">
+            DocGen TW runs <strong>15 keyword and heuristic rules</strong> for Taiwan law, including the Civil Code §205 interest cap,
+            excessive penalties, unlimited confidentiality, unilateral termination, foreign jurisdiction, and missing venue clauses.
+            <strong> Free, no signup, and contents are not stored.</strong>
           </p>
-        </section>
+        </header>
 
-        <section className="container" style={{ padding: "12px 32px 24px", maxWidth: 960 }}>
-          <div className="dg-fields-2col" style={{ gap: 16, alignItems: "flex-start" }}>
-            <div className="card" style={{
-              padding: 16, background: "var(--bg-elev)", border: "1px solid var(--line)",
-              borderRadius: "var(--radius)",
-            }}>
-              <label style={{ fontSize: 13, fontWeight: 600 }}>Paste contract text</label>
+        <section className="dg-page-shell dg-check-shell dg-check-workspace" aria-label="Contract risk analysis tool">
+          <div className="dg-check-grid">
+            <div className="card dg-card-compact dg-check-form-card">
+              <div className="dg-check-field-heading">
+                <label className="field-label dg-check-label" htmlFor="contract-text-en">Paste contract text</label>
+              </div>
               <textarea
-                className="input"
+                id="contract-text-en"
+                className="textarea dg-check-textarea"
                 rows={14}
-                style={{ resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 13, lineHeight: 1.7, marginTop: 8 }}
                 placeholder={t(L, "check.placeholder")}
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(event) => setText(event.target.value)}
+                aria-describedby={`contract-text-en-help${err ? " contract-text-en-error" : ""}`}
+                aria-invalid={Boolean(err) || undefined}
               />
-              <div className="row" style={{ marginTop: 10, justifyContent: "space-between", fontSize: 12, color: "var(--ink-muted)" }}>
-                <span>{text.length.toLocaleString()} / 50,000 {t(L, "check.charcount")}</span>
+              <div id="contract-text-en-help" className="dg-check-text-meta">
+                <span>{text.length.toLocaleString("en")} / 50,000 {t(L, "check.charcount")}</span>
                 {(text || result) && (
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setText(""); setResult(null); }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    type="button"
+                    onClick={() => {
+                      setText("");
+                      setResult(null);
+                      setErr(null);
+                    }}
+                  >
                     {t(L, "check.clear")}
                   </button>
                 )}
               </div>
-              {err && <div className="field-error" style={{ marginTop: 8 }}><Icon name="alert" size={12} />{err}</div>}
+              {err && (
+                <div id="contract-text-en-error" className="field-error dg-check-error" role="alert">
+                  <Icon name="alert" size={12} />{err}
+                </div>
+              )}
               <button
-                className="btn btn-primary btn-lg"
-                style={{ marginTop: 14, width: "100%" }}
+                className="btn btn-primary btn-lg dg-check-submit"
+                type="button"
                 onClick={run}
                 disabled={busy || !text.trim()}
+                aria-busy={busy || undefined}
               >
                 {busy ? "Analyzing…" : t(L, "check.cta")}
-                <Icon name="arrowRight" size={14} />
+                <Icon name={busy ? "loader" : "arrowRight"} size={14} className={busy ? "spin" : undefined} />
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div className="dg-check-results" aria-busy={busy || undefined}>
+              <h2 className="dg-visually-hidden">Risk-check results</h2>
               {!result && !busy && (
-                <div className="card" style={{ padding: 20, color: "var(--ink-muted)", fontSize: 14, lineHeight: 1.7 }}>
-                  <Icon name="info" size={14} /> {t(L, "check.idle")}
-                </div>
+                <UIState status="empty" title="Waiting for a contract" description={t(L, "check.idle")} />
               )}
-              {result && (
+              {!result && busy && (
+                <UIState status="loading" title="Analyzing the contract" description="Long contracts can take a moment. Keep this page open." />
+              )}
+              {result && summaryStyle && (
                 <>
-                  <div className="card" style={{
-                    padding: 18, background: LEVEL_STYLE[result.summary.level].bg,
-                    border: `1px solid ${LEVEL_STYLE[result.summary.level].border}`,
-                    color: LEVEL_STYLE[result.summary.level].ink,
-                    borderRadius: "var(--radius)",
-                  }}>
-                    <div className="row gap-2" style={{ alignItems: "center" }}>
-                      <Icon
-                        name={result.summary.level === "red" ? "alertOctagon" : result.summary.level === "yellow" ? "alert" : "checkCircle"}
-                        size={16}
-                        style={{ color: LEVEL_STYLE[result.summary.level].chip }}
-                      />
-                      <b style={{ fontSize: 15 }}>{LEVEL_LABEL[result.summary.level]}</b>
-                      <span style={{ marginLeft: "auto", fontSize: 12, opacity: 0.85 }}>
-                        Red {result.summary.reds} · Yellow {result.summary.yellows}
-                      </span>
+                  {busy && (
+                    <div className="dg-notice dg-notice--info dg-risk-status" role="status" aria-live="polite">
+                      <Icon name="loader" size={14} className="spin" />
+                      <span>Analyzing again; the previous result remains visible.</span>
                     </div>
-                    <div style={{ fontSize: 13, lineHeight: 1.6, marginTop: 6 }}>{result.summary.oneliner}</div>
+                  )}
+                  <div className={`dg-notice dg-notice--${summaryStyle.notice} dg-risk-summary`}>
+                    <div className="dg-risk-summary__header">
+                      <Icon name={summaryStyle.icon} size={16} />
+                      <strong className="dg-risk-summary__title">{LEVEL_LABEL[result.summary.level]}</strong>
+                      <span className="dg-risk-summary__counts">Red {result.summary.reds} · Yellow {result.summary.yellows}</span>
+                    </div>
+                    <p className="dg-risk-summary__oneliner" lang="zh-Hant">{result.summary.oneliner}</p>
                   </div>
-                  {result.findings.map((f) => {
-                    const fs = LEVEL_STYLE[f.level];
-                    return (
-                      <div key={f.id} className="card" style={{
-                        padding: 14, background: "var(--bg-elev)",
-                        border: "1px solid var(--line)", borderRadius: "var(--radius)",
-                      }}>
-                        <div className="row gap-2" style={{ alignItems: "center", marginBottom: 6 }}>
-                          <span style={{
-                            display: "inline-flex", padding: "2px 8px", borderRadius: 999,
-                            background: fs.bg, color: fs.ink, border: `1px solid ${fs.border}`,
-                            fontSize: 11, fontWeight: 600,
-                          }}>
-                            {LEVEL_LABEL[f.level]}
-                          </span>
-                          <b style={{ fontSize: 14 }}>{f.title}</b>
-                        </div>
-                        <div style={{ fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.65, marginBottom: 6 }}>{f.detail}</div>
-                        <div style={{ fontSize: 12.5, color: "var(--ink)" }}><b>Suggested fix:</b> {f.suggestion}</div>
-                        {f.legalBasis.length > 0 && (
-                          <div className="row gap-2" style={{ marginTop: 8, flexWrap: "wrap" }}>
-                            {f.legalBasis.map((b) => (
-                              <span key={b} className="chip chip-mono" style={{ fontSize: 11, padding: "2px 8px" }}>{b}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {result.findings.length > 0 ? (
+                    <div className="dg-risk-findings" lang="zh-Hant">
+                      {result.findings.map((finding) => <RiskFindingCard key={finding.id} finding={finding} />)}
+                    </div>
+                  ) : (
+                    <div className="dg-notice dg-notice--success dg-risk-status" role="status">
+                      <Icon name="checkCircle" size={14} />
+                      <span>No rule-based red flags detected. Lawyer review is still recommended for important transactions.</span>
+                    </div>
+                  )}
                   {result.summary.needsLawyer && (
-                    <LawyerReferralCTA variant="card" context="EN-pasted contract risk check (red findings)" />
+                    <LawyerReferralCTA
+                      variant="card"
+                      context="EN-pasted contract risk check (red findings)"
+                      locale={L}
+                    />
                   )}
                   {result.templateSuggestion && (
-                    <div className="card" style={{
-                      padding: 16, background: "#eef4ff",
-                      border: "1px solid #b9cdf2", color: "#1f3a5a", borderRadius: "var(--radius)",
-                    }}>
-                      <div className="row gap-2"><Icon name="sparkles" size={14} /><b style={{ fontSize: 14 }}>Recommended template</b></div>
-                      <div style={{ fontSize: 13, lineHeight: 1.65, marginTop: 6 }}>
-                        Closest DocGen template: <b>{result.templateSuggestion.name}</b>. Re-issuing from a
-                        compliant template fixes most red flags in one pass.
-                      </div>
-                      <Link href={`/contracts/new?tpl=${result.templateSuggestion.templateId}`} className="btn btn-primary btn-sm" style={{ marginTop: 8 }}>
+                    <section className="dg-notice dg-notice--info dg-check-suggestion" aria-labelledby="template-suggestion-title-en">
+                      <h2 id="template-suggestion-title-en" className="dg-subsection-title dg-check-card-heading">
+                        <Icon name="sparkles" size={14} />Recommended template
+                      </h2>
+                      <p>
+                        The closest DocGen template is <strong lang="zh-Hant">{result.templateSuggestion.name}</strong>.
+                        Reissuing from a compliant template can address many common red flags in one pass.
+                      </p>
+                      <Link href={`/contracts/new?tpl=${result.templateSuggestion.templateId}`} className="btn btn-primary btn-sm">
                         <Icon name="fileText" size={11} />Use template
                       </Link>
-                    </div>
+                    </section>
                   )}
                 </>
               )}
@@ -189,12 +185,11 @@ export default function CheckEn() {
           </div>
         </section>
 
-        <section className="container" style={{ padding: "12px 32px 64px", maxWidth: 960 }}>
-          <LegalDisclaimer />
+        <section className="dg-page-shell dg-check-shell dg-check-disclaimer">
+          <LegalDisclaimer locale={L} />
         </section>
-
-        <Footer />
       </main>
+      <Footer locale={L} />
     </>
   );
 }

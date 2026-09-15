@@ -1,5 +1,6 @@
 "use client";
 import { Icon } from "./Icon";
+import { DEFAULT_LOCALE, t, type Locale } from "@/lib/i18n/dict";
 
 type Variant = "inline" | "card" | "footer";
 type HeadingLevel = 2 | 3 | 4;
@@ -8,10 +9,12 @@ export function LawyerReferralCTA({
   variant = "inline",
   context,
   headingLevel,
+  locale = DEFAULT_LOCALE,
 }: {
   variant?: Variant;
   context?: string;
   headingLevel?: HeadingLevel;
+  locale?: Locale;
 }) {
   const href =
     context && context.trim()
@@ -21,7 +24,7 @@ export function LawyerReferralCTA({
   if (variant === "footer") {
     return (
       <a href={href} className="dg-referral-footer-link">
-        律師轉介
+        {t(locale, "lawyer.footer")}
       </a>
     );
   }
@@ -32,15 +35,14 @@ export function LawyerReferralCTA({
       <div className="card dg-referral-card">
         <div className="dg-referral-card__header">
           <Icon name="scale" size={16} />
-          <HeadingTag className="dg-referral-card__title">需要執業律師審閱？</HeadingTag>
+          <HeadingTag className="dg-referral-card__title">{t(locale, "lawyer.title")}</HeadingTag>
         </div>
         <p className="dg-referral-card__copy">
-          DocGen TW 僅提供文件自動化與風險提示，不取代律師意見。
-          若合約金額龐大、跨境、或涉及訴訟風險，建議由合作律師審閱。
+          {t(locale, "lawyer.copy")}
         </p>
         <a href={href} className="btn btn-soft btn-sm dg-referral-card__action">
           <Icon name="mail" size={13} />
-          申請律師轉介
+          {t(locale, "lawyer.action")}
         </a>
       </div>
     );
@@ -49,7 +51,7 @@ export function LawyerReferralCTA({
   return (
     <a href={href} className="btn btn-soft btn-sm">
       <Icon name="scale" size={13} />
-      申請律師轉介
+      {t(locale, "lawyer.action")}
     </a>
   );
 }

@@ -47,3 +47,25 @@
 - VoltAgent awesome-design-md `stripe/DESIGN.md`，commit `8147538`。
 - 只取版型、8px 間距、hairline、Level-1 陰影、32px 行動區原則。
 - 顏色與字體一律使用 DocGen TW tokens。
+
+## P19 全站收尾基準（2026-09-14）
+
+- 全站驗收盤點涵蓋 22 個非 admin 頁面：`/`、`/check`、`/checkout`、`/payment/success`、`/contracts`、`/contracts/new`、`/contracts/[id]`、`/contracts/[id]/sign`、`/contracts/[id]/versions`、`/cases`、`/cases/[id]`、`/settings`、`/templates/[id]`、`/shared/check/[id]`、`/terms`、`/privacy`、`/refund`、`/disclaimer`、`/en`、`/en/check`、`/en/disclaimer`、`/en/templates/[id]`。
+- 未知路由使用全站 `not-found`；未預期 render/data error 使用全站 `error`。兩者提供中英可讀 fallback 與回首頁路徑。`error` 的重試只呼叫 Next `unstable_retry()` 重取 segment，不直接呼叫付款、寄信、webhook 或其他 POST。
+- 分享快照保留 segment 級 loading/error/not-found；missing、expired、缺 DB 與 DB failure 外觀一致，但效期、`noindex`、views increment 語意不變。
+- 已移除 repo 零引用的 `.pulse-ring`、`.dg-sign-bottom-grid`、`.dg-autosave-indicator`、`.nav-trust`，以及依 inline style 結構猜測版型的 `#pricing > div[style*=auto-fit]`。手機全域 heading `!important` 已移除；頁面字級由 `.dg-page-title`、`.dg-section-title`、`.dg-subsection-title` 明示。
+
+### 有意保留例外
+
+- `app/admin` 不納入 22 頁視覺改造；只接受全域 token/base CSS，需以 smoke 確認無新增破壞。
+- `.container`、`.container-narrow` 與既有 `.gap-*` 保留相容。`.gap-1`、`.gap-3` 仍有首頁／英文頁／導覽引用，不重新定義。
+- `ContractPreview`／簽署 UI 的 `!important` 僅用於覆寫既有 inline 文件尺寸、紙張 padding、簽名表面與長短標題；PDF renderer 不共用這些 CSS，禁止藉收尾批改 PDF。
+- `no-texture` 與 `prefers-reduced-motion` 的 `!important` 分別確保顯式移除紙紋及停用動態；屬使用者偏好優先級。
+- 其餘手機 `!important` 暫留於仍有 inline style 或舊 selector specificity 的相容宿主（舊 container、付款列、首頁 trust/filter、TopNav、PlanCard、設定 raw key）。後續只能在宿主完成命名化後逐項移除。
+
+### 簽署頁回歸基準
+
+- 桌機：1180px 版心、文件 `minmax(0, 1fr)`＋操作欄 360px、24px gap；操作欄 `top: 88px`、`max-height: calc(100vh - 104px)` 並可內捲。
+- 手機：寄件人 → 文件 → 表單；文件預設 60vh 可展開，固定底部 CTA 可達，頁底保留 96px。
+- 長／短標題、六頁合約、未簽／已簽、錯誤／成功與下載失敗皆以此基準比對。V/S 與 web-ui-validator 報告由驗收者另行簽核，不以 tsc/vitest 代替。
+- 本分支的四個英文頁目前仍有 inline heading 與一般文字 `--ink-muted`；這不是有意例外。移除全域手機 heading 強制規則後，22 頁視覺簽核前須退回英文頁批次命名化並重驗。
