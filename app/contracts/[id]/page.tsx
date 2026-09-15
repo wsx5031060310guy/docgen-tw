@@ -36,6 +36,10 @@ type Data = {
   milestones: Milestone[];
   case: { id: string; title: string; status: string } | null;
 };
+type InviteSuccess = {
+  email: string;
+  sentAt: string;
+};
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "待辦", DONE: "已完成", OVERDUE: "逾期", CANCELLED: "已取消",
@@ -62,6 +66,14 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
   const [busy, setBusy] = useState(false);
   const [showMs, setShowMs] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
+  const [signUrl, setSignUrl] = useState("");
+  const [signUrlLoading, setSignUrlLoading] = useState(true);
+  const [signUrlError, setSignUrlError] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviteSuccess, setInviteSuccess] = useState<InviteSuccess | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,7 +81,9 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
     try {
       const r = await fetch(`/api/contracts/${id}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      setData(await r.json());
+      const nextData = await r.json() as Data;
+      setData(nextData);
+      setInviteEmail((current) => current || nextData.contract.recipientEmail || "");
       setActionError(null);
     } catch (e) {
       setError((e as Error).message);
@@ -81,6 +95,87 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
     const timer = setTimeout(() => void load(), 0);
     return () => clearTimeout(timer);
   }, [load]);
+
+  const loadSignUrl = useCallback(async () => {
+    setSignUrlLoading(true);
+    setSignUrlError(null);
+    try {
+      const response = await fetch(`/api/contracts/${id}/invite`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ dryRun: true }),
+      });
+      const payload = await response.json().catch(() => null) as {
+        signUrl?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.signUrl) {
+        throw new Error(payload?.error || `HTTP ${response.status}`);
+      }
+      setSignUrl(payload.signUrl);
+    } catch (inviteLinkError) {
+      setSignUrlError(`無法取得簽署連結：${(inviteLinkError as Error).message}`);
+    } finally {
+      setSignUrlLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => void loadSignUrl(), 0);
+    return () => clearTimeout(timer);
+  }, [loadSignUrl]);
+
+  async function copySignUrl() {
+    setCopyStatus(null);
+    if (!signUrl) {
+      setCopyStatus("複製失敗：目前沒有可用的簽署連結");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(signUrl);
+      setCopyStatus("簽署連結已複製");
+    } catch {
+      setCopyStatus("複製失敗，請手動選取連結");
+    }
+  }
+
+  async function sendInvite(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setInviteBusy(true);
+    setInviteError(null);
+    setInviteSuccess(null);
+    try {
+      const response = await fetch(`/api/contracts/${id}/invite`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail }),
+      });
+      const payload = await response.json().catch(() => null) as {
+        signUrl?: string;
+        sentTo?: string;
+        sentAt?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.sentTo || !payload.sentAt) {
+        throw new Error(payload?.error || `HTTP ${response.status}`);
+      }
+      if (payload.signUrl) setSignUrl(payload.signUrl);
+      setInviteSuccess({ email: payload.sentTo, sentAt: payload.sentAt });
+      setData((current) => current
+        ? {
+            ...current,
+            contract: {
+              ...current.contract,
+              recipientEmail: current.contract.recipientEmail || payload.sentTo || null,
+            },
+          }
+        : current);
+    } catch (sendError) {
+      setInviteError((sendError as Error).message);
+    } finally {
+      setInviteBusy(false);
+    }
+  }
 
   async function setStatus(mid: string, status: string) {
     setBusy(true);
@@ -176,12 +271,92 @@ export default function ContractViewPage({ params }: { params: Promise<{ id: str
                   <span>簽名雜湊 #{data.contract.recipientHashShort}</span>
                 </div>
               ) : (
-                <p className="dg-text-secondary dg-contract-detail-wrap">
-                  尚未簽署（簽署連結：寄送給 {data.contract.recipientEmail || "—"}）
-                </p>
+                <p className="dg-text-secondary">尚未簽署</p>
               )}
             </article>
           </div>
+          {data.contract.signingStatus === "AWAITING_RECIPIENT" && (
+            <article className="card dg-card-body dg-invite-card" aria-labelledby="invite-signature-title">
+              <div className="dg-invite-card__header">
+                <h3 id="invite-signature-title" className="dg-subsection-title dg-invite-card__title">
+                  <Icon name="mail" size={14} />邀請簽署
+                </h3>
+                <p className="dg-text-secondary">複製連結自行傳送，或由系統寄出邀請信。</p>
+              </div>
+
+              <div className="field">
+                <label className="field-label" htmlFor="recipient-sign-url">簽署連結</label>
+                <div className="dg-invite-field-row">
+                  <input
+                    id="recipient-sign-url"
+                    className="input dg-invite-url"
+                    value={signUrlLoading ? "載入中…" : signUrl}
+                    readOnly
+                    aria-describedby={copyStatus ? "recipient-sign-url-status" : undefined}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    onClick={copySignUrl}
+                    disabled={signUrlLoading || !signUrl}
+                  >
+                    複製連結
+                  </button>
+                </div>
+                {copyStatus && (
+                  <p id="recipient-sign-url-status" className="field-help" role="status" aria-live="polite">
+                    {copyStatus}
+                  </p>
+                )}
+              </div>
+
+              <form className="dg-invite-form" onSubmit={sendInvite}>
+                <div className="field">
+                  <label className="field-label" htmlFor="invite-recipient-email">Email</label>
+                  <div className="dg-invite-field-row">
+                    <input
+                      id="invite-recipient-email"
+                      className="input"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(event) => setInviteEmail(event.target.value)}
+                      placeholder="name@example.com"
+                      required
+                      disabled={inviteBusy}
+                      aria-describedby="invite-recipient-email-help"
+                    />
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={inviteBusy}
+                      aria-busy={inviteBusy || undefined}
+                    >
+                      {inviteBusy ? "寄送中…" : "寄出邀請"}
+                    </button>
+                  </div>
+                  <p id="invite-recipient-email-help" className="field-help">
+                    對方會收到含簽署連結的邀請信
+                  </p>
+                </div>
+              </form>
+
+              {signUrlError && (
+                <div className="dg-notice dg-notice--error" role="alert">
+                  {signUrlError}
+                </div>
+              )}
+              {inviteError && (
+                <div className="dg-notice dg-notice--error" role="alert">
+                  {inviteError}
+                </div>
+              )}
+              {inviteSuccess && (
+                <div className="dg-notice dg-notice--success" role="status" aria-live="polite">
+                  已寄至 {inviteSuccess.email} · {new Date(inviteSuccess.sentAt).toLocaleString("zh-Hant")}
+                </div>
+              )}
+            </article>
+          )}
         </section>
 
         <section className="dg-contract-detail-section" aria-labelledby="milestones-title">

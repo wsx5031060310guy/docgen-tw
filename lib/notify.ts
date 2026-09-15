@@ -7,6 +7,7 @@
 
 import { sendEmail, mailgunConfigured } from "@/lib/mailgun";
 import type { StoredContract } from "@/lib/contract-store";
+import { renderCompletionEmail } from "@/lib/email-templates";
 import { pdfInputFor } from "@/lib/pdf/input";
 import { renderContractPdf } from "@/lib/pdf/render";
 import { contractTitle } from "@/lib/templates";
@@ -47,23 +48,22 @@ export async function notifyFullySigned(c: StoredContract): Promise<void> {
     if (pdfTimeout) clearTimeout(pdfTimeout);
   }
 
-  const text =
-    `${tplName} 已由甲乙雙方完成電子簽署。\n\n` +
-    `合約編號：${c.id}\n` +
-    `甲方：${c.values?.party_a_name || "—"}\n` +
-    `乙方：${c.values?.party_b_name || c.recipientName || "—"}\n` +
-    `簽署狀態：FULLY_SIGNED\n\n` +
-    (pdf
-      ? `完整契約 PDF 如附件，依電子簽章法 §5 與紙本具同等效力。\n`
-      : `完整契約 PDF 可至 DocGen TW 合約頁面下載，依電子簽章法 §5 與紙本具同等效力。\n`) +
-    `本郵件由 DocGen TW 系統自動發送。`;
+  const email = renderCompletionEmail({
+    title: tplName,
+    contractId: c.id,
+    partyA: c.values?.party_a_name || "—",
+    partyB: c.values?.party_b_name || c.recipientName || "—",
+    signedAt: c.recipientSignedAt ?? c.updatedAt,
+    pdfAttached: Boolean(pdf),
+  });
 
   for (const to of recipients) {
     try {
       const r = await sendEmail({
         to,
-        subject: `[DocGen TW] ${tplName} 已雙方簽署完成`,
-        text,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
         attachment: pdf
           ? { filename: `docgen-${c.id}.pdf`, data: pdf, contentType: "application/pdf" }
           : undefined,

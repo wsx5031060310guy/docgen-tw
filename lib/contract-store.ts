@@ -27,13 +27,15 @@ export interface StoredContract {
   recipientSignatureHash: string | null;
   signingToken: string;
   signingStatus: SigningStatus;
+  expiryDate: Date | null;
+  uid: string | null;
   senderIp: string | null;
   recipientIp: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const useDb = () => Boolean(process.env.DATABASE_URL);
+const hasDatabase = () => Boolean(process.env.DATABASE_URL);
 
 const globalForStore = globalThis as unknown as {
   __docgenContracts?: StoredContract[];
@@ -64,6 +66,8 @@ function fromRow(r: any): StoredContract {
     recipientSignatureHash: r.recipientSignatureHash ?? null,
     signingToken: r.signingToken ?? "",
     signingStatus: (r.signingStatus ?? "UNSIGNED") as SigningStatus,
+    expiryDate: r.expiryDate ?? null,
+    uid: r.uid ?? null,
     senderIp: r.senderIp ?? null,
     recipientIp: r.recipientIp ?? null,
     createdAt: r.createdAt,
@@ -86,7 +90,7 @@ export async function createContract(input: {
   const now = new Date();
   const token = makeToken();
 
-  if (useDb()) {
+  if (hasDatabase()) {
     const row = await prisma.contract.create({
       data: {
         templateId: input.templateId,
@@ -123,6 +127,8 @@ export async function createContract(input: {
     recipientSignatureHash: null,
     signingToken: token,
     signingStatus: "AWAITING_RECIPIENT",
+    expiryDate: null,
+    uid: input.uid ?? null,
     senderIp: input.senderIp,
     recipientIp: null,
     createdAt: now,
@@ -133,11 +139,28 @@ export async function createContract(input: {
 }
 
 export async function findContractById(id: string): Promise<StoredContract | undefined> {
-  if (useDb()) {
+  if (hasDatabase()) {
     const row = await prisma.contract.findUnique({ where: { id } });
     return row ? fromRow(row) : undefined;
   }
   return memStore.find((c) => c.id === id);
+}
+
+/** Persist the first invite address without replacing an address already on the contract. */
+export async function setRecipientEmail(id: string, email: string): Promise<void> {
+  if (hasDatabase()) {
+    await prisma.contract.updateMany({
+      where: { id, recipientEmail: null },
+      data: { recipientEmail: email },
+    });
+    return;
+  }
+
+  const contract = memStore.find((item) => item.id === id);
+  if (contract && !contract.recipientEmail) {
+    contract.recipientEmail = email;
+    contract.updatedAt = new Date();
+  }
 }
 
 export async function findContractByToken(
@@ -166,7 +189,7 @@ export async function recordRecipientSignature(input: {
   if (!c) return { error: "簽署連結無效或已過期" };
   if (c.signingStatus === "FULLY_SIGNED") return { error: "本合約已完成簽署" };
 
-  if (useDb()) {
+  if (hasDatabase()) {
     const updated = await prisma.contract.update({
       where: { id: input.id },
       data: {
