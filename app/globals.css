@@ -497,11 +497,109 @@ a.btn[aria-disabled="true"] { pointer-events: none; }
 .stepper-line.done { background: var(--primary); }
 
 .dg-signature-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-1); }
-.dg-signature-surface { position: relative; overflow: hidden; border: 1px dashed var(--zinc-400); border-radius: var(--radius); background: var(--bg-elev); }
+.dg-signature-surface {
+  position: relative;
+  overflow: hidden;
+  border: 1px dashed var(--zinc-400);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+}
+.dg-signature-surface,
+.dg-signature-canvas {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: contain;
+}
+.dg-signature-canvas { position: relative; z-index: 1; display: block; cursor: crosshair; }
 .dg-signature-surface--dark { border-color: var(--zinc-600); background: rgba(255,255,255,.02); }
 .signature-pad-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-soft); font-family: var(--font-italic); font-size: 32px; font-style: italic; pointer-events: none; user-select: none; }
 .signature-pad-placeholder--dark { color: var(--zinc-300); }
 .dg-signature-hint { color: var(--ink-soft); }
+.dg-signature-mobile { display: none; }
+.dg-signature-trigger {
+  width: 100%;
+  min-height: 96px;
+  padding: var(--space-2);
+  border: 1.5px dashed var(--zinc-400);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  color: var(--primary);
+  transition: border-color .2s, box-shadow .2s, background-color .2s;
+}
+.dg-signature-trigger:hover,
+.dg-signature-trigger:focus-visible {
+  border-color: var(--primary);
+  background: var(--indigo-50);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+  outline: 0;
+}
+.dg-signature-trigger-empty { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 700; }
+.dg-signature-trigger--signed { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); padding: 8px 12px; }
+.dg-signature-trigger--signed img { display: block; width: 100%; height: 78px; object-fit: contain; }
+.dg-signature-trigger-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 8px 12px; border-radius: var(--radius-sm); background: var(--primary-soft); font-weight: 700; white-space: nowrap; }
+.dg-signature-trigger--dark { border-color: var(--zinc-600); background: rgba(255,255,255,.02); color: var(--zinc-100); }
+
+body.dg-sigsheet-open { overflow: hidden; position: fixed; width: 100%; }
+.dg-sigsheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto minmax(60dvh, 1fr) auto;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-elev);
+  color: var(--ink);
+  overscroll-behavior: none;
+}
+.dg-sigsheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+.dg-sigsheet-heading { min-width: 0; }
+.dg-sigsheet-heading h2 { font-size: var(--text-section); line-height: 1.3; }
+.dg-sigsheet-heading p { margin-top: 3px; color: var(--ink-soft); font-size: var(--text-helper); line-height: 1.45; }
+.dg-sigsheet-heading .dg-sigsheet-orientation-hint { color: var(--state-info-ink); font-weight: 700; }
+.dg-sigsheet-cancel { flex: 0 0 auto; min-height: 44px; }
+.dg-sigsheet-main { min-width: 0; min-height: 60dvh; padding: 12px 16px; background: var(--bg-soft); }
+.dg-sigsheet-canvas-wrap { width: 100%; height: 100%; min-height: 60dvh; border: 1px solid var(--line); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-sm); }
+.dg-sigsheet-guide { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.dg-sigsheet-corner { position: absolute; width: 28px; height: 28px; border-color: var(--zinc-400); }
+.dg-sigsheet-corner--tl { top: 14px; left: 14px; border-top: 2px solid; border-left: 2px solid; }
+.dg-sigsheet-corner--tr { top: 14px; right: 14px; border-top: 2px solid; border-right: 2px solid; }
+.dg-sigsheet-corner--bl { bottom: 14px; left: 14px; border-bottom: 2px solid; border-left: 2px solid; }
+.dg-sigsheet-corner--br { right: 14px; bottom: 14px; border-right: 2px solid; border-bottom: 2px solid; }
+.dg-sigsheet-baseline { position: absolute; left: 8%; right: 8%; bottom: 24%; border-top: 1px solid var(--zinc-300); }
+.dg-sigsheet-footer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+.dg-sigsheet-footer .btn { min-height: 48px; }
+.dg-sigsheet-confirm { width: 100%; }
+
+@media (max-width: 959px), (pointer: coarse) {
+  .dg-signature-desktop { display: none !important; }
+  .dg-signature-mobile { display: block; }
+  .dg-signature-mobile.dg-signature-trigger--signed { display: grid; }
+}
+
+@media (max-width: 479px) and (orientation: portrait) {
+  .dg-sigsheet-header { padding-bottom: 8px; }
+  .dg-sigsheet-main { padding: 8px 12px; }
+  .dg-sigsheet-footer { padding-top: 8px; }
+}
 
 ::selection { background: color-mix(in oklab, var(--primary) 25%, transparent); color: inherit; }
 
