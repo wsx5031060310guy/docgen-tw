@@ -1,9 +1,15 @@
 "use client";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+
+import { useId, useRef, useState } from "react";
 import { Icon } from "./Icon";
+import {
+  SignatureCanvas,
+  SignatureSheet,
+  type SignatureCanvasHandle,
+} from "./SignatureSheet";
 
 export function SignaturePad({
-  value,
+  value = "",
   onChange,
   label = "在此簽名",
   description = "滑鼠或觸控均可簽署 · IP 與時間戳將自動留存",
@@ -17,112 +23,23 @@ export function SignaturePad({
   height?: number;
   dark?: boolean;
 }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const drawing = useRef(false);
-  const last = useRef<{ x: number; y: number } | null>(null);
-  const [empty, setEmpty] = useState(!value);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const canvasApiRef = useRef<SignatureCanvasHandle>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const id = useId();
   const labelId = `${id}-label`;
   const descriptionId = `${id}-description`;
   const canvasId = `${id}-canvas`;
+  const inlineHeight = Math.min(140, Math.max(120, height));
 
-  // Size the bitmap to the surface once, and again only when the surface resizes.
-  // Assigning canvas.width wipes the bitmap, so this must NOT run when `value`
-  // changes: it used to, and every stroke after the first erased the drawing
-  // (the parent set `value` on pointer-up, the effect re-ran, the canvas
-  // cleared, and the restore branch had already been consumed).
-  const setup = () => {
-    const c = canvasRef.current;
-    const wrap = wrapRef.current;
-    if (!c || !wrap) return null;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = wrap.getBoundingClientRect();
-    c.width = Math.max(1, Math.round(rect.width * dpr));
-    c.height = Math.max(1, Math.round(height * dpr));
-    c.style.width = rect.width + "px";
-    c.style.height = height + "px";
-    const ctx = c.getContext("2d")!;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.strokeStyle = dark ? "#e8eaf2" : "#1E2A5E";
-    ctx.lineWidth = 2.2;
-    return { ctx, width: rect.width };
+  const closeSheet = () => {
+    setSheetOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
   };
-  const restore = (data: string) => {
-    const c = canvasRef.current;
-    if (!c || !data) return;
-    const ctx = c.getContext("2d")!;
-    const img = new Image();
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, c.width / (window.devicePixelRatio || 1), height);
-      setEmpty(false);
-    };
-    img.src = data;
-  };
-  const latest = useRef(value ?? "");
-  useLayoutEffect(() => {
-    latest.current = value ?? "";
-  }, [value]);
 
-  useLayoutEffect(() => {
-    setup();
-    if (latest.current) restore(latest.current);
-    const wrap = wrapRef.current;
-    if (!wrap || typeof ResizeObserver === "undefined") return;
-    let lastWidth = wrap.getBoundingClientRect().width;
-    const ro = new ResizeObserver(() => {
-      const w = wrap.getBoundingClientRect().width;
-      if (Math.abs(w - lastWidth) < 1) return; // mobile URL bar show/hide fires without a width change
-      lastWidth = w;
-      setup();
-      if (latest.current) restore(latest.current);
-    });
-    ro.observe(wrap);
-    return () => ro.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [height, dark]);
-
-  // Placeholder shows when nothing is drawn: either the parent holds no value
-  // and no stroke has started (tracked in `empty`), or the parent reset it to "".
-  const showPlaceholder = empty && !value;
-
-  const pos = (e: React.PointerEvent) => {
-    const c = canvasRef.current!;
-    const rect = c.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-  const down = (e: React.PointerEvent) => {
-    e.preventDefault();
-    (e.currentTarget as HTMLCanvasElement).setPointerCapture?.(e.pointerId);
-    drawing.current = true;
-    last.current = pos(e);
-    setEmpty(false);
-  };
-  const move = (e: React.PointerEvent) => {
-    if (!drawing.current) return;
-    e.preventDefault();
-    const ctx = canvasRef.current!.getContext("2d")!;
-    const p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(last.current!.x, last.current!.y);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    last.current = p;
-  };
-  const up = () => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    const data = canvasRef.current!.toDataURL("image/png");
+  const confirmSheet = (data: string) => {
     onChange?.(data);
-  };
-  const clear = () => {
-    const c = canvasRef.current!;
-    const ctx = c.getContext("2d")!;
-    ctx.clearRect(0, 0, c.width, c.height);
-    setEmpty(true);
-    onChange?.("");
+    closeSheet();
   };
 
   return (
@@ -132,36 +49,64 @@ export function SignaturePad({
           {label} <span className="field-required" aria-hidden="true">*</span>
           <span className="dg-visually-hidden">必填</span>
         </span>
-        <button className="btn btn-soft btn-sm" onClick={clear} type="button" aria-controls={canvasId} aria-label={`清除${label}`}>
+        <button
+          className="btn btn-soft btn-sm dg-signature-desktop"
+          onClick={() => canvasApiRef.current?.clear()}
+          type="button"
+          aria-controls={canvasId}
+          aria-label={`清除${label}`}
+        >
           <Icon name="rotateCcw" size={12} />清除
         </button>
       </div>
-      <div
-        className={`signature-pad-surface dg-signature-surface ${dark ? "dg-signature-surface--dark" : ""}`.trim()}
-        ref={wrapRef}
-      >
-        {showPlaceholder && (
-          <div
-            className={`signature-pad-placeholder ${dark ? "signature-pad-placeholder--dark" : ""}`.trim()}
-            aria-hidden="true"
-          >
-            {label}
-          </div>
-        )}
-        <canvas
-          id={canvasId}
-          ref={canvasRef}
-          aria-labelledby={labelId}
-          aria-describedby={descriptionId}
-          style={{ display: "block", touchAction: "none", cursor: "crosshair" }}
-          onPointerDown={down}
-          onPointerMove={move}
-          onPointerUp={up}
-          onPointerCancel={up}
-          onPointerLeave={up}
+
+      <div className="dg-signature-desktop" id={canvasId}>
+        <SignatureCanvas
+          ref={canvasApiRef}
+          value={value}
+          onChange={(data) => onChange?.(data)}
+          height={inlineHeight}
+          dark={dark}
+          label={label}
+          labelledBy={labelId}
+          describedBy={descriptionId}
         />
       </div>
+
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`dg-signature-mobile dg-signature-trigger ${value ? "dg-signature-trigger--signed" : ""} ${dark ? "dg-signature-trigger--dark" : ""}`.trim()}
+        aria-haspopup="dialog"
+        onClick={() => setSheetOpen(true)}
+      >
+        {value ? (
+          <>
+            {/* A data URL is the signature source; a plain img preserves the requested preview semantics. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={value} alt="你的簽名" />
+            <span className="dg-signature-trigger-action">
+              <Icon name="pen" size={17} />重新簽名
+            </span>
+          </>
+        ) : (
+          <span className="dg-signature-trigger-empty">
+            <Icon name="pen" size={24} />
+            <span>點此開始簽名</span>
+          </span>
+        )}
+      </button>
+
       <div className="field-help dg-signature-hint" id={descriptionId}>{description}</div>
+
+      {sheetOpen && (
+        <SignatureSheet
+          value={value}
+          label={label}
+          onCancel={closeSheet}
+          onConfirm={confirmSheet}
+        />
+      )}
     </div>
   );
 }
