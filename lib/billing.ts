@@ -63,7 +63,12 @@ export function writeUidCookie(res: NextResponse, uid: string) {
 export function readUidFromRequest(req: Request): string | null {
   const cookie = req.headers.get("cookie") || "";
   const m = cookie.match(/(?:^|;\s*)docgen_uid=([^;]+)/);
-  return m ? verifyUidCookie(decodeURIComponent(m[1])) : null;
+  if (!m) return null;
+  try {
+    return verifyUidCookie(decodeURIComponent(m[1]));
+  } catch {
+    return null; // malformed %-escape
+  }
 }
 
 /** Read the verified uid from server-component cookies(). Null if absent or invalid. */

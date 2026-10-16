@@ -44,6 +44,8 @@ function req(path: string, opts: { method?: string; uid?: string; cookie?: strin
 }
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
+if (!DB) console.warn("owner-auth tests SKIPPED: set TEST_DATABASE_URL to a local Postgres to run them");
+
 describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
   beforeAll(async () => {
     const env = { DATABASE_URL: DB, DATABASE_POSTGRES_PRISMA_URL: DB, DATABASE_URL_UNPOOLED: DB };
@@ -73,6 +75,7 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
       load("dunning", import("@/app/api/milestones/[id]/dunning-prefill/route")),
       load("cron", import("@/app/api/cron/reminders/route")),
       load("emailStart", import("@/app/api/auth/email/start/route")),
+      load("profile", import("@/app/api/billing/profile/route")),
     ]);
 
     const contract = (uid: string, token: string) =>
@@ -159,6 +162,8 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
     for (const cookie of [A, foreign, swapped, `${A}.`]) {
       expect((await routes.contracts.GET(req("/api/contracts", { cookie }), ctx(""))).status).toBe(401);
     }
+    const malformed = req("/api/contracts", { headers: { cookie: "docgen_uid=%E0%A4%A" } });
+    expect((await routes.contracts.GET(malformed, ctx(""))).status).toBe(401);
   });
 
   it("POST /api/cases mints a signed httpOnly uid that then owns the case", async () => {
@@ -203,5 +208,26 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
     const res = await routes.emailStart.POST(req("/api/auth/email/start", { method: "POST", body: { email: `owner-a-${run}@example.test` } }), ctx(""));
     expect(res.status).toBe(200);
     expect(res.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("GET /api/cases/[id] hides contracts of other owners linked to the case, and signing tokens", async () => {
+    await prisma.contract.update({ where: { id: ids.contractB }, data: { caseId: ids.caseA } });
+    const res = await routes.case.GET(req(`/api/cases/${ids.caseA}`, { uid: A }), ctx(ids.caseA));
+    expect(res.status).toBe(200);
+    const contracts = (await res.json()).case.contracts as Record<string, unknown>[];
+    expect(contracts.map((c) => c.id)).toEqual([ids.contractA]);
+    expect(contracts[0]).not.toHaveProperty("signingToken");
+  });
+
+  it("PATCH /api/billing/profile cannot claim an email; the bound one is accepted unchanged", async () => {
+    const patch = (email: string) =>
+      routes.profile.PATCH(req("/api/billing/profile", { uid: A, method: "PATCH", body: { email, webhookUrl: "" } }), ctx(""));
+    expect((await patch(`victim-${run}@example.test`)).status).toBe(400);
+    expect((await patch(`owner-a-${run}@example.test`)).status).toBe(200);
+    const otherClaims = await routes.profile.PATCH(
+      req("/api/billing/profile", { uid: B, method: "PATCH", body: { email: `owner-a-${run}@example.test` } }),
+      ctx(""),
+    );
+    expect(otherClaims.status).toBe(400);
   });
 });

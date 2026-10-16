@@ -27,11 +27,13 @@ export async function listCases(filter: { uid: string; status?: CaseStatus }) {
   });
 }
 
-export async function getCase(id: string) {
+export async function getCase(id: string, uid: string) {
   return prisma.case.findUnique({
     where: { id },
     include: {
       contracts: {
+        where: { uid },
+        omit: { signingToken: true },
         include: { milestones: { orderBy: { dueDate: "asc" } } },
         orderBy: { createdAt: "desc" },
       },
@@ -51,7 +53,11 @@ export async function addAttachment(input: {
 }
 
 export async function attachContractToCase(contractId: string, caseId: string) {
-  return prisma.contract.update({ where: { id: contractId }, data: { caseId } });
+  return prisma.contract.update({
+    where: { id: contractId },
+    data: { caseId },
+    select: { id: true, caseId: true },
+  });
 }
 
 export async function createMilestone(input: {

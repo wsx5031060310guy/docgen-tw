@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const uid = readUidFromRequest(req);
   if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   try {
-    const c = await getCase(id);
+    const c = await getCase(id, uid);
     if (!c) return NextResponse.json({ error: "not found" }, { status: 404 });
     if (c.uid !== uid) return NextResponse.json({ error: "not your case" }, { status: 403 });
     return NextResponse.json({ case: c });
