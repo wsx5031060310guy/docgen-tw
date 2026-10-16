@@ -22,7 +22,12 @@ function tokenHash(raw: string): string {
 // holding this request's nonce cookie: setting it here would hand any caller
 // the uid bound to any email.
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as { email?: string };
+  // A cross-site <form enctype="text/plain"> could otherwise plant this nonce in a
+  // victim's browser; requiring JSON forces a CORS preflight, which we never grant.
+  if (!req.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {
+    return NextResponse.json({ error: "expected application/json" }, { status: 415 });
+  }
+  const body =(await req.json().catch(() => ({}))) as { email?: string };
   const email = (body.email || "").trim().toLowerCase();
   if (!email || !RE_EMAIL.test(email)) {
     return NextResponse.json({ error: "email invalid" }, { status: 400 });

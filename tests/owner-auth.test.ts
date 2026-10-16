@@ -243,6 +243,19 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
     expect(res.headers.get("set-cookie") ?? "").not.toMatch(/docgen_uid=/);
   });
 
+  it("POST /api/auth/email/start refuses a cross-site form post (no nonce planted)", async () => {
+    // <form enctype="text/plain"> can submit a JSON-looking body without a CORS preflight.
+    const form = new Request("http://localhost/api/auth/email/start", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: `{"email":"attacker-form-${run}@example.test","p":"="}\r\n`,
+    });
+    const res = await routes.emailStart.POST(form, ctx(""));
+    expect(res.status).toBe(415);
+    expect(res.headers.get("set-cookie")).toBeNull();
+    expect(sent.mail.some((m) => m.to === `attacker-form-${run}@example.test`)).toBe(false);
+  });
+
   it("magic link only logs in the browser that requested it (login CSRF)", async () => {
     const verify = (await import("@/app/api/auth/email/verify/route")).GET;
     const email = `attacker-${run}@example.test`;

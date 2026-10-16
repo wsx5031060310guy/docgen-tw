@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.token || !body.signature) {
+  if (!body.token || !body.signature || typeof body.token !== "string" || typeof body.signature !== "string") {
     return NextResponse.json({ error: "缺少 token 或簽名" }, { status: 400 });
   }
 

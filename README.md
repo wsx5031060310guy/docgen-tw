@@ -122,7 +122,7 @@ npm run build      # prisma generate + prisma migrate deploy + next build
 npm run start      # 啟動 production server
 npm run lint       # ESLint
 npm test           # Vitest（含 NewebPay TradeSha regression）
-npm run db:migrate # prisma migrate deploy（舊 db push 建的庫首次會先 baseline 0_init）
+npm run db:migrate # prisma migrate deploy（沒有 migration 紀錄的舊庫需先手動 `prisma migrate resolve --applied 0_init`）
 ```
 
 > 多數功能（建立合約、認證、里程碑）在未連資料庫時會回傳 503 或降級，請先設好 DB 連線。OpenRouter / Mailgun / Blob / NewebPay 未設定時各自 graceful fallback 或回報「未設定」，不會中斷主流程。
