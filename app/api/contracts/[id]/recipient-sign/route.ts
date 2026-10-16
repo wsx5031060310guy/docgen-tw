@@ -1,6 +1,6 @@
 import { NextResponse, after } from "next/server";
 import { persistSignaturePng } from "@/lib/services/signing_service";
-import { recordRecipientSignature } from "@/lib/contract-store";
+import { findContractByToken, recordRecipientSignature } from "@/lib/contract-store";
 import { notifyFullySigned } from "@/lib/notify";
 import { fireUserWebhook } from "@/lib/webhooks";
 import { prisma } from "@/lib/prisma";
@@ -39,6 +39,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!isValidEmail(recipientEmail)) {
       return NextResponse.json({ error: "電子郵件格式不正確" }, { status: 400 });
     }
+  }
+
+  // Check the token before writing anything to storage.
+  const pending = await findContractByToken(id, body.token);
+  if (!pending) return NextResponse.json({ error: "簽署連結無效或已過期" }, { status: 403 });
+  if (pending.signingStatus === "FULLY_SIGNED") {
+    return NextResponse.json({ error: "本合約已完成簽署" }, { status: 403 });
   }
 
   const sig = await persistSignaturePng(`${id}_recipient`, body.signature);

@@ -166,6 +166,7 @@ npm run db:migrate # prisma migrate deploy（舊 db push 建的庫首次會先 b
 | 變數 | 必填 | 說明 |
 |---|---|---|
 | `BLOB_READ_WRITE_TOKEN` | ⬜ | 簽名圖儲存；Vercel 連 Blob Store 後自動注入。未設時 dev 下 fallback 至 `public/signatures/` |
+| `PRIVATE_BLOB_READ_WRITE_TOKEN` | ⬜ | 案件附件儲存（**private** Blob Store，以前綴 `PRIVATE_BLOB` connect 至專案）。未設時附件上傳回 503 |
 
 ### AI 風險檢查（選用）
 
@@ -193,7 +194,7 @@ npm run db:migrate # prisma migrate deploy（舊 db push 建的庫首次會先 b
 完整步驟見 [`DEPLOY.md`](DEPLOY.md)。摘要：
 
 1. **資料庫**：在 Vercel 接上 Neon 整合（自動注入 `DATABASE_POSTGRES_PRISMA_URL` / `DATABASE_URL_UNPOOLED`），並補上 `DATABASE_URL`。
-2. **Blob**：Vercel → Storage → 建立 Blob Store 並 connect 至專案，`BLOB_READ_WRITE_TOKEN` 自動注入。
+2. **Blob**：Vercel → Storage → 建立 Blob Store 並 connect 至專案，`BLOB_READ_WRITE_TOKEN` 自動注入。案件附件另建一個 **private** Blob Store，connect 時前綴填 `PRIVATE_BLOB`。
 3. **金流 / Email**：於 Project Settings → Environment Variables 填入 NewebPay 與 Mailgun 變數（去除前後空白）。
 4. **Cron**：`vercel.json` 已定義 `/api/cron/reminders` 每日 `0 1 * * *`，必須設 `CRON_SECRET`（Vercel Cron 會自動帶 `Authorization: Bearer`）。
 5. **部署**：

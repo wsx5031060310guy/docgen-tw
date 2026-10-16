@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 
 // POST multipart/form-data with field 'file' to upload a case attachment.
-// Stored on Vercel Blob; metadata persisted to CaseAttachment table.
+// Stored on a private Vercel Blob store; metadata persisted to CaseAttachment table.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: caseId } = await params;
   const uid = readUidFromRequest(req);
@@ -21,16 +21,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "missing file field" }, { status: 400 });
   }
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  // Attachments live in a separate private store; GET ./[attachmentId] serves them.
+  const token = process.env.PRIVATE_BLOB_READ_WRITE_TOKEN;
+  if (!token) {
     return NextResponse.json(
-      { error: "Vercel Blob not configured (BLOB_READ_WRITE_TOKEN missing)" },
+      { error: "Vercel Blob not configured (PRIVATE_BLOB_READ_WRITE_TOKEN missing)" },
       { status: 503 },
     );
   }
   const safeName = file.name.replace(/[^\w.\-]/g, "_").slice(0, 100);
   const blob = await put(`cases/${caseId}/${Date.now()}-${safeName}`, file, {
-    access: "public",
+    access: "private",
     addRandomSuffix: true,
+    token,
   });
   const rec = await addAttachment({
     caseId,
