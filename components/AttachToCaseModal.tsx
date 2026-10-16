@@ -32,6 +32,7 @@ export function AttachToCaseModal({
     let cancelled = false;
     fetch("/api/cases")
       .then((r) => {
+        if (r.status === 401) return { cases: [] }; // no identity yet: nothing to list
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })

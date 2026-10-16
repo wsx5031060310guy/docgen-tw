@@ -25,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const existing = await prisma.contract.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
-  if (existing.uid && existing.uid !== uid) {
+  if (existing.uid !== uid) {
     return NextResponse.json({ error: "not your contract" }, { status: 403 });
   }
   if (existing.signingStatus === "FULLY_SIGNED") {

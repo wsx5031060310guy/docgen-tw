@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildCheckoutPayload } from "@/lib/payment/newebpay";
 import { getPlan } from "@/lib/payment/pricing";
 import { prisma } from "@/lib/prisma";
-import { newUid, readUidFromRequest, UID_COOKIE, UID_COOKIE_MAX_AGE } from "@/lib/billing";
+import { newUid, readUidFromRequest, writeUidCookie } from "@/lib/billing";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,9 +58,7 @@ export async function POST(req: NextRequest) {
 
   const res = NextResponse.json({ endpoint, params, merchantOrderNo });
   if (setUidCookie) {
-    res.cookies.set(UID_COOKIE, uid, {
-      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-    });
+    writeUidCookie(res, uid);
   }
   return res;
 }

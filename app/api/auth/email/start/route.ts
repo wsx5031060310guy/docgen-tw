@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import {
-  readUidFromRequest, newUid, UID_COOKIE, UID_COOKIE_MAX_AGE,
-} from "@/lib/billing";
+import { readUidFromRequest, newUid } from "@/lib/billing";
 import { sendEmail } from "@/lib/mailgun";
 
 export const runtime = "nodejs";
@@ -19,7 +17,8 @@ function tokenHash(raw: string): string {
 // Issues a 15-minute magic link. Idempotent: if the email already has a
 // BillingProfile, we bind to that uid; otherwise we use the caller's current
 // cookie uid (or mint a new one), so clicking the link from a different
-// browser still re-binds back to the same uid.
+// browser still re-binds back to the same uid. The uid cookie is only set by
+// /verify: setting it here would hand any caller the uid bound to any email.
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { email?: string };
   const email = (body.email || "").trim().toLowerCase();
@@ -64,9 +63,5 @@ export async function POST(req: Request) {
     console.error("[auth/email/start] mailgun send failed:", result.reason);
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(UID_COOKIE, uid, {
-    httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-  });
-  return res;
+  return NextResponse.json({ ok: true });
 }

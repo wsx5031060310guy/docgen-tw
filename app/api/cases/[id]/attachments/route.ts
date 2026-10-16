@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { addAttachment } from "@/lib/case-store";
+import { readUidFromRequest } from "@/lib/billing";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -8,6 +10,11 @@ export const runtime = "nodejs";
 // Stored on Vercel Blob; metadata persisted to CaseAttachment table.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: caseId } = await params;
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
+  const kase = await prisma.case.findUnique({ where: { id: caseId }, select: { uid: true } });
+  if (!kase) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (kase.uid !== uid) return NextResponse.json({ error: "not your case" }, { status: 403 });
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ error: "expected multipart form" }, { status: 400 });
   const file = form.get("file");

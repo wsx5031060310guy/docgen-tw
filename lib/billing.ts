@@ -1,10 +1,12 @@
 // Anonymous-identity + usage-metering helpers.
-// Identity: a random `uid` stored in cookie `docgen_uid` (httpOnly: false so
-// client JS can read it for UI banners; doesn't hold any secrets).
+// Identity: a random `uid` stored in cookie `docgen_uid` as `<uid>.<hmac>`,
+// signed with UID_COOKIE_SECRET. The uid is the only key to a user's
+// contracts, so unsigned or tampered cookies count as no identity.
 // Quota: FREE = 3 contracts / calendar month (Asia/Taipei); PRO = unlimited.
 
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 import { prisma } from "./prisma";
 
 export const FREE_MONTHLY_QUOTA = 3;
@@ -21,17 +23,59 @@ export function newUid(): string {
   return crypto.randomBytes(18).toString("base64url");
 }
 
-/** Read uid from `Cookie` header on a request. Returns null if absent. */
+function uidMac(uid: string): string {
+  const secret = process.env.UID_COOKIE_SECRET?.trim();
+  if (!secret) throw new Error("UID_COOKIE_SECRET is not set");
+  return crypto.createHmac("sha256", secret).update(uid).digest("base64url");
+}
+
+export function signUid(uid: string): string {
+  return `${uid}.${uidMac(uid)}`;
+}
+
+/** Returns the uid when the cookie value carries a valid signature, else null. */
+export function verifyUidCookie(value: string): string | null {
+  const dot = value.lastIndexOf(".");
+  if (dot <= 0) return null;
+  const uid = value.slice(0, dot);
+  let expected: Buffer;
+  try {
+    expected = Buffer.from(uidMac(uid));
+  } catch {
+    return null; // secret not configured: fail closed
+  }
+  const given = Buffer.from(value.slice(dot + 1));
+  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return null;
+  return uid;
+}
+
+export function writeUidCookie(res: NextResponse, uid: string) {
+  res.cookies.set(UID_COOKIE, signUid(uid), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: UID_COOKIE_MAX_AGE,
+    path: "/",
+  });
+}
+
+/** Read the verified uid from the `Cookie` header. Null if absent or not validly signed. */
 export function readUidFromRequest(req: Request): string | null {
   const cookie = req.headers.get("cookie") || "";
   const m = cookie.match(/(?:^|;\s*)docgen_uid=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
+  if (!m) return null;
+  try {
+    return verifyUidCookie(decodeURIComponent(m[1]));
+  } catch {
+    return null; // malformed %-escape
+  }
 }
 
-/** Read uid from server-component cookies(). Returns null if absent. */
+/** Read the verified uid from server-component cookies(). Null if absent or invalid. */
 export async function readUidFromCookies(): Promise<string | null> {
   const c = await cookies();
-  return c.get(UID_COOKIE)?.value ?? null;
+  const v = c.get(UID_COOKIE)?.value;
+  return v ? verifyUidCookie(v) : null;
 }
 
 export interface BillingStatus {

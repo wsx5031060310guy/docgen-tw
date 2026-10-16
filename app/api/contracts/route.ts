@@ -10,8 +10,7 @@ import {
   incrementUsage,
   newUid,
   readUidFromRequest,
-  UID_COOKIE,
-  UID_COOKIE_MAX_AGE,
+  writeUidCookie,
 } from "@/lib/billing";
 
 interface CreateContractPayload {
@@ -24,9 +23,10 @@ interface CreateContractPayload {
 }
 
 // GET /api/contracts?status=&template=&q=
-// List recent contracts with optional filters. Open endpoint; UI is the only
-// listing surface (would gate behind auth in a real multi-tenant build).
+// List the caller's recent contracts (owner = signed uid cookie) with optional filters.
 export async function GET(req: Request) {
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ contracts: [], note: "database not configured" });
   }
@@ -35,7 +35,7 @@ export async function GET(req: Request) {
   const template = url.searchParams.get("template") || undefined;
   const q = (url.searchParams.get("q") || "").trim();
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { uid };
   if (status) where.signingStatus = status;
   if (template) where.templateId = template;
   if (q) {
@@ -177,9 +177,7 @@ export async function POST(req: Request) {
     { status: 201 },
   );
   if (setUidCookie) {
-    res.cookies.set(UID_COOKIE, uid, {
-      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-    });
+    writeUidCookie(res, uid);
   }
   return res;
 }

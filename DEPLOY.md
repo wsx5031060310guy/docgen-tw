@@ -31,8 +31,8 @@
 # 連接 repo（首次）
 vercel link
 
-# Push schema 到 Neon（首次或 schema 改動）
-DATABASE_URL="<neon url>" npx prisma db push
+# Schema 改動：在 prisma/migrations 新增 migration；build 會跑 `prisma migrate deploy`
+# （vercel.json 的 buildCommand 覆寫 Project Settings 的 Build Command）
 
 # 部署到 production
 vercel --prod

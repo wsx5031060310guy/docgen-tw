@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   readUidFromRequest,
   newUid,
-  UID_COOKIE,
-  UID_COOKIE_MAX_AGE,
+  writeUidCookie,
 } from "@/lib/billing";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -35,9 +34,7 @@ export async function GET(req: Request) {
     p ?? { uid, email: null, plan: "FREE", periodEnd: null, webhookUrl: null, webhookSecret: null },
   );
   if (setCookie) {
-    res.cookies.set(UID_COOKIE, uid, {
-      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-    });
+    writeUidCookie(res, uid);
   }
   return res;
 }
@@ -61,8 +58,16 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "webhookUrl must be http(s) URL" }, { status: 400 });
   }
 
+  // The bound email decides which uid a magic-link login lands on, so it is only
+  // set by /api/auth/email/verify. Accept the unchanged value the form echoes back.
+  if (body.email !== undefined) {
+    const current = await prisma.billingProfile.findUnique({ where: { uid }, select: { email: true } });
+    if ((body.email || null) !== (current?.email ?? null)) {
+      return NextResponse.json({ error: "Email 需透過登入連結驗證後綁定" }, { status: 400 });
+    }
+  }
+
   const data: Record<string, unknown> = {};
-  if (body.email !== undefined) data.email = body.email || null;
   if (body.webhookUrl !== undefined) data.webhookUrl = body.webhookUrl || null;
   if (body.webhookSecret !== undefined) data.webhookSecret = body.webhookSecret || null;
 

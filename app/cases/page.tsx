@@ -38,6 +38,7 @@ export default function CasesPage() {
     setError(null);
     try {
       const r = await fetch("/api/cases");
+      if (r.status === 401) return setCases([]); // no identity yet: nothing to list
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setCases(data.cases ?? []);

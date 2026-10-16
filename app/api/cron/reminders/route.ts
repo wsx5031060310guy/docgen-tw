@@ -26,7 +26,7 @@ function bucketFor(due: Date, now: Date): "D7" | "D1" | "D0" | "D1p" | null {
 
 function authorised(req: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // dev mode: open
+  if (!secret) return false; // fail closed: an unset secret must not open the endpoint
   const auth = req.headers.get("authorization") || "";
   return auth === `Bearer ${secret}`;
 }

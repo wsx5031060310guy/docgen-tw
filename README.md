@@ -106,8 +106,8 @@ npm install
 #    本機可用 Vercel CLI 拉線上變數：
 vercel env pull .env.local
 
-# 3. 推送 schema 到資料庫
-npm run db:push
+# 3. 套用 migrations 到資料庫
+npm run db:migrate
 
 # 4. 啟動開發伺服器
 npm run dev
@@ -118,11 +118,11 @@ npm run dev
 其他指令：
 
 ```bash
-npm run build      # prisma generate + prisma db push + next build
+npm run build      # prisma generate + prisma migrate deploy + next build
 npm run start      # 啟動 production server
 npm run lint       # ESLint
 npm test           # Vitest（含 NewebPay TradeSha regression）
-npm run db:migrate # prisma migrate deploy
+npm run db:migrate # prisma migrate deploy（舊 db push 建的庫首次會先 baseline 0_init）
 ```
 
 > 多數功能（建立合約、認證、里程碑）在未連資料庫時會回傳 503 或降級，請先設好 DB 連線。OpenRouter / Mailgun / Blob / NewebPay 未設定時各自 graceful fallback 或回報「未設定」，不會中斷主流程。
@@ -181,7 +181,8 @@ npm run db:migrate # prisma migrate deploy
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | ⬜ | 站台對外 URL（簽署連結、metadata、回呼 origin）。預設 `https://docgen-tw.vercel.app` |
 | `NEXT_PUBLIC_SITE_URL` | ⬜ | 站台 URL（部分連結 origin 使用） |
-| `CRON_SECRET` | ⬜ | 保護 `/api/cron/reminders`；未設時該端點開放（僅建議 dev） |
+| `CRON_SECRET` | ✅ | 保護 `/api/cron/reminders`；未設時該端點一律 401 |
+| `UID_COOKIE_SECRET` | ✅ | 簽署身分 cookie `docgen_uid`（HMAC）；未設時無法建立或辨識任何使用者 |
 | `ADMIN_KEY` | ⬜ | `/admin` 後台共享金鑰；未設時後台一律拒絕 |
 | `ADMIN_ALERT_WEBHOOK` | ⬜ | 系統告警 webhook |
 | `WEBHOOK_FAIL_ALERT_THRESHOLD` | ⬜ | webhook 連續失敗告警門檻 |
@@ -194,7 +195,7 @@ npm run db:migrate # prisma migrate deploy
 1. **資料庫**：在 Vercel 接上 Neon 整合（自動注入 `DATABASE_POSTGRES_PRISMA_URL` / `DATABASE_URL_UNPOOLED`），並補上 `DATABASE_URL`。
 2. **Blob**：Vercel → Storage → 建立 Blob Store 並 connect 至專案，`BLOB_READ_WRITE_TOKEN` 自動注入。
 3. **金流 / Email**：於 Project Settings → Environment Variables 填入 NewebPay 與 Mailgun 變數（去除前後空白）。
-4. **Cron**：`vercel.json` 已定義 `/api/cron/reminders` 每日 `0 1 * * *`，建議設 `CRON_SECRET` 保護。
+4. **Cron**：`vercel.json` 已定義 `/api/cron/reminders` 每日 `0 1 * * *`，必須設 `CRON_SECRET`（Vercel Cron 會自動帶 `Authorization: Bearer`）。
 5. **部署**：
 
    ```bash
@@ -202,7 +203,7 @@ npm run db:migrate # prisma migrate deploy
    vercel --prod
    ```
 
-   `build` script 會自動 `prisma generate` + `prisma db push` + `next build`。
+   `build` script 會自動 `prisma generate` + `prisma migrate deploy` + `next build`。
 
 部署後驗證清單（範本畫廊、建立合約寫入 DB、簽名圖 URL、結帳導向、雙方簽署達 `FULLY_SIGNED` 等）見 `DEPLOY.md` §6。
 
