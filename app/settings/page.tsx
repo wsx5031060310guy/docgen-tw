@@ -23,6 +23,7 @@ const MAGIC_MESSAGE: Record<string, { kind: "success" | "error" | "warning"; tex
   invalid: { kind: "error", text: "✗ 連結無效或已被使用。請重新申請。" },
   used: { kind: "error", text: "✗ 此連結已被使用。每個連結僅可使用一次。" },
   expired: { kind: "error", text: "✗ 連結已過期（15 分鐘有效）。請重新申請。" },
+  browser: { kind: "error", text: "✗ 請用申請登入連結的同一個瀏覽器開啟（可複製連結貼到該瀏覽器）。" },
   disabled: { kind: "warning", text: "⚠ 此部署未啟用資料庫，無法綁定 Email。" },
 };
 
@@ -245,7 +246,7 @@ function SettingsInner() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
-      setMagicSent(`已寄出登入連結至 ${magicEmail}，請查收信箱（15 分鐘內有效）。`);
+      setMagicSent(`已寄出登入連結至 ${magicEmail}，請用這個瀏覽器開啟信中連結（15 分鐘內有效）。`);
     } catch (error) {
       setMagicError((error as Error).message);
     } finally {

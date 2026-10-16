@@ -98,6 +98,7 @@ export async function listMilestonesNeedingReminder(now = new Date()) {
           id: true,
           recipientEmail: true,
           recipientName: true,
+          signingToken: true,
           values: true,
           templateId: true,
           uid: true,

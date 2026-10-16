@@ -20,20 +20,26 @@ export async function GET(req: Request) {
   if (!process.env.DATABASE_URL) {
     return NextResponse.redirect(`${APP_URL}/settings?magic=disabled`);
   }
-  const row = await prisma.magicLink.findUnique({ where: { tokenHash: tokenHash(token) } });
+  // Nonce cookie set by /start in the browser that asked for the link.
+  const nonce = req.headers.get("cookie")?.match(/(?:^|;\s*)docgen_magic=([^;]+)/)?.[1];
+  if (!nonce) return NextResponse.redirect(`${APP_URL}/settings?magic=browser`);
+  const row = await prisma.magicLink.findUnique({ where: { tokenHash: tokenHash(`${token}.${nonce}`) } });
   if (!row) return NextResponse.redirect(`${APP_URL}/settings?magic=invalid`);
   if (row.usedAt) return NextResponse.redirect(`${APP_URL}/settings?magic=used`);
   if (row.expiresAt < new Date()) return NextResponse.redirect(`${APP_URL}/settings?magic=expired`);
 
-  // Bind email <-> uid in BillingProfile, mark token used.
-  await Promise.all([
-    prisma.magicLink.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
-    prisma.billingProfile.upsert({
-      where: { uid: row.uid },
-      create: { uid: row.uid, email: row.email },
-      update: { email: row.email },
-    }),
-  ]);
+  // Claim the token atomically (one winner under concurrent clicks), then bind
+  // email <-> uid in BillingProfile.
+  const claimed = await prisma.magicLink.updateMany({
+    where: { id: row.id, usedAt: null },
+    data: { usedAt: new Date() },
+  });
+  if (claimed.count !== 1) return NextResponse.redirect(`${APP_URL}/settings?magic=used`);
+  await prisma.billingProfile.upsert({
+    where: { uid: row.uid },
+    create: { uid: row.uid, email: row.email },
+    update: { email: row.email },
+  });
 
   const res = NextResponse.redirect(`${APP_URL}/settings?magic=ok`);
   writeUidCookie(res, row.uid);

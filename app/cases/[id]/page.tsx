@@ -280,7 +280,7 @@ export default function CaseDetailPage({ params }: { params: Promise<{ id: strin
           ) : (
             <div className="dg-attachment-list">
               {data.attachments.map((a) => (
-                <a key={a.id} href={a.blobUrl} target="_blank" rel="noreferrer"
+                <a key={a.id} href={`/api/cases/${data.id}/attachments/${a.id}`} download
                   className="card card-hover dg-card-compact dg-attachment-item"
                 >
                   <div className="dg-attachment-item__name">

@@ -30,7 +30,8 @@ export async function persistSignaturePng(
     const blob = await put(`signatures/${filename}`, buf, {
       access: "public",
       contentType: "image/png",
-      addRandomSuffix: false,
+      // Public store: the random suffix is what keeps the URL unguessable.
+      addRandomSuffix: true,
     });
     return { url: blob.url, filename, sha256 };
   }

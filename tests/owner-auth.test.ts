@@ -15,8 +15,28 @@ if (DB && !/^postgres(ql)?:\/\/([^@/]*@)?(localhost|127\.0\.0\.1)[:/]/.test(DB))
   throw new Error("TEST_DATABASE_URL must point at localhost: this test writes rows");
 }
 
+const sent = vi.hoisted(() => ({
+  puts: [] as { path: string; opts: Record<string, unknown> }[],
+  gets: [] as { url: string; opts: Record<string, unknown> }[],
+  mail: [] as { to: string; text: string }[],
+}));
 vi.mock("@vercel/blob", () => ({
-  put: async (path: string) => ({ url: `https://blob.test/${path}` }),
+  put: async (path: string, _body: unknown, opts: Record<string, unknown>) => {
+    sent.puts.push({ path, opts });
+    const host = opts.access === "private" ? "store.private.blob.vercel-storage.com" : "store.public.blob.vercel-storage.com";
+    return { url: `https://${host}/${path}` };
+  },
+  get: async (url: string, opts: Record<string, unknown>) => {
+    sent.gets.push({ url, opts });
+    return { statusCode: 200, stream: new Response("file-bytes").body, headers: new Headers(), blob: {} };
+  },
+}));
+vi.mock("@/lib/mailgun", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  sendEmail: async (m: { to: string; text: string }) => {
+    sent.mail.push(m);
+    return { ok: true };
+  },
 }));
 
 type Handler = (req: Request, ctx: { params: Promise<{ id: string }> }) => Promise<Response>;
@@ -25,7 +45,7 @@ type Mod = Record<string, Handler>;
 const run = Math.random().toString(36).slice(2, 10);
 const A = `ownerA-${run}`;
 const B = `otherB-${run}`;
-const ids = { contractA: "", contractB: "", caseA: "", caseB: "", milestoneA: "" };
+const ids = { contractA: "", contractB: "", contractC: "", caseA: "", caseB: "", milestoneA: "" };
 let signUid: (uid: string) => string;
 let prisma: import("@prisma/client").PrismaClient;
 const routes: Record<string, Mod> = {};
@@ -53,7 +73,9 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
       env: { ...process.env, ...env },
       stdio: "pipe",
     });
-    Object.assign(process.env, env, { UID_COOKIE_SECRET: "test-uid-secret", BLOB_READ_WRITE_TOKEN: "test" });
+    Object.assign(process.env, env, {
+      UID_COOKIE_SECRET: "test-uid-secret", BLOB_READ_WRITE_TOKEN: "test", PRIVATE_BLOB_READ_WRITE_TOKEN: "test-private",
+    });
     delete process.env.CRON_SECRET;
 
     ({ signUid } = await import("@/lib/billing"));
@@ -76,6 +98,7 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
       load("cron", import("@/app/api/cron/reminders/route")),
       load("emailStart", import("@/app/api/auth/email/start/route")),
       load("profile", import("@/app/api/billing/profile/route")),
+      load("recipientSign", import("@/app/api/contracts/[id]/recipient-sign/route")),
     ]);
 
     const contract = (uid: string, token: string) =>
@@ -93,6 +116,16 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
       data: { contractId: ids.contractA, kind: "PAYMENT", title: "m", amount: 1, dueDate: new Date(Date.now() + 60 * 86400_000) },
     })).id;
     await prisma.billingProfile.create({ data: { uid: A, email: `owner-a-${run}@example.test` } });
+    const contractC = await prisma.contract.create({
+      data: {
+        templateId: "freelance", values: {}, client: A, content: "x", uid: A,
+        signingToken: `token-C-${run}`, signingStatus: "FULLY_SIGNED", recipientEmail: `recipient-${run}@example.test`,
+      },
+    });
+    ids.contractC = contractC.id;
+    await prisma.milestone.create({
+      data: { contractId: contractC.id, kind: "PAYMENT", title: "due soon", amount: 1, dueDate: new Date(Date.now() + 86400_000) },
+    });
   }, 60_000);
 
   afterAll(async () => {
@@ -133,7 +166,7 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
       expect(res.status).toBe(200);
       return ((await res.json()).contracts as { id: string }[]).map((c) => c.id);
     };
-    expect(await listIds(A)).toEqual([ids.contractA]);
+    expect((await listIds(A)).sort()).toEqual([ids.contractA, ids.contractC].sort());
     expect(await listIds(B)).toEqual([ids.contractB]);
   });
 
@@ -207,7 +240,36 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
   it("POST /api/auth/email/start does not hand out the uid bound to an email", async () => {
     const res = await routes.emailStart.POST(req("/api/auth/email/start", { method: "POST", body: { email: `owner-a-${run}@example.test` } }), ctx(""));
     expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie") ?? "").not.toMatch(/docgen_uid=/);
+  });
+
+  it("POST /api/auth/email/start refuses a cross-site form post (no nonce planted)", async () => {
+    // <form enctype="text/plain"> can submit a JSON-looking body without a CORS preflight.
+    const form = new Request("http://localhost/api/auth/email/start", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: `{"email":"attacker-form-${run}@example.test","p":"="}\r\n`,
+    });
+    const res = await routes.emailStart.POST(form, ctx(""));
+    expect(res.status).toBe(415);
     expect(res.headers.get("set-cookie")).toBeNull();
+    expect(sent.mail.some((m) => m.to === `attacker-form-${run}@example.test`)).toBe(false);
+  });
+
+  it("magic link only logs in the browser that requested it (login CSRF)", async () => {
+    const verify = (await import("@/app/api/auth/email/verify/route")).GET;
+    const email = `attacker-${run}@example.test`;
+    const start = await routes.emailStart.POST(req("/api/auth/email/start", { uid: B, method: "POST", body: { email } }), ctx(""));
+    const nonce = /docgen_magic=([^;]+)/.exec(start.headers.get("set-cookie") ?? "")?.[1];
+    const link = sent.mail.find((m) => m.to === email)?.text.match(/token=([\w-]+)/)?.[1];
+    expect(nonce && link).toBeTruthy();
+    const click = (cookie?: string) =>
+      verify(new Request(`http://localhost/api/auth/email/verify?token=${link}`, { headers: cookie ? { cookie } : {} }));
+    const victim = await click();
+    expect(victim.headers.get("set-cookie") ?? "").not.toMatch(/docgen_uid=/);
+    expect(await prisma.billingProfile.findFirst({ where: { email } })).toBeNull();
+    const requester = await click(`docgen_magic=${nonce}`);
+    expect(requester.headers.get("set-cookie") ?? "").toMatch(/docgen_uid=/);
   });
 
   it("GET /api/cases/[id] hides contracts of other owners linked to the case, and signing tokens", async () => {
@@ -217,6 +279,57 @@ describe.skipIf(!DB)("owner authorization (real Postgres)", () => {
     const contracts = (await res.json()).case.contracts as Record<string, unknown>[];
     expect(contracts.map((c) => c.id)).toEqual([ids.contractA]);
     expect(contracts[0]).not.toHaveProperty("signingToken");
+  });
+
+  it("case attachments go to the private store and are served only to the case owner", async () => {
+    const form = new FormData();
+    form.set("file", new File(["hello"], "報價.pdf", { type: "application/pdf" }));
+    const up = await routes.attachments.POST(req(`/api/cases/${ids.caseA}/attachments`, { uid: A, method: "POST", body: form }), ctx(ids.caseA));
+    expect(up.status).toBe(200);
+    expect(sent.puts.at(-1)?.opts).toMatchObject({ access: "private", token: "test-private" });
+    const attId = (await up.json()).attachment.id as string;
+
+    const download = (await import("@/app/api/cases/[id]/attachments/[attachmentId]/route")).GET;
+    const dl = (caseId: string, uid?: string) =>
+      download(req(`/api/cases/${caseId}/attachments/${attId}`, { uid }), { params: Promise.resolve({ id: caseId, attachmentId: attId }) });
+    expect((await dl(ids.caseA)).status).toBe(401);
+    expect((await dl(ids.caseA, B)).status).toBe(403);
+    expect((await dl(ids.caseB, B)).status).toBe(404);
+    const ok = await dl(ids.caseA, A);
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get("content-disposition")).toMatch(/^attachment;/);
+    expect(await ok.text()).toBe("file-bytes");
+    expect(sent.gets.at(-1)?.opts).toMatchObject({ access: "private", token: "test-private" });
+  });
+
+  it("recipient-sign checks the token before storing the signature image", async () => {
+    const before = sent.puts.length;
+    const res = await routes.recipientSign.POST(
+      req(`/api/contracts/${ids.contractA}/recipient-sign`, { method: "POST", body: { token: `token-B-${run}`, signature: "data:image/png;base64,AAAA" } }),
+      ctx(ids.contractA),
+    );
+    expect(res.status).toBe(403);
+    expect(sent.puts.length).toBe(before);
+  });
+
+  it("signature images get a random suffix so their public URL cannot be guessed", async () => {
+    const { persistSignaturePng } = await import("@/lib/services/signing_service");
+    await persistSignaturePng("x_recipient", "data:image/png;base64,AAAA");
+    expect(sent.puts.at(-1)?.opts.addRandomSuffix).toBe(true);
+  });
+
+  it("cron reminder mails the recipient the token sign page, not owner-only pages", async () => {
+    process.env.CRON_SECRET = "cron-test-secret";
+    try {
+      const res = await routes.cron.GET(req("/api/cron/reminders", { headers: { authorization: "Bearer cron-test-secret" } }), ctx(""));
+      expect(res.status).toBe(200);
+    } finally {
+      delete process.env.CRON_SECRET;
+    }
+    const mail = sent.mail.find((m) => m.to === `recipient-${run}@example.test`);
+    expect(mail?.text).toContain(`/contracts/${ids.contractC}/sign?token=token-C-${run}`);
+    expect(mail?.text).not.toMatch(new RegExp(`/contracts/${ids.contractC}(?!/sign)`));
+    expect(mail?.text).not.toContain("fromMilestone");
   });
 
   it("PATCH /api/billing/profile cannot claim an email; the bound one is accepted unchanged", async () => {
