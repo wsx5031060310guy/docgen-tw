@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createMilestone, type MilestoneKind } from "@/lib/case-store";
+import { readUidFromRequest } from "@/lib/billing";
+import { prisma } from "@/lib/prisma";
 
 const KINDS: MilestoneKind[] = ["PAYMENT", "DELIVERY", "RENEWAL", "CUSTOM"];
 
 export async function POST(req: Request) {
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   let body;
   try {
     body = await req.json();
@@ -21,6 +25,9 @@ export async function POST(req: Request) {
   if (Number.isNaN(due.getTime())) {
     return NextResponse.json({ error: "dueDate not parseable" }, { status: 400 });
   }
+  const contract = await prisma.contract.findUnique({ where: { id: contractId }, select: { uid: true } });
+  if (!contract) return NextResponse.json({ error: "contract not found" }, { status: 404 });
+  if (contract.uid !== uid) return NextResponse.json({ error: "not your contract" }, { status: 403 });
   const m = await createMilestone({
     contractId,
     kind,

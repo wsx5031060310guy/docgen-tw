@@ -11,13 +11,14 @@ export async function createCase(input: {
   counterparty?: string;
   notes?: string;
   ownerEmail?: string;
+  uid: string;
 }) {
   return prisma.case.create({ data: input });
 }
 
-export async function listCases(filter: { status?: CaseStatus } = {}) {
+export async function listCases(filter: { uid: string; status?: CaseStatus }) {
   return prisma.case.findMany({
-    where: filter.status ? { status: filter.status } : undefined,
+    where: { uid: filter.uid, ...(filter.status ? { status: filter.status } : {}) },
     include: {
       contracts: { select: { id: true, templateId: true, signingStatus: true, expiryDate: true } },
       attachments: { select: { id: true } },

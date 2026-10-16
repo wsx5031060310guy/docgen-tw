@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server";
+import { readUidFromRequest } from "@/lib/billing";
 import { findContractById } from "@/lib/contract-store";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
 // GET /api/contracts/[id] — fetch contract + milestones + case linkage.
-// No token check: this endpoint is for the contract owner's dashboard.
+// Owner only (signed uid cookie); the recipient uses /sign-fetch with the token.
 // Sensitive signing data (signatures, IPs) is returned as hashes/short-forms only.
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   const c = await findContractById(id);
   if (!c) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (c.uid !== uid) return NextResponse.json({ error: "not your contract" }, { status: 403 });
 
   let milestones: unknown[] = [];
   let caseInfo: unknown = null;
@@ -49,6 +53,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 // PATCH /api/contracts/[id] — currently supports linking to a case + setting expiry.
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   const body = (await req.json().catch(() => null)) as {
     caseId?: string | null;
     expiryDate?: string | null;
@@ -57,6 +63,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: "database not configured" }, { status: 503 });
+  }
+  const owner = await prisma.contract.findUnique({ where: { id }, select: { uid: true } });
+  if (!owner) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (owner.uid !== uid) return NextResponse.json({ error: "not your contract" }, { status: 403 });
+  if (body.caseId) {
+    const target = await prisma.case.findUnique({ where: { id: body.caseId }, select: { uid: true } });
+    if (target?.uid !== uid) return NextResponse.json({ error: "not your case" }, { status: 403 });
   }
   const data: Record<string, unknown> = {};
   if (body.caseId !== undefined) data.caseId = body.caseId;

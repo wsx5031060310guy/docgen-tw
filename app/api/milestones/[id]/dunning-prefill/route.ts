@@ -1,22 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { readUidFromRequest } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
 // GET /api/milestones/[id]/dunning-prefill
 // Build a dunning-template `values` object from an overdue PAYMENT milestone
 // and its source contract. Caller (/contracts/new) uses this to skip retyping.
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const uid = readUidFromRequest(req);
+  if (!uid) return NextResponse.json({ error: "unauthorised" }, { status: 401 });
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ error: "database not configured" }, { status: 503 });
   }
 
   const m = await prisma.milestone.findUnique({
     where: { id },
-    include: { contract: { select: { values: true, templateId: true } } },
+    include: { contract: { select: { values: true, templateId: true, uid: true } } },
   });
   if (!m) return NextResponse.json({ error: "milestone not found" }, { status: 404 });
+  if (m.contract.uid !== uid) return NextResponse.json({ error: "not your milestone" }, { status: 403 });
 
   const cv = (m.contract?.values ?? {}) as Record<string, string>;
 

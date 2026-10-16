@@ -61,6 +61,7 @@ model Case {
   notes        String?
   status       String           @default("OPEN")
   ownerEmail   String?
+  uid          String?
   contracts    Contract[]
   attachments  CaseAttachment[]
   createdAt    DateTime         @default(now())

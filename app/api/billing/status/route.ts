@@ -3,8 +3,7 @@ import {
   getBillingStatus,
   newUid,
   readUidFromRequest,
-  UID_COOKIE,
-  UID_COOKIE_MAX_AGE,
+  writeUidCookie,
 } from "@/lib/billing";
 
 export const runtime = "nodejs";
@@ -20,9 +19,7 @@ export async function GET(req: Request) {
   const status = await getBillingStatus(uid);
   const res = NextResponse.json(status);
   if (setCookie) {
-    res.cookies.set(UID_COOKIE, uid, {
-      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-    });
+    writeUidCookie(res, uid);
   }
   return res;
 }

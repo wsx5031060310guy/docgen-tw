@@ -3,8 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   readUidFromRequest,
   newUid,
-  UID_COOKIE,
-  UID_COOKIE_MAX_AGE,
+  writeUidCookie,
 } from "@/lib/billing";
 import { dispatchWebhook } from "@/lib/webhooks";
 
@@ -35,9 +34,7 @@ export async function GET(req: Request) {
     p ?? { uid, email: null, plan: "FREE", periodEnd: null, webhookUrl: null, webhookSecret: null },
   );
   if (setCookie) {
-    res.cookies.set(UID_COOKIE, uid, {
-      httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-    });
+    writeUidCookie(res, uid);
   }
   return res;
 }

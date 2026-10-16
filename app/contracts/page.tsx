@@ -46,6 +46,7 @@ export default function ContractsListPage() {
       if (template) sp.set("template", template);
       if (q.trim()) sp.set("q", q.trim());
       const r = await fetch(`/api/contracts?${sp.toString()}`);
+      if (r.status === 401) return setRows([]); // no identity yet: nothing to list
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       setRows(j.contracts ?? []);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
-import { UID_COOKIE, UID_COOKIE_MAX_AGE } from "@/lib/billing";
+import { writeUidCookie } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
@@ -36,8 +36,6 @@ export async function GET(req: Request) {
   ]);
 
   const res = NextResponse.redirect(`${APP_URL}/settings?magic=ok`);
-  res.cookies.set(UID_COOKIE, row.uid, {
-    httpOnly: false, sameSite: "lax", maxAge: UID_COOKIE_MAX_AGE, path: "/",
-  });
+  writeUidCookie(res, row.uid);
   return res;
 }
