@@ -3,11 +3,10 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Vercel + Neon integration injects DATABASE_POSTGRES_PRISMA_URL (pooled,
-  // for app queries) and DATABASE_URL_UNPOOLED (direct, for migrations).
-  url       = env("DATABASE_POSTGRES_PRISMA_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
+  provider = "postgresql"
+  // Prisma 7: connection URLs live outside the schema. Vercel + Neon injects
+  // DATABASE_POSTGRES_PRISMA_URL (pooled, app queries -> lib/prisma.ts) and
+  // DATABASE_URL_UNPOOLED (direct, migrations -> prisma.config.ts).
 }
 
 model Contract {
