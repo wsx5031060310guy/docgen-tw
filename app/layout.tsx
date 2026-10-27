@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { JetBrains_Mono, Noto_Sans_TC, Noto_Serif_TC } from "next/font/google";
 import { JsonLd } from "@/components/JsonLd";
 import "./globals.css";
@@ -82,7 +83,9 @@ const WEBSITE_LD = {
   inLanguage: "zh-Hant",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Nonce CSP (proxy.ts) only reaches HTML rendered per request, so no page may be prerendered.
+  await connection();
   return (
     <html lang="zh-Hant" className={`${sans.variable} ${serif.variable} ${mono.variable}`}>
       <head>
