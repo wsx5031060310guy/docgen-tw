@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
@@ -7,7 +8,6 @@ import { Icon } from "@/components/Icon";
 import { TrustBar } from "@/components/TrustBar";
 import { TemplateCard } from "@/components/TemplateCard";
 import { LegalDisclaimer } from "@/components/LegalDisclaimer";
-import { BillingBanner } from "@/components/BillingBanner";
 import { PlanCard, type Plan } from "@/components/PlanCard";
 import { UIState } from "@/components/UIState";
 import { TEMPLATES } from "@/lib/templates";
@@ -75,29 +75,14 @@ export default function Home() {
     <>
       <TopNav />
       <main className="page paper-bg">
-        <section className="dg-page-shell dg-hero-grid">
+        <section className="dg-page-shell dg-hero-grid dg-home-hero">
           <div className="dg-home-hero-copy">
-            <div className="dg-eyebrow dg-home-eyebrow">
-              <span className="dg-home-eyebrow-line" aria-hidden="true" />
-              台灣法律合約 · 自動產生 + 電子簽署
-            </div>
             <h1 className="dg-page-title dg-home-title">
-              3 分鐘產出
-              <br />
-              <span style={{ fontFamily: "var(--font-italic)", fontStyle: "italic", fontWeight: 400, color: "var(--primary)" }}>
-                可信
-              </span>
-              合約，
-              <br />
-              附完整法條依據。
+              建立可信合約，附完整法條依據。
             </h1>
             <p className="dg-body dg-home-lead">
-              從 10 種常用範本開始（含催款通知書、存證信函草稿），逐欄填入即可產出。每一條款都附中華民國法令引用，雙方電子簽署留存 IP、時間戳與簽名雜湊 ——
-              <span style={{ color: "var(--ink)" }}> 比律師快、比範本可信。</span>
+              從 10 種合約與通知範本開始，逐欄填寫並即時預覽。完成後可送交雙方電子簽署，留存 IP、時間戳與簽名雜湊。
             </p>
-            <div className="dg-home-billing">
-              <BillingBanner compact />
-            </div>
             <div className="dg-actions dg-hero-cta">
               <Link href="/contracts/new" className="btn btn-primary btn-lg">
                 <Icon name="sparkles" size={15} />
@@ -111,7 +96,7 @@ export default function Home() {
             <div className="dg-home-trust-notes">
               <span className="row gap-1">
                 <Icon name="checkCircle" size={13} style={{ color: "var(--primary)" }} />
-                電子簽章法 §4 合規
+                電子簽章法 §5、§6
               </span>
               <span aria-hidden="true" style={{ width: 1, height: 12, background: "var(--line)" }} />
               <span className="row gap-1">
@@ -126,80 +111,30 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="dg-hero-visual">
-            <div
-              className="paper"
-              style={{
-                position: "absolute", right: 0, top: 24,
-                width: 380, height: 460, padding: "32px 36px",
-                transform: "rotate(2.2deg)",
-                boxShadow: "var(--shadow-sm)",
-                fontFamily: "var(--font-serif)", color: "#1a1612", borderRadius: 4,
-              }}
-            >
-              <div style={{ textAlign: "center", borderBottom: "1px solid rgba(0,0,0,0.12)", paddingBottom: 10, marginBottom: 14 }}>
-                <div style={{ fontSize: 9, letterSpacing: "0.3em", color: "#856b4a" }}>DOCGEN TW</div>
-                <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "0.18em", marginTop: 4 }}>承　攬　契　約</div>
-              </div>
-              {[
-                { t: "第 一 條　工作範圍", body: "乙方應為甲方完成下列工作：品牌識別系統設計，含 logo、配色與字型規範……" },
-                { t: "第 二 條　報酬", body: "本契約之報酬總額為新臺幣 拾貳萬 元整（NT$ 120,000）。" },
-                { t: "第 三 條　智慧財產權", body: "乙方完成之工作成果，自報酬全額給付完成之日起，全部歸甲方所有……" },
-              ].map((c, i) => (
-                <div key={i} style={{ marginBottom: 11, fontSize: 11.5, lineHeight: 1.7 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 2, letterSpacing: "0.04em" }}>{c.t}</div>
-                  <div style={{ textIndent: "2em", color: "#1a1612" }}>{c.body}</div>
-                </div>
-              ))}
-              <div style={{ display: "flex", gap: 10, marginTop: 22, fontSize: 10 }}>
-                <span className="chip chip-mono" style={{ fontSize: 9, padding: "1px 6px", fontFamily: "var(--font-sans)" }}>
-                  民法 §490
-                </span>
-                <span className="chip chip-mono" style={{ fontSize: 9, padding: "1px 6px", fontFamily: "var(--font-sans)" }}>
-                  著作權法 §12
-                </span>
-              </div>
+          <figure className="dg-home-product-visual">
+            <div className="dg-home-product-meta">
+              <span>真實合約建立畫面</span>
+              <span className="chip">示範資料</span>
             </div>
-            <div
-              style={{
-                position: "absolute", right: 30, top: 60, width: 360, height: 440,
-                background: "#efe6cf", borderRadius: 4, transform: "rotate(-3deg)",
-                boxShadow: "var(--shadow-sm)", zIndex: -1,
-              }}
-            />
-            <div
-              className="stamp"
-              style={{ position: "absolute", right: 60, top: 160, ["--stamp-size" as string]: "128px" }}
-            >
-              <div className="stamp-line1">DOCGEN</div>
-              <div className="stamp-star">✦</div>
-              <div className="stamp-line2">已簽署</div>
+            <div className="dg-home-product-image">
+              <Image
+                src="/homepage-contract-builder.webp"
+                alt="DocGen TW 建立新合約頁面，左側選擇範本，右側即時預覽契約"
+                fill
+                priority
+                sizes="(min-width: 960px) 52vw, 100vw"
+              />
             </div>
-            <div
-              style={{
-                position: "absolute", left: 30, bottom: 30, padding: "10px 14px",
-                background: "var(--bg-elev)", border: "1px solid var(--line)",
-                borderRadius: "var(--radius)", boxShadow: "var(--shadow-sm)",
-                fontSize: 12, maxWidth: 240,
-              }}
-            >
-              <div className="row gap-2" style={{ color: "var(--primary)" }}>
-                <Icon name="scale" size={13} />
-                <b>每條款附法令依據</b>
-              </div>
-              <div style={{ color: "var(--ink-soft)", marginTop: 4 }}>hover 法條 chip 即可看到完整條文</div>
-            </div>
-          </div>
+            <figcaption>選擇範本時，右側同步顯示契約內容與法條依據。</figcaption>
+          </figure>
         </section>
 
         <section className="dg-page-shell dg-home-trust-section" aria-label="服務成果與信任指標">
           <TrustBar
             items={[
-              { icon: "fileText", value: "12,480", label: "已產出合約" },
-              { icon: "scale", value: "23 條", label: "中華民國法令" },
-              { icon: "shieldCheck", value: "§4 合規", label: "電子簽章法" },
-              { icon: "users", value: "4,200+", label: "使用者" },
-              { icon: "clock", value: "< 3 min", label: "平均完成時間" },
+              { icon: "fileText", value: "10 種", label: "合約與通知範本" },
+              { icon: "scale", value: "29 項", label: "範本列明法條引用" },
+              { icon: "list", value: "4 階段", label: "選範本、填資訊、簽名、完成" },
             ]}
           />
         </section>
@@ -263,25 +198,32 @@ export default function Home() {
             運作方式
           </div>
           <h2 className="dg-section-title dg-home-section-title">三步完成，無需法律背景</h2>
-          <div className="dg-howit-grid">
-            {[
-              { n: "01", icon: "fileText", t: "挑選範本", d: "從 10 種常用合約挑一個，或從空白模板自訂。每個範本均附法條依據。" },
-              { n: "02", icon: "pen", t: "填寫表單", d: "左側填寫，右側即時預覽。系統自動將數字轉為國字大寫，逐條編號。" },
-              { n: "03", icon: "fileSig", t: "雙方簽署", d: "寄送簽署連結給對方，IP 與時間戳自動留存，PDF 一鍵下載。" },
-            ].map((s, i) => (
-              <div key={i} className="card dg-card-body dg-home-step">
-                <div className="dg-home-step-header">
-                  <div className="dg-home-step-icon">
-                    <Icon name={s.icon} size={20} />
+          <div className="dg-home-howit-layout">
+            <ol className="dg-home-step-list">
+              {[
+                { n: "01", icon: "fileText", t: "挑選範本", d: "從 10 種合約與通知範本開始，也可選擇自訂模板。" },
+                { n: "02", icon: "pen", t: "填寫並預覽", d: "左側填寫資料，右側即時預覽契約內容與法條依據。" },
+                { n: "03", icon: "fileSig", t: "送交雙方簽署", d: "寄送簽署連結，完成後下載留存 PDF。" },
+              ].map((step) => (
+                <li key={step.n} className="dg-home-step-row">
+                  <div className="dg-home-step-icon"><Icon name={step.icon} size={20} /></div>
+                  <div>
+                    <span className="dg-home-step-number" aria-hidden="true">{step.n}</span>
+                    <h3 className="dg-subsection-title">{step.t}</h3>
+                    <p className="dg-text-secondary">{step.d}</p>
                   </div>
-                  <span className="dg-home-step-number" aria-hidden="true">
-                    {s.n}
-                  </span>
-                </div>
-                <h3 className="dg-subsection-title">{s.t}</h3>
-                <p className="dg-text-secondary">{s.d}</p>
-              </div>
-            ))}
+                </li>
+              ))}
+            </ol>
+            <figure className="dg-home-howit-visual">
+              <Image
+                src="/homepage-contract-builder.webp"
+                alt="DocGen TW 合約建立流程示範畫面"
+                fill
+                sizes="(min-width: 760px) 52vw, 100vw"
+              />
+              <figcaption>示範資料</figcaption>
+            </figure>
           </div>
         </section>
 
