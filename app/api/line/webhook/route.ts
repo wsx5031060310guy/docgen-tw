@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { AI_DAILY_LIMIT, AI_TEXT_MAX, extractContractDraft, type AiContractDraft } from "@/lib/ai-contract";
+import { AI_TEXT_MAX, extractContractDraft, type AiContractDraft } from "@/lib/ai-contract";
 import { getBillingStatus } from "@/lib/billing";
 import { bindLine, consumeAiQuota, createDraft, findUidByLine } from "@/lib/contract-bot";
 import { fetchMessageContent, pushText, replyText, showLoading, verifyLineSignature } from "@/lib/line";
@@ -78,8 +78,9 @@ async function handleEvent(event: LineEvent, token: string) {
   if (billing.quotaExceeded) {
     return reply(`本月免費合約額度（3 份）已用完，升級 Pro：${SITE}/checkout`);
   }
-  if (!(await consumeAiQuota(uid))) {
-    return reply(`今天的 AI 填寫次數（${AI_DAILY_LIMIT} 次）已用完，明天再試或改手動填寫。`);
+  const quota = await consumeAiQuota(uid);
+  if (!quota.ok) {
+    return reply(`今天的 AI 填寫次數（${quota.limit} 次）已用完，明天再試或改手動填寫。`);
   }
   await showLoading(token, lineUserId);
 

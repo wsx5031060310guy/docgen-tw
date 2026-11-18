@@ -94,7 +94,7 @@ async function getProfile(uid: string) {
   return prisma.billingProfile.findUnique({ where: { uid } });
 }
 
-function planFor(profile: { plan: string; periodEnd: Date | null } | null): "FREE" | "PRO" {
+export function planFor(profile: { plan: string; periodEnd: Date | null } | null): "FREE" | "PRO" {
   if (!profile) return "FREE";
   if (profile.plan !== "PRO") return "FREE";
   if (!profile.periodEnd) return "FREE";
