@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { MockLanguageModelV4 } from "ai/test";
 import { extractContractDraft, normalizeContractDraft } from "@/lib/ai-contract";
 import { verifyLineSignature } from "@/lib/line";
-import { TEMPLATES } from "@/lib/templates";
+import { TEMPLATES, getTemplate } from "@/lib/templates";
 
 function mockModel(output: unknown) {
   return new MockLanguageModelV4({
@@ -78,6 +78,21 @@ describe("AI contract draft", () => {
     });
     expect(draft.missing).toEqual([]);
     expect(draft.values).not.toHaveProperty("grace_days");
+  });
+
+  it("drops self-references the model filled in as a party name", () => {
+    // Seen in a real gemini-3.1-flash-lite run: 「王小明跟我借 20 萬」→ party_a_name「我」.
+    const draft = normalizeContractDraft({
+      transcript: "王小明跟我借 20 萬",
+      templateId: "loan",
+      fields: [
+        { id: "party_a_name", value: "我" },
+        { id: "party_b_name", value: "王小明" },
+        { id: "amount", value: "200000" },
+      ],
+    });
+    expect(draft.values).toEqual({ party_b_name: "王小明", amount: "200000" });
+    expect(draft.missing).toContain(getTemplate("loan")!.fields.find((f) => f.id === "party_a_name")!.label);
   });
 
   it("drops all values for an unknown template", () => {

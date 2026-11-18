@@ -47,8 +47,11 @@ ${templateGuide}
 - 日期一律西元 YYYY/MM/DD；「月底」「下個月 15 號」依今天日期換算。
 - 依範本角色判斷甲乙方（例：承攬合約甲方是定作人＝出錢的人；使用者說自己是接案方，使用者就是乙方）。不確定就照使用者說的名字填，不要自行對調。
 - 不可捏造統編、身分證字號、Email、地址、電話；沒提到就不要放。
+- 使用者用「我」「我們」「本公司」指自己時，不要把這些字填成姓名，該方姓名留空讓使用者補。
 - 使用者沒講的條款（違約金、管轄法院、保固等）不要放，系統用預設值。
 - 看不出合約類型，templateId 填空字串。`;
+
+const SELF_REFERENCES = new Set(["我", "我們", "本人", "本公司", "敝公司", "自己"]);
 
 const text = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
 
@@ -81,7 +84,8 @@ export function normalizeContractDraft(raw: unknown): AiContractDraft {
     const field = fieldMap.get(id);
     if (!field) continue;
     let value = text(row.value, field.type === "textarea" ? 2000 : 200);
-    if (!value) continue;
+    // Real-model run filled the lender as「我」; a pronoun is never a party name.
+    if (!value || SELF_REFERENCES.has(value)) continue;
     if (field.type === "number") {
       // Half-width only here: prose fields keep their Chinese punctuation (，).
       value = halfWidth(value).replace(/NT\$/gi, "").replace(/[,\s元%]/g, "");
