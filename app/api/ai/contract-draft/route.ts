@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { AI_DAILY_LIMIT, AI_TEXT_MAX, extractContractDraft } from "@/lib/ai-contract";
+import { AI_TEXT_MAX, extractContractDraft } from "@/lib/ai-contract";
 import { readUidFromRequest } from "@/lib/billing";
 import { consumeAiQuota } from "@/lib/contract-bot";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -25,9 +25,10 @@ export async function POST(req: Request) {
   if (text.length > AI_TEXT_MAX) {
     return NextResponse.json({ error: `內容請勿超過 ${AI_TEXT_MAX} 字` }, { status: 400 });
   }
-  if (!(await consumeAiQuota(uid))) {
+  const quota = await consumeAiQuota(uid);
+  if (!quota.ok) {
     return NextResponse.json(
-      { error: `今天的 AI 填寫次數（${AI_DAILY_LIMIT} 次）已用完，明天再試或改手動填寫` },
+      { error: `今天的 AI 填寫次數（${quota.limit} 次）已用完，明天再試或改手動填寫` },
       { status: 429 },
     );
   }

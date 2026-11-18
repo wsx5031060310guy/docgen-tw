@@ -3,7 +3,8 @@ import { z } from "zod";
 import { TEMPLATES, getTemplate } from "./templates";
 
 export const AI_MODEL = "google/gemini-3.1-flash-lite";
-export const AI_DAILY_LIMIT = 30;
+export const AI_DAILY_LIMIT = 30; // FREE (and lapsed PRO)
+export const AI_DAILY_LIMIT_PRO = 200;
 export const AI_TEXT_MAX = 1000;
 
 export type AiContractDraft = {

@@ -142,16 +142,34 @@ describe.skipIf(!DB)("AI contract bot (real Postgres)", () => {
   it("enforces 30 AI calls per Taipei day and resets on a new day", async () => {
     const uid = `quota-${run}`;
     for (let count = 1; count <= 30; count += 1) {
-      expect(await bot.consumeAiQuota(uid), `call ${count}`).toBe(true);
+      expect(await bot.consumeAiQuota(uid), `call ${count}`).toEqual({ ok: true, limit: 30 });
     }
-    expect(await bot.consumeAiQuota(uid)).toBe(false);
+    expect(await bot.consumeAiQuota(uid)).toEqual({ ok: false, limit: 30 });
     await prisma.billingProfile.update({
       where: { uid },
       data: { aiDay: "2000-01-01" },
     });
-    expect(await bot.consumeAiQuota(uid)).toBe(true);
+    expect((await bot.consumeAiQuota(uid)).ok).toBe(true);
     const profile = await prisma.billingProfile.findUniqueOrThrow({ where: { uid } });
     expect(profile.aiCount).toBe(1);
+  });
+
+  it("gives active PRO 200 AI calls a day; lapsed PRO falls back to 30", async () => {
+    const pro = `quota-pro-${run}`;
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Taipei" });
+    await prisma.billingProfile.create({
+      data: { uid: pro, plan: "PRO", periodEnd: new Date(Date.now() + 86_400_000), aiDay: today, aiCount: 198 },
+    });
+    expect(await bot.consumeAiQuota(pro)).toEqual({ ok: true, limit: 200 }); // 199th
+    expect(await bot.consumeAiQuota(pro)).toEqual({ ok: true, limit: 200 }); // 200th
+    expect(await bot.consumeAiQuota(pro)).toEqual({ ok: false, limit: 200 }); // 201st
+    expect((await prisma.billingProfile.findUniqueOrThrow({ where: { uid: pro } })).aiCount).toBe(200);
+
+    const lapsed = `quota-lapsed-${run}`;
+    await prisma.billingProfile.create({
+      data: { uid: lapsed, plan: "PRO", periodEnd: new Date(Date.now() - 1_000), aiDay: today, aiCount: 30 },
+    });
+    expect(await bot.consumeAiQuota(lapsed)).toEqual({ ok: false, limit: 30 });
   });
 
   it("issues one-time LINE codes, handles expiry, rebinding and missing cookies", async () => {

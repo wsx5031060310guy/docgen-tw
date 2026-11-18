@@ -1,32 +1,35 @@
 import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { AI_DAILY_LIMIT, taipeiDate } from "./ai-contract";
+import { AI_DAILY_LIMIT, AI_DAILY_LIMIT_PRO, taipeiDate } from "./ai-contract";
+import { planFor } from "./billing";
 import { prisma } from "./prisma";
 
-export async function consumeAiQuota(uid: string): Promise<boolean> {
-  if (!process.env.DATABASE_URL) return true;
-  await prisma.billingProfile.upsert({
+/** Counts one AI call against today's (Asia/Taipei) quota: PRO 200, everyone else 30. */
+export async function consumeAiQuota(uid: string): Promise<{ ok: boolean; limit: number }> {
+  if (!process.env.DATABASE_URL) return { ok: true, limit: AI_DAILY_LIMIT };
+  const profile = await prisma.billingProfile.upsert({
     where: { uid },
     create: { uid },
     update: {},
   });
+  const limit = planFor(profile) === "PRO" ? AI_DAILY_LIMIT_PRO : AI_DAILY_LIMIT;
   const day = taipeiDate(new Date());
   const sameDay = await prisma.billingProfile.updateMany({
-    where: { uid, aiDay: day, aiCount: { lt: AI_DAILY_LIMIT } },
+    where: { uid, aiDay: day, aiCount: { lt: limit } },
     data: { aiCount: { increment: 1 } },
   });
-  if (sameDay.count === 1) return true;
+  if (sameDay.count === 1) return { ok: true, limit };
   const newDay = await prisma.billingProfile.updateMany({
     where: { uid, OR: [{ aiDay: null }, { aiDay: { not: day } }] },
     data: { aiDay: day, aiCount: 1 },
   });
-  if (newDay.count === 1) return true;
+  if (newDay.count === 1) return { ok: true, limit };
   // A concurrent request rolled the day over between our two updates: count against today.
   const retry = await prisma.billingProfile.updateMany({
-    where: { uid, aiDay: day, aiCount: { lt: AI_DAILY_LIMIT } },
+    where: { uid, aiDay: day, aiCount: { lt: limit } },
     data: { aiCount: { increment: 1 } },
   });
-  return retry.count === 1;
+  return { ok: retry.count === 1, limit };
 }
 
 export async function createDraft(
