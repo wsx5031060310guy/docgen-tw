@@ -12,6 +12,11 @@ import {
   readUidFromRequest,
   writeUidCookie,
 } from "@/lib/billing";
+import {
+  claimDraft,
+  markDraftContract,
+  releaseDraft,
+} from "@/lib/contract-bot";
 
 interface CreateContractPayload {
   templateId: string;
@@ -20,6 +25,8 @@ interface CreateContractPayload {
   recipientName?: string;
   recipientEmail?: string;
   autoMilestones?: boolean;
+  draftId?: string;
+  draftToken?: string;
 }
 
 // GET /api/contracts?status=&template=&q=
@@ -75,17 +82,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { templateId, values, partyASignature, recipientName, recipientEmail, autoMilestones } = body;
+  const {
+    templateId,
+    values,
+    partyASignature,
+    recipientName,
+    recipientEmail,
+    autoMilestones,
+    draftId,
+    draftToken,
+  } = body;
+  if (
+    (draftId !== undefined && typeof draftId !== "string") ||
+    (draftToken !== undefined && typeof draftToken !== "string") ||
+    Boolean(draftId) !== Boolean(draftToken)
+  ) {
+    return NextResponse.json({ error: "草稿編號與授權 token 必須一起提供" }, { status: 400 });
+  }
   if (!templateId || !values || !partyASignature) {
     return NextResponse.json({ error: "缺少必要欄位（範本/欄位/甲方簽名）" }, { status: 400 });
   }
 
   // Identity + monthly quota gate (FREE = 3 / month).
-  let uid = readUidFromRequest(req as unknown as Request);
-  const setUidCookie = !uid;
+  const claimedDraft = draftId && draftToken ? await claimDraft(draftId, draftToken) : null;
+  if (draftId && !claimedDraft) {
+    return NextResponse.json({ error: "草稿連結無效、已過期或已使用" }, { status: 409 });
+  }
+  let uid = claimedDraft?.uid ?? readUidFromRequest(req as unknown as Request);
+  const setUidCookie = !claimedDraft && !uid;
   if (!uid) uid = newUid();
-  const status = await getBillingStatus(uid);
+  let status;
+  try {
+    status = await getBillingStatus(uid);
+  } catch (error) {
+    if (claimedDraft) await releaseDraft(claimedDraft.id);
+    throw error;
+  }
   if (status.quotaExceeded) {
+    if (claimedDraft) await releaseDraft(claimedDraft.id);
     return NextResponse.json(
       {
         error: "本月免費額度已用完",
@@ -101,29 +135,43 @@ export async function POST(req: Request) {
   try {
     document = buildContractDocument(templateId, values);
   } catch (err) {
+    if (claimedDraft) await releaseDraft(claimedDraft.id);
     return NextResponse.json({ error: (err as Error).message }, { status: 400 });
   }
 
-  // Persist sender signature image, hash for audit
-  const tempId = crypto.randomBytes(8).toString("hex");
-  const sigRecord = await persistSignaturePng(tempId, partyASignature);
+  let stored;
+  try {
+    // Persist sender signature image, hash for audit
+    const tempId = crypto.randomBytes(8).toString("hex");
+    const sigRecord = await persistSignaturePng(tempId, partyASignature);
+    stored = await createContract({
+      templateId,
+      values,
+      client: values.party_a_name || values.party_b_name || "",
+      content: [
+        document.title,
+        ...document.clauses.map((c) => `第 ${c.n} 條  ${c.title}\n${c.body}`),
+        document.footer,
+      ].join("\n\n"),
+      senderSignatureUrl: sigRecord.url,
+      senderSignatureHash: sigRecord.sha256,
+      senderIp: req.headers.get("x-forwarded-for") ?? "unknown",
+      recipientName: recipientName ?? null,
+      recipientEmail: recipientEmail ?? null,
+      uid,
+    });
+  } catch (error) {
+    if (claimedDraft) await releaseDraft(claimedDraft.id);
+    throw error;
+  }
 
-  const stored = await createContract({
-    templateId,
-    values,
-    client: values.party_a_name || values.party_b_name || "",
-    content: [
-      document.title,
-      ...document.clauses.map((c) => `第 ${c.n} 條  ${c.title}\n${c.body}`),
-      document.footer,
-    ].join("\n\n"),
-    senderSignatureUrl: sigRecord.url,
-    senderSignatureHash: sigRecord.sha256,
-    senderIp: req.headers.get("x-forwarded-for") ?? "unknown",
-    recipientName: recipientName ?? null,
-    recipientEmail: recipientEmail ?? null,
-    uid,
-  });
+  if (claimedDraft) {
+    try {
+      await markDraftContract(claimedDraft.id, stored.id);
+    } catch (error) {
+      console.error("mark draft contract failed", error);
+    }
+  }
 
   const origin =
     req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -172,7 +220,8 @@ export async function POST(req: Request) {
       signingToken: stored.signingToken,
       recipientSignUrl,
       milestonesCreated,
-      uid,
+      // A draft link may be opened by anyone holding it; don't echo the owner's uid.
+      ...(claimedDraft ? {} : { uid }),
     },
     { status: 201 },
   );

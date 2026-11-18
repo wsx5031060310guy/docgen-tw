@@ -1687,3 +1687,20 @@ body.dg-sigsheet-open { overflow: hidden; position: fixed; width: 100%; }
 .dg-en-home-template-note { max-width: 760px; }
 .dg-en-template-language-note { color: var(--state-info-ink); font-size: var(--text-secondary); overflow-wrap: anywhere; }
 .dg-en-referral-meta { margin-bottom: var(--space-2); }
+
+/* AI contract drafting and LINE linking */
+.dg-ai-contract-box { display: flex; min-width: 0; flex-direction: column; gap: var(--space-1); background: var(--state-info-bg); }
+.dg-ai-contract-heading { display: flex; align-items: flex-start; gap: var(--space-1); }
+.dg-ai-contract-heading > .ic { flex: 0 0 auto; margin-top: 2px; color: var(--primary); }
+.dg-ai-contract-label { color: var(--ink); font-size: var(--text-subsection); font-weight: 700; line-height: 1.5; }
+.dg-ai-contract-textarea { min-height: 104px; background: var(--bg-elev); }
+.dg-ai-contract-actions { align-items: stretch; }
+.dg-ai-line-panel > .btn { width: fit-content; }
+.dg-ai-line-code { display: flex; align-items: flex-start !important; flex-direction: column; }
+.dg-ai-line-code strong { color: var(--ink); font-family: var(--font-mono); font-size: 24px; font-variant-numeric: tabular-nums; letter-spacing: .08em; line-height: 1.4; user-select: all; }
+.dg-ai-line-confirm { display: flex; align-items: flex-start !important; flex-direction: column; }
+
+@media (max-width: 760px) {
+  .dg-ai-contract-actions > .btn,
+  .dg-ai-line-panel > .btn { width: 100%; }
+}

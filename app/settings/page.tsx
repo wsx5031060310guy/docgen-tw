@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { BillingBanner } from "@/components/BillingBanner";
 import { Footer } from "@/components/Footer";
 import { Icon } from "@/components/Icon";
+import { LineLinkPanel } from "@/components/LineLinkPanel";
 import {
   SettingsApiKeys,
   type SettingsApiKey,
@@ -344,6 +345,8 @@ function SettingsInner() {
               onSendMagic={sendMagic}
             />
           )}
+
+          <LineLinkPanel />
 
           <SettingsApiKeys
             keys={apiKeys}
