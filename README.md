@@ -176,6 +176,18 @@ npm run db:migrate # prisma migrate deploy（沒有 migration 紀錄的舊庫需
 | `OPENROUTER_MODEL` | ⬜ | 預設 `google/gemini-2.5-pro:free` |
 | `SMART_ROUTER_URL` | ⬜ | 自架智慧路由端點（`lib/router-client.ts`） |
 
+### AI 一句話合約／LINE 合約機器人（選用）
+
+| 變數 | 必填 | 說明 |
+|---|---|---|
+| `LINE_CHANNEL_SECRET` | ⬜ | LINE Messaging API channel secret；與 access token 同時設定才啟用機器人 |
+| `LINE_CHANNEL_ACCESS_TOKEN` | ⬜ | LINE Messaging API channel access token |
+| `LINE_ADD_FRIEND_URL` | ⬜ | 設定頁「加機器人為好友」連結 |
+
+AI Gateway 在 Vercel 使用 OIDC 自動驗證。本機開發、測試與建置必須設定
+`AI_GATEWAY_API_KEY=invalid-local-no-billing`，避免誤呼叫可計費模型。LINE Developers 後台 webhook URL
+設為 `<site>/api/line/webhook`，並保持 webhook redelivery 關閉。
+
 ### 站台 URL / Cron / 後台 / 通知
 
 | 變數 | 必填 | 說明 |

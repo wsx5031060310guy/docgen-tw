@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { TopNav } from "@/components/TopNav";
 import { Stepper } from "@/components/Stepper";
@@ -11,6 +11,7 @@ import { BillingBanner } from "@/components/BillingBanner";
 import { ContractTemplatePicker } from "@/components/ContractTemplatePicker";
 import { ContractFormFields, type ContractFieldGroups } from "@/components/ContractFormFields";
 import { ContractComplete } from "@/components/ContractComplete";
+import { AiContractBox } from "@/components/AiContractBox";
 import { TEMPLATES, getTemplate, type Values } from "@/lib/templates";
 
 function NewInner() {
@@ -18,13 +19,18 @@ function NewInner() {
   const params = useSearchParams();
   const tplParam = params.get("tpl") || TEMPLATES[0].id;
   const fromMilestone = params.get("fromMilestone");
+  const draftParam = params.get("draft");
+  const draftTokenParam = params.get("t");
+  const incompleteDraftLink = Boolean(draftParam) !== Boolean(draftTokenParam);
 
   const [tplId, setTplId] = useState<string>(tplParam);
   const tpl = getTemplate(tplId) || TEMPLATES[0];
   const [step, setStep] = useState(1);
   const [values, setValues] = useState<Values>({ ...tpl.defaults });
-  const [prefillBanner, setPrefillBanner] = useState<string | null>(null);
-  const [prefillFailed, setPrefillFailed] = useState(false);
+  const [prefillBanner, setPrefillBanner] = useState<string | null>(
+    incompleteDraftLink ? "草稿連結無效或已過期，你仍可手動填寫。" : null,
+  );
+  const [prefillFailed, setPrefillFailed] = useState(incompleteDraftLink);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLegal, setShowLegal] = useState(false);
   const [sigA, setSigA] = useState("");
@@ -36,6 +42,7 @@ function NewInner() {
   const [contractId, setContractId] = useState<string | null>(null);
   const [recipientUrl, setRecipientUrl] = useState<string | null>(null);
   const [signingToken, setSigningToken] = useState<string | null>(null);
+  const [sourceDraft, setSourceDraft] = useState<{ id: string; token: string } | null>(null);
   const pendingPrefill = useRef<{ templateId: string; values: Values } | null>(null);
   const activeTemplateId = useRef(tplId);
   const submitInFlight = useRef(false);
@@ -43,6 +50,18 @@ function NewInner() {
   useEffect(() => {
     activeTemplateId.current = tplId;
   }, [tplId]);
+
+  const applyPrefill = useCallback((templateId: string, nextValues: Values) => {
+    const targetTemplate = getTemplate(templateId) || TEMPLATES[0];
+    pendingPrefill.current = { templateId: targetTemplate.id, values: nextValues };
+    if (targetTemplate.id === activeTemplateId.current) {
+      setValues({ ...targetTemplate.defaults, ...nextValues });
+      pendingPrefill.current = null;
+      setErrors({});
+    } else {
+      setTplId(targetTemplate.id);
+    }
+  }, []);
 
   useEffect(() => {
     const prefill = pendingPrefill.current;
@@ -66,16 +85,7 @@ function NewInner() {
         const j = await r.json();
         if (cancelled) return;
         const targetTemplate = getTemplate(j.templateId || tplParam) || TEMPLATES[0];
-        if (j.values) {
-          pendingPrefill.current = { templateId: targetTemplate.id, values: j.values };
-        }
-        if (targetTemplate.id === activeTemplateId.current) {
-          setValues({ ...targetTemplate.defaults, ...(j.values || {}) });
-          pendingPrefill.current = null;
-          setErrors({});
-        } else {
-          setTplId(targetTemplate.id);
-        }
+        applyPrefill(targetTemplate.id, j.values || {});
         setPrefillFailed(false);
         setPrefillBanner("已從逾期項目自動帶入收件人 / 金額 / 原約定到期日。請覆核後送出。");
         setStep(2);
@@ -88,7 +98,41 @@ function NewInner() {
     return () => {
       cancelled = true;
     };
-  }, [fromMilestone, tplParam]);
+  }, [applyPrefill, fromMilestone, tplParam]);
+
+  useEffect(() => {
+    if (!draftParam && !draftTokenParam) return;
+    if (!draftParam || !draftTokenParam) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(
+          `/api/contract-drafts/${encodeURIComponent(draftParam)}?t=${encodeURIComponent(draftTokenParam)}`,
+        );
+        if (cancelled) return;
+        if (response.status === 410) {
+          setPrefillFailed(true);
+          setPrefillBanner("這份草稿已建立過合約，可到「我的合約」查看。");
+          return;
+        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json() as { templateId: string; values: Values };
+        if (cancelled) return;
+        applyPrefill(data.templateId, data.values || {});
+        setSourceDraft({ id: draftParam, token: draftTokenParam });
+        setPrefillFailed(false);
+        setPrefillBanner("已帶入 LINE 機器人產生的草稿，請覆核後簽署。");
+        setStep(2);
+      } catch {
+        if (cancelled) return;
+        setPrefillFailed(true);
+        setPrefillBanner("草稿連結無效或已過期，你仍可手動填寫。");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyPrefill, draftParam, draftTokenParam]);
 
   const setVal = (k: string, v: string) => {
     setValues((s) => ({ ...s, [k]: v }));
@@ -137,6 +181,7 @@ function NewInner() {
           values,
           partyASignature: sigA,
           recipientName: values.party_b_name,
+          ...(sourceDraft ? { draftId: sourceDraft.id, draftToken: sourceDraft.token } : {}),
         }),
       });
       const json = await res.json();
@@ -202,6 +247,18 @@ function NewInner() {
                   </div>
                 )}
                 <BillingBanner />
+                <AiContractBox
+                  onDraft={(draft) => {
+                    if (!draft.templateId) return;
+                    applyPrefill(draft.templateId, draft.values);
+                    setPrefillFailed(false);
+                    setPrefillBanner(
+                      `AI 已填入 ${Object.keys(draft.values).length} 個欄位，請逐項覆核後再簽署。` +
+                        (draft.missing.length ? ` 還缺：${draft.missing.join("、")}。` : ""),
+                    );
+                    setStep(2);
+                  }}
+                />
                 <div className="dg-newcontract-step-heading">
                   <h2 className="dg-section-title">步驟 1 · 選擇合約類型</h2>
                   <p className="dg-text-secondary">

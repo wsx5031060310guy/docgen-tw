@@ -145,11 +145,16 @@ model Order {
 }
 
 model BillingProfile {
-  uid        String    @id
-  email      String?
-  plan       String    @default("FREE")
-  periodEnd  DateTime?
-  lastOrderId String?
+  uid                 String    @id
+  email               String?
+  plan                String    @default("FREE")
+  periodEnd           DateTime?
+  lastOrderId         String?
+  lineUserId          String?   @unique
+  lineLinkCode        String?   @unique
+  lineLinkCodeExpires DateTime?
+  aiDay               String?
+  aiCount             Int       @default(0)
   // User-configurable generic webhook URL (Slack/Discord/Make/n8n/Zapier all
   // accept POST JSON). Single column keeps the model simple; we don't need
   // per-platform parsing here.
@@ -157,6 +162,21 @@ model BillingProfile {
   webhookSecret String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+}
+
+model ContractDraft {
+  id         String    @id @default(cuid())
+  uid        String
+  token      String    @unique
+  templateId String
+  values     Json
+  transcript String?
+  source     String    @default("line")
+  expiresAt  DateTime
+  usedAt     DateTime?
+  contractId String?
+  createdAt  DateTime  @default(now())
+  @@index([uid])
 }
 
 model ApiKey {
