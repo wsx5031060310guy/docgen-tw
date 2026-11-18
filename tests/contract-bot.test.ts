@@ -160,19 +160,20 @@ describe.skipIf(!DB)("AI contract bot (real Postgres)", () => {
     const issue = await linkRoute.POST(request("/api/line/link", { method: "POST", uid: firstUid }));
     expect(issue.status).toBe(200);
     const { code } = await issue.json() as { code: string };
-    expect(await bot.bindLine(`line-user-${run}`, code)).toBe(true);
+    expect(await bot.bindLine(`line-user-${run}`, code)).toBe(`識別碼末四碼 ${firstUid.slice(-4)}`);
     expect(await bot.findUidByLine(`line-user-${run}`)).toBe(firstUid);
-    expect(await bot.bindLine(`line-user-${run}`, code)).toBe(false);
+    expect(await bot.bindLine(`line-user-${run}`, code)).toBeNull();
 
     const expired = await bot.issueLinkCode(firstUid);
     await prisma.billingProfile.update({
       where: { uid: firstUid },
       data: { lineLinkCodeExpires: new Date(Date.now() - 1_000) },
     });
-    expect(await bot.bindLine(`expired-line-${run}`, expired.code)).toBe(false);
+    expect(await bot.bindLine(`expired-line-${run}`, expired.code)).toBeNull();
 
     const second = await bot.issueLinkCode(secondUid);
-    expect(await bot.bindLine(`line-user-${run}`, second.code)).toBe(true);
+    await prisma.billingProfile.update({ where: { uid: secondUid }, data: { email: `owner-b-${run}@example.test` } });
+    expect(await bot.bindLine(`line-user-${run}`, second.code)).toBe("ow***@example.test");
     expect(await bot.findUidByLine(`line-user-${run}`)).toBe(secondUid);
     expect(await bot.isLineLinked(firstUid)).toBe(false);
     expect((await linkRoute.POST(request("/api/line/link", { method: "POST" }))).status).toBe(401);
@@ -217,7 +218,7 @@ describe.skipIf(!DB)("AI contract bot (real Postgres)", () => {
     }] }));
     await drainAfter();
     expect(await bot.findUidByLine(lineUserId)).toBe(uid);
-    expect(sent.replies.at(-1)).toContain("綁定成功");
+    expect(sent.replies.at(-1)).toContain(`已綁定 DocGen TW 帳號（識別碼末四碼 ${uid.slice(-4)}）`);
 
     const before = await prisma.contractDraft.count({ where: { uid } });
     await webhookRoute.POST(signedWebhook({ events: [{
@@ -241,6 +242,31 @@ describe.skipIf(!DB)("AI contract bot (real Postgres)", () => {
     await drainAfter();
     expect(sent.replies).toHaveLength(replyCount);
     expect(await prisma.contractDraft.count()).toBe(draftCount);
+
+    // Over-long text: told to shorten, no AI call, no draft.
+    await webhookRoute.POST(signedWebhook({ events: [{
+      type: "message",
+      replyToken: "r-long",
+      source: { type: "user", userId: lineUserId },
+      message: { id: "m5", type: "text", text: "接".repeat(1001) },
+    }] }));
+    await drainAfter();
+    expect(sent.replies.at(-1)).toContain("1000 字以內");
+    expect(await prisma.contractDraft.count()).toBe(draftCount);
+
+    // Brute-forcing bind codes: the 6th attempt within 10 minutes is refused before touching the DB.
+    const guesser = `guesser-${run}`;
+    for (let i = 0; i < 6; i += 1) {
+      await webhookRoute.POST(signedWebhook({ events: [{
+        type: "message",
+        replyToken: `r-guess-${i}`,
+        source: { type: "user", userId: guesser },
+        message: { id: `g${i}`, type: "text", text: `綁定 ${String(i).padStart(8, "0")}` },
+      }] }));
+      await drainAfter();
+    }
+    expect(sent.replies.at(-2)).toContain("綁定碼錯誤");
+    expect(sent.replies.at(-1)).toContain("綁定嘗試太多次");
   });
 
   it("authorizes draft fetches and creates a contract once without a uid cookie", async () => {

@@ -39,6 +39,7 @@ const MAX_CONTENT_BYTES = 5 * 1024 * 1024;
 export async function fetchMessageContent(token: string, messageId: string) {
   const res = await fetch(`https://api-data.line.me/v2/bot/message/${messageId}/content`, {
     headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(15_000),
   });
   if (res.status !== 200) throw new Error(`LINE content ${res.status}`);
   const data = new Uint8Array(await res.arrayBuffer());

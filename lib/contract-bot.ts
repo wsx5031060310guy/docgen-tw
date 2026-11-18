@@ -20,7 +20,13 @@ export async function consumeAiQuota(uid: string): Promise<boolean> {
     where: { uid, OR: [{ aiDay: null }, { aiDay: { not: day } }] },
     data: { aiDay: day, aiCount: 1 },
   });
-  return newDay.count === 1;
+  if (newDay.count === 1) return true;
+  // A concurrent request rolled the day over between our two updates: count against today.
+  const retry = await prisma.billingProfile.updateMany({
+    where: { uid, aiDay: day, aiCount: { lt: AI_DAILY_LIMIT } },
+    data: { aiCount: { increment: 1 } },
+  });
+  return retry.count === 1;
 }
 
 export async function createDraft(
@@ -85,25 +91,27 @@ export async function issueLinkCode(uid: string): Promise<{ code: string; expire
   throw new Error("Unable to issue unique LINE link code");
 }
 
-export async function bindLine(lineUserId: string, code: string): Promise<boolean> {
+/** Returns a short account hint (masked email or uid tail) on success, null on failure. */
+export async function bindLine(lineUserId: string, code: string): Promise<string | null> {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
     const owner = await tx.billingProfile.findFirst({
       where: { lineLinkCode: code, lineLinkCodeExpires: { gt: now } },
-      select: { uid: true },
+      select: { uid: true, email: true },
     });
-    if (!owner) return false;
+    if (!owner) return null;
     const claimed = await tx.billingProfile.updateMany({
       where: { uid: owner.uid, lineLinkCode: code, lineLinkCodeExpires: { gt: now } },
       data: { lineLinkCode: null, lineLinkCodeExpires: null },
     });
-    if (claimed.count !== 1) return false;
+    if (claimed.count !== 1) return null;
     await tx.billingProfile.updateMany({
       where: { lineUserId, uid: { not: owner.uid } },
       data: { lineUserId: null },
     });
     await tx.billingProfile.update({ where: { uid: owner.uid }, data: { lineUserId } });
-    return true;
+    const [user, domain] = (owner.email ?? "").split("@");
+    return user && domain ? `${user.slice(0, 2)}***@${domain}` : `識別碼末四碼 ${owner.uid.slice(-4)}`;
   });
 }
 

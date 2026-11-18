@@ -1,8 +1,9 @@
 import { after } from "next/server";
-import { AI_DAILY_LIMIT, extractContractDraft, type AiContractDraft } from "@/lib/ai-contract";
+import { AI_DAILY_LIMIT, AI_TEXT_MAX, extractContractDraft, type AiContractDraft } from "@/lib/ai-contract";
 import { getBillingStatus } from "@/lib/billing";
 import { bindLine, consumeAiQuota, createDraft, findUidByLine } from "@/lib/contract-bot";
 import { fetchMessageContent, pushText, replyText, showLoading, verifyLineSignature } from "@/lib/line";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getTemplate } from "@/lib/templates";
 
 const SITE = process.env.NEXT_PUBLIC_APP_URL ?? "https://docgen-tw.vercel.app";
@@ -52,8 +53,15 @@ async function handleEvent(event: LineEvent, token: string) {
   const text = message.type === "text" ? toHalfWidth(String(message.text ?? "").trim()) : "";
   const bind = text.match(/^綁定\s*(\d{8})$/);
   if (bind) {
-    const ok = await bindLine(lineUserId, bind[1]);
-    return reply(ok ? `✅ 綁定成功\n\n${HELP}` : "綁定碼錯誤、已過期或已使用，請到設定頁重新產生。");
+    // ponytail: in-memory per instance; enough to stop one LINE account brute-forcing 8-digit codes.
+    if (!checkRateLimit(`line-bind:${lineUserId}`, 5, 10 * 60_000).ok) {
+      return reply("綁定嘗試太多次，請 10 分鐘後再試。");
+    }
+    const account = await bindLine(lineUserId, bind[1]);
+    // Show which account got linked so a user tricked into sending someone else's code can notice.
+    return reply(account
+      ? `✅ 已綁定 DocGen TW 帳號（${account}）。如果不是你的帳號，請到設定頁重新綁定。\n\n${HELP}`
+      : "綁定碼錯誤、已過期或已使用，請到設定頁重新產生。");
   }
 
   const uid = await findUidByLine(lineUserId);
@@ -63,6 +71,7 @@ async function handleEvent(event: LineEvent, token: string) {
   if (/^(說明|help|\?|？)$/i.test(text)) return reply(HELP);
   if (message.type !== "text" && message.type !== "audio") return reply(`目前只看得懂文字和語音。\n\n${HELP}`);
   if (message.type === "text" && !text) return;
+  if (text.length > AI_TEXT_MAX) return reply(`內容請在 ${AI_TEXT_MAX} 字以內，太長的條款請到網頁再補。`);
   if (message.type === "audio" && (message.duration ?? 0) > MAX_AUDIO_MS) return reply("語音請在 2 分鐘以內。");
 
   const billing = await getBillingStatus(uid);
