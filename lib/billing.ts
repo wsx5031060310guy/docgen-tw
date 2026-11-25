@@ -7,6 +7,7 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import type { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 
 export const FREE_MONTHLY_QUOTA = 3;
@@ -147,13 +148,13 @@ export async function activatePro(input: {
   email?: string | null;
   orderId: string;
   days?: number;
-}) {
+}, db: Prisma.TransactionClient = prisma) {
   const days = input.days ?? 30;
-  const existing = await prisma.billingProfile.findUnique({ where: { uid: input.uid } });
+  const existing = await db.billingProfile.findUnique({ where: { uid: input.uid } });
   const baseline =
     existing?.periodEnd && existing.periodEnd > new Date() ? existing.periodEnd : new Date();
   const periodEnd = new Date(baseline.getTime() + days * 86400_000);
-  await prisma.billingProfile.upsert({
+  await db.billingProfile.upsert({
     where: { uid: input.uid },
     create: {
       uid: input.uid,

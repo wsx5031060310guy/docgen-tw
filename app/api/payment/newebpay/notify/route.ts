@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decodeTradeInfo, getNewebpayConfig } from "@/lib/payment/newebpay";
+import { getNewebpayConfig, readPaymentCallback, type PaymentCallback } from "@/lib/payment/newebpay";
 import { prisma } from "@/lib/prisma";
 import { activatePro } from "@/lib/billing";
 
@@ -11,67 +11,56 @@ const PRO_PLAN_DAYS: Record<string, number> = {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// NewebPay server-to-server notify. ALWAYS echo "0" — anything else triggers
-// retry storm. Idempotent: skip if order is already terminal.
+// NewebPay server-to-server notify. The gateway retries up to 3 times until it
+// sees HTTP 200, so anything that should be retried must not answer 200.
 export async function POST(req: NextRequest) {
+  let callback: PaymentCallback;
   try {
     const form = await req.formData();
-    const tradeInfoHex = String(form.get("TradeInfo") ?? "");
-    const status = String(form.get("Status") ?? "");
     const { hashKey, hashIv } = getNewebpayConfig();
+    callback = readPaymentCallback(
+      String(form.get("TradeInfo") ?? ""),
+      String(form.get("TradeSha") ?? ""),
+      hashKey,
+      hashIv,
+    );
+  } catch (e) {
+    console.error("[newebpay/notify] rejected", e);
+    return new NextResponse("rejected", { status: 400 });
+  }
+  const { outcome, merchantOrderNo, amount, paymentType, payload } = callback;
 
-    const decoded = decodeTradeInfo(tradeInfoHex, hashKey, hashIv);
+  const order = await prisma.order.findUnique({
+    where: { merchantTradeNo: merchantOrderNo },
+  });
+  if (!order) return new NextResponse("0");
+  if (outcome === "PENDING") {
+    console.warn("[newebpay/notify] SUCCESS without PayTime, not credited", { merchantOrderNo, paymentType });
+    return new NextResponse("0");
+  }
+  if (outcome === "PAID" && amount !== order.amount) {
+    console.error("[newebpay/notify] amount mismatch", { merchantOrderNo, amount, expected: order.amount });
+    return new NextResponse("0");
+  }
 
-    let result: Record<string, unknown> = {};
-    try {
-      result = JSON.parse(decoded.JSONResult ?? decoded.Result ?? "{}");
-    } catch {
-      result = {};
-    }
-    const merchantOrderNo: string =
-      (result.MerchantOrderNo as string) ?? decoded.MerchantOrderNo ?? "";
-    const tradeNo: string | undefined = result.TradeNo as string | undefined;
-    const paymentType: string | undefined = result.PaymentType as string | undefined;
-
-    if (!merchantOrderNo) return new NextResponse("0");
-
-    const order = await prisma.order.findUnique({
-      where: { merchantTradeNo: merchantOrderNo },
-    });
-    if (!order) return new NextResponse("0");
-
-    if (order.status === "PAID" || order.status === "FAILED") {
-      return new NextResponse("0");
-    }
-
-    await prisma.order.update({
-      where: { merchantTradeNo: merchantOrderNo },
+  // Claim the order and activate in one transaction: concurrent or repeated
+  // notifies credit once, and a failed activation leaves the order retryable.
+  await prisma.$transaction(async (tx) => {
+    const claimed = await tx.order.updateMany({
+      // A payment may succeed after a failed attempt, so FAILED can still become PAID.
+      where: { id: order.id, status: { in: outcome === "PAID" ? ["PENDING", "FAILED"] : ["PENDING"] } },
       data: {
-        status: status === "SUCCESS" ? "PAID" : "FAILED",
+        status: outcome,
         paymentMethod: paymentType ?? null,
         paymentDate: new Date(),
-        rawCallback: JSON.stringify({ status, decoded, tradeNo }),
+        rawCallback: JSON.stringify(payload),
       },
     });
-
     // Activate Pro plan on successful payment when planCode warrants it.
-    if (status === "SUCCESS" && order.uid && order.planCode) {
-      const days = PRO_PLAN_DAYS[order.planCode];
-      if (days) {
-        try {
-          await activatePro({
-            uid: order.uid,
-            email: order.buyerEmail,
-            orderId: order.id,
-            days,
-          });
-        } catch (err) {
-          console.error("[newebpay/notify] activatePro failed", err);
-        }
-      }
+    const days = PRO_PLAN_DAYS[order.planCode ?? ""];
+    if (claimed.count === 1 && outcome === "PAID" && order.uid && days) {
+      await activatePro({ uid: order.uid, email: order.buyerEmail, orderId: order.id, days }, tx);
     }
-  } catch (e) {
-    console.error("[newebpay/notify]", e);
-  }
+  });
   return new NextResponse("0");
 }
