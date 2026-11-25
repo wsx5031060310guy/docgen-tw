@@ -72,7 +72,7 @@
 | `GET` | `/api/payment/status` | 查詢 `merchantTradeNo` 狀態 | 公開 |
 | `POST` | `/api/payment/newebpay/checkout` | 建立 NewebPay 訂單參數 | 需 UID（無則自建） |
 | `POST` | `/api/payment/newebpay/return` | 付費回傳頁面導向 | 由支付 callback 呼叫 |
-| `POST` | `/api/payment/newebpay/notify` | 支付結果最終授權 | 無條件（第三方回呼） |
+| `POST` | `/api/payment/newebpay/notify` | 支付結果最終授權 | 需藍新簽章（第三方回呼） |
 | `POST` | `/api/referrals` | 提交律師轉介表單 | 公開 |
 | `POST` | `/api/v1/contracts` | 對外合約 API（Rate Limit） | `Authorization: Bearer dk_*` |
 | `GET` | `/api/cron/reminders` | 每日提醒與 webhook 重試 | `CRON_SECRET`（未設定時可直接叫） |

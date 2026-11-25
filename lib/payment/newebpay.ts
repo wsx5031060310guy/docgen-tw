@@ -1,4 +1,4 @@
-import { createCipheriv, createDecipheriv, createHash } from "node:crypto";
+import { createCipheriv, createDecipheriv, createHash, timingSafeEqual } from "node:crypto";
 
 export type NewebpayConfig = {
   merchantId: string;
@@ -60,12 +60,12 @@ export function encodeTradeInfo(fields: TradeInfoFields, hashKey: string, hashIv
   return Buffer.concat([cipher.update(padded), cipher.final()]).toString("hex");
 }
 
-export function decodeTradeInfo(hex: string, hashKey: string, hashIv: string): Record<string, string> {
+/** Decrypts only. Callbacks must go through readPaymentCallback, which checks TradeSha first. */
+export function decodeTradeInfo(hex: string, hashKey: string, hashIv: string): string {
   const decipher = createDecipheriv("aes-256-cbc", Buffer.from(hashKey, "utf8"), Buffer.from(hashIv, "utf8"));
   decipher.setAutoPadding(false);
   const dec = Buffer.concat([decipher.update(Buffer.from(hex, "hex")), decipher.final()]);
-  const stripped = pkcs7Unpad(dec).toString("utf8");
-  return Object.fromEntries(new URLSearchParams(stripped));
+  return pkcs7Unpad(dec).toString("utf8");
 }
 
 // SHA256 input format per MPG 1.1 spec: `HashKey={KEY}&{HEX}&HashIV={IV}`.
@@ -77,6 +77,50 @@ export function computeTradeSha(tradeInfoHex: string, hashKey: string, hashIv: s
     .update(`HashKey=${hashKey}&${tradeInfoHex}&HashIV=${hashIv}`)
     .digest("hex")
     .toUpperCase();
+}
+
+export type PaymentCallback = {
+  outcome: "PAID" | "PENDING" | "FAILED";
+  merchantOrderNo: string;
+  amount: number;
+  paymentType?: string;
+  payload: unknown;
+};
+
+/**
+ * Verify, decrypt and parse what the gateway posts to NotifyURL / ReturnURL.
+ * Throws unless it is a signed payment result.
+ *
+ * A valid TradeSha alone is not enough: the checkout form we hand the buyer is
+ * signed with the same key. Results are JSON (we send RespondType=JSON) while
+ * requests are form-encoded, and every value is taken from inside the result.
+ */
+export function readPaymentCallback(
+  tradeInfoHex: string,
+  tradeSha: string,
+  hashKey: string,
+  hashIv: string,
+): PaymentCallback {
+  const expected = Buffer.from(computeTradeSha(tradeInfoHex, hashKey, hashIv));
+  const given = Buffer.from(tradeSha);
+  if (given.length !== expected.length || !timingSafeEqual(given, expected)) {
+    throw new Error("TradeSha mismatch");
+  }
+
+  const payload = JSON.parse(decodeTradeInfo(tradeInfoHex, hashKey, hashIv));
+  const result = payload?.Result;
+  const merchantOrderNo = result?.MerchantOrderNo;
+  if (typeof merchantOrderNo !== "string" || !merchantOrderNo) {
+    throw new Error("not a payment result");
+  }
+  return {
+    // Issuing an ATM / convenience-store code also reports SUCCESS, without PayTime.
+    outcome: payload.Status !== "SUCCESS" ? "FAILED" : result.PayTime ? "PAID" : "PENDING",
+    merchantOrderNo,
+    amount: Number(result.Amt),
+    paymentType: result.PaymentType,
+    payload,
+  };
 }
 
 export function buildCheckoutPayload(input: {
