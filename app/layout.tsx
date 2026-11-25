@@ -29,6 +29,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://docgen-tw.vercel.ap
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "./" },
   title: "DocGen TW · 台灣法律合約自動產生平台",
   description:
     "3 分鐘產出可信合約，附完整法條依據。雙方電子簽署，留存 IP、時間戳與簽名雜湊。",

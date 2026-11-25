@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "DocGen TW · Taiwan-law contracts, auto-drafted and e-signed",
   description: "Generate a Taiwan-law contract in 3 minutes with statute citations; both parties e-sign with IP, timestamp and signature hash.",
   alternates: {
+    canonical: "./",
     languages: {
       "zh-Hant": "/",
       en: "/en",
