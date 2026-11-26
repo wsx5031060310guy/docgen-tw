@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // Activate Pro plan on successful payment when planCode warrants it.
     const days = PRO_PLAN_DAYS[order.planCode ?? ""];
     if (claimed.count === 1 && outcome === "PAID" && order.uid && days) {
-      await activatePro({ uid: order.uid, email: order.buyerEmail, orderId: order.id, days }, tx);
+      await activatePro({ uid: order.uid, orderId: order.id, days }, tx);
     }
   });
   return new NextResponse("0");

@@ -7,6 +7,8 @@ import { newUid, readUidFromRequest, writeUidCookie } from "@/lib/billing";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const RE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 function siteUrl(req: NextRequest) {
   return process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin;
 }
@@ -15,7 +17,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const planCode = String(body.plan ?? "single");
   const contractId = body.contractId ? String(body.contractId) : null;
-  const email = String(body.email ?? "buyer@docgen.tw").trim();
+  // Receipt address only; it is not bound to the account (see activatePro).
+  const email = String(body.email ?? "").trim().toLowerCase();
+  if (!RE_EMAIL.test(email)) {
+    return NextResponse.json({ error: "email invalid" }, { status: 400 });
+  }
 
   const plan = getPlan(planCode);
   if (!plan) {

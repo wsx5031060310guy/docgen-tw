@@ -21,7 +21,12 @@ const DAY = 86400_000;
 type Fields = Record<string, string>;
 type Handler = (req: NextRequest) => Promise<Response>;
 let prisma: import("@prisma/client").PrismaClient;
-let checkout: Handler, notify: Handler, back: Handler, signUid: (uid: string) => string;
+let checkout: Handler, notify: Handler, back: Handler, emailStart: (req: Request) => Promise<Response>;
+let signUid: (uid: string) => string;
+vi.mock("@/lib/mailgun", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  sendEmail: async () => ({ ok: true }),
+}));
 
 /** Encrypt and sign a payload the way the gateway does. */
 function seal(payload: unknown, hashKey = HASH_KEY): Fields {
@@ -49,8 +54,8 @@ const post = (path: string, body: BodyInit, headers: Fields = {}) =>
 const callback = (fields: Fields) => notify(post("/api/payment/newebpay/notify", new URLSearchParams(fields)));
 
 /** Create a real order through the checkout route; returns what the buyer's browser receives. */
-async function buy(plan = "pro", uid = `buyer-${randomBytes(6).toString("hex")}`) {
-  const res = await checkout(post("/api/payment/newebpay/checkout", JSON.stringify({ plan, email: "buyer@example.com" }), {
+async function buy(plan = "pro", uid = `buyer-${randomBytes(6).toString("hex")}`, email = "buyer@example.com") {
+  const res = await checkout(post("/api/payment/newebpay/checkout", JSON.stringify({ plan, email }), {
     "content-type": "application/json", cookie: `docgen_uid=${encodeURIComponent(signUid(uid))}`,
   }));
   const { params, merchantOrderNo } = (await res.json()) as { params: Fields; merchantOrderNo: string };
@@ -74,6 +79,7 @@ describe.skipIf(!DB)("newebpay callbacks (real Postgres)", () => {
     checkout = (await import("@/app/api/payment/newebpay/checkout/route")).POST;
     notify = (await import("@/app/api/payment/newebpay/notify/route")).POST;
     back = (await import("@/app/api/payment/newebpay/return/route")).POST;
+    emailStart = (await import("@/app/api/auth/email/start/route")).POST;
   }, 60_000);
   afterAll(async () => prisma?.$disconnect());
 
@@ -212,5 +218,49 @@ describe.skipIf(!DB)("newebpay callbacks (real Postgres)", () => {
     expect(await go({ ...params, Status: "SUCCESS" })).toBe("http://localhost/payment/success");
     expect(await go({ ...seal(result(order)), TradeSha: "0".repeat(64) })).toBe("http://localhost/payment/success");
     expect(await orderStatus(order)).toBe("PENDING");
+  });
+
+  it("does not bind the email typed at checkout to the account", async () => {
+    const typed = `typed-${randomBytes(6).toString("hex")}@example.test`;
+    const { uid, order } = await buy("pro", undefined, typed);
+    await callback(seal(result(order)));
+    expect(await profile(uid)).toMatchObject({ plan: "PRO", email: null });
+    expect((await prisma.order.findUniqueOrThrow({ where: { merchantTradeNo: order } })).buyerEmail).toBe(typed);
+  });
+
+  it("keeps the email bound by a login link when another email is typed at checkout", async () => {
+    const uid = `buyer-${randomBytes(6).toString("hex")}`;
+    const bound = `bound-${uid}@example.test`;
+    await prisma.billingProfile.create({ data: { uid, email: bound } });
+    const { order } = await buy("pro", uid, `other-${uid}@example.test`);
+    await callback(seal(result(order)));
+    expect(await profile(uid)).toMatchObject({ plan: "PRO", email: bound });
+  });
+
+  it("a login link for the email typed at checkout does not open the payer's account", async () => {
+    const typed = `someone-${randomBytes(6).toString("hex")}@example.test`;
+    const { uid, order } = await buy("pro", undefined, typed);
+    await callback(seal(result(order)));
+    const res = await emailStart(new Request("http://localhost/api/auth/email/start", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: typed }),
+    }));
+    expect(res.status).toBe(200);
+    const link = await prisma.magicLink.findFirstOrThrow({ where: { email: typed }, orderBy: { createdAt: "desc" } });
+    expect(link.uid).not.toBe(uid);
+  });
+
+  it("requires a valid checkout email and stores it lowercased", async () => {
+    const uid = `buyer-${randomBytes(6).toString("hex")}`;
+    const cookie = `docgen_uid=${encodeURIComponent(signUid(uid))}`;
+    const send = (body: object) =>
+      checkout(post("/api/payment/newebpay/checkout", JSON.stringify(body), { "content-type": "application/json", cookie }));
+    for (const body of [{ plan: "pro" }, { plan: "pro", email: "" }, { plan: "pro", email: "not-an-email" }, { plan: "pro", email: 42 }]) {
+      expect((await send(body)).status).toBe(400);
+    }
+    expect(await prisma.order.count({ where: { uid } })).toBe(0);
+    const res = await send({ plan: "pro", email: `  Mixed.Case-${uid}@Example.TEST ` });
+    const { merchantOrderNo } = (await res.json()) as { merchantOrderNo: string };
+    expect((await prisma.order.findUniqueOrThrow({ where: { merchantTradeNo: merchantOrderNo } })).buyerEmail)
+      .toBe(`mixed.case-${uid}@example.test`.toLowerCase());
   });
 });

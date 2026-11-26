@@ -142,10 +142,13 @@ export async function incrementUsage(uid: string) {
   });
 }
 
-/** Activate PRO for `days` from now (default 30). Called from NewebPay notify. */
+/**
+ * Activate PRO for `days` from now (default 30). Called from NewebPay notify.
+ * Never touches `email`: the bound email decides where a magic-link login lands,
+ * so only /api/auth/email/verify sets it. The checkout email stays on the Order.
+ */
 export async function activatePro(input: {
   uid: string;
-  email?: string | null;
   orderId: string;
   days?: number;
 }, db: Prisma.TransactionClient = prisma) {
@@ -158,13 +161,11 @@ export async function activatePro(input: {
     where: { uid: input.uid },
     create: {
       uid: input.uid,
-      email: input.email ?? null,
       plan: "PRO",
       periodEnd,
       lastOrderId: input.orderId,
     },
     update: {
-      email: input.email ?? existing?.email ?? null,
       plan: "PRO",
       periodEnd,
       lastOrderId: input.orderId,
