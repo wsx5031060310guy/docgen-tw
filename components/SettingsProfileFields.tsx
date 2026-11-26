@@ -99,7 +99,7 @@ export function SettingsProfileFields({
             aria-describedby="settings-email-help"
           />
           <p id="settings-email-help" className="field-help">
-            用於付款收據、Pro 啟用憑據及跨裝置轉移時的身分確認。
+            綁定 Email 以便跨裝置登入，需透過下方登入連結驗證。
           </p>
         </div>
       </section>

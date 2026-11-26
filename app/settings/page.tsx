@@ -294,7 +294,7 @@ function SettingsInner() {
               <div className="dg-eyebrow dg-settings-eyebrow"><Icon name="users" size={13} />設定</div>
               <h1 className="dg-page-title">帳號 &amp; 整合</h1>
               <p className="dg-text-secondary dg-settings-intro">
-                本平台以瀏覽器 cookie 識別身分（無註冊登入）。可選擇綁定 Email 收取 Pro 啟用憑據，
+                本平台以瀏覽器 cookie 識別身分（無註冊登入）。可選擇綁定 Email 以便跨裝置登入，
                 或設定 webhook URL，將「合約簽完」「milestone 逾期」等事件即時推到 Slack、Discord、n8n 或 Make。
               </p>
             </div>
