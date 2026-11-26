@@ -77,7 +77,7 @@ export function SettingsProfileFields({
           </div>
         </dl>
         <p className="dg-helper">
-          uid 存在你的瀏覽器 cookie。換瀏覽器或清除 cookie 會視為新使用者；如需跨裝置帶入 Pro，請填寫 Email 並聯絡客服轉移。
+          uid 存在你的瀏覽器 cookie。換瀏覽器或清除 cookie 會視為新使用者；如需跨裝置帶入 Pro，請先用下方登入連結綁定 Email，再到新裝置用同一個 Email 登入。
         </p>
       </section>
 
