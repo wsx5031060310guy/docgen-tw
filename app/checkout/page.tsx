@@ -43,7 +43,7 @@ const FAQS = [
   ["這些合約具法律效力嗎？", "是的。合約內容均依中華民國法律編製，並透過電子簽章法 §4、§9 保障雙方簽署效力。但重大或複雜爭議仍建議委請律師審閱。"],
   ["Free 方案 3 份用完了怎麼辦？", "等下個月（每月 1 日重置），或現在升級 Pro / Pack 立即解除限制。系統會在你嘗試送出第 4 份合約時擋下並導向升級。"],
   ["會自動續訂嗎？", "不會。Pro 月方案是「付一次給 30 天」，Pack 是「付一次給 90 天」，到期降回 Free，不會繼續扣款。"],
-  ["怎麼辨識我是 Pro？", "用 Email 結帳後，系統會把你的瀏覽器（cookie uid）綁定到 PRO，效期內任何裝置只要保持同一個瀏覽器 cookie 就是 Pro。要換裝置請告知客服重綁。"],
+  ["怎麼辨識我是 Pro？", "用 Email 結帳後，系統會把你的瀏覽器（cookie uid）綁定到 PRO，效期內任何裝置只要保持同一個瀏覽器 cookie 就是 Pro。要換裝置，請先在設定頁寄登入連結綁定 Email，之後在新裝置用同一個 Email 登入即可。"],
   ["合約如何保存？", "簽完的合約 PDF 永久保存於你的後台 /contracts；簽名圖片 + 雜湊 + IP + 時間戳均存證。"],
 ];
 
@@ -61,7 +61,7 @@ export default function CheckoutPage() {
     setOrderError(null);
     const normalizedEmail = email.trim();
     if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) {
-      setEmailError("請先輸入有效 Email（付款收據與 Pro 啟用憑據用）");
+      setEmailError("請先輸入有效 Email（付款收據用）");
       emailRef.current?.focus();
       return;
     }
@@ -114,7 +114,7 @@ export default function CheckoutPage() {
               <strong>藍新金流</strong>結帳、<strong>不自動續約</strong>。
             </p>
             <div className="field dg-checkout-email-field">
-              <label className="field-label" htmlFor="checkout-email">Email（收據與 Pro 帳號識別）</label>
+              <label className="field-label" htmlFor="checkout-email">Email（付款收據用）</label>
               <input
                 ref={emailRef}
                 id="checkout-email"
@@ -127,7 +127,7 @@ export default function CheckoutPage() {
                 aria-describedby={`checkout-email-help${emailError ? " checkout-email-error" : ""}`}
                 aria-invalid={Boolean(emailError) || undefined}
               />
-              <p id="checkout-email-help" className="field-help">付款收據與 Pro 啟用憑據會寄送至此 Email。</p>
+              <p id="checkout-email-help" className="field-help">藍新會寄交易通知到此 Email。要在其他裝置使用 Pro，付款後請到設定頁用登入連結綁定 Email。</p>
               {emailError && (
                 <div id="checkout-email-error" className="field-error" role="alert">
                   <Icon name="alert" size={12} />{emailError}
